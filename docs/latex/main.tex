@@ -1,0 +1,60 @@
+\documentclass[12pt, a4paper]{report}
+
+% ─── Encoding & Language ──────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[italian]{babel}
+
+% ─── Layout ───────────────────────────────────────────────────────────────────
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{setspace}
+\onehalfspacing
+
+% ─── Graphics & Colors ────────────────────────────────────────────────────────
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+\usepackage{xcolor}
+
+% ─── Math ─────────────────────────────────────────────────────────────────────
+\usepackage{amsmath, amssymb}
+
+% ─── Code Listings ────────────────────────────────────────────────────────────
+\usepackage{listings}
+\lstset{basicstyle=\ttfamily\small, breaklines=true}
+
+% ─── Hyperlinks ───────────────────────────────────────────────────────────────
+\usepackage[hidelinks]{hyperref}
+
+% ─── Bibliography ─────────────────────────────────────────────────────────────
+\usepackage[backend=biber, style=numeric]{biblatex}
+\addbibresource{references.bib}
+
+% ─── Title Info ───────────────────────────────────────────────────────────────
+\title{
+    \vspace{2cm}
+    \textbf{SINTON-IA} \\
+    \large Documentazione Tecnica dei Modelli di Intelligenza Artificiale \\
+    \vspace{0.5cm}
+    \normalsize Sistema di Supporto alla Salute Mentale -- ASL Campania
+}
+\author{Team SINTONIA}
+\date{\today}
+
+% ──────────────────────────────────────────────────────────────────────────────
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% Capitoli (da decommentare man mano che vengono scritti)
+% \include{chapters/01_introduction}
+% \include{chapters/02_nlp_suicide_risk}
+% \include{chapters/03_churn_prediction}
+% \include{chapters/04_depression_detection}
+% \include{chapters/05_api_integration}
+
+\printbibliography
+
+\end{document}

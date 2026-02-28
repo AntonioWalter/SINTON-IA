@@ -1,0 +1,75 @@
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+env/
+venv/
+.venv/
+ENV/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ─── Jupyter Notebooks ────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# ─── Data & Datasets (troppo grandi per git) ──────────────────────────────────
+models/*/data/*
+!models/*/data/.gitkeep
+*.csv
+*.tsv
+*.json
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.db
+*.sqlite
+
+# ─── Model outputs (salvare su Drive / MLflow / HuggingFace Hub) ──────────────
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.bin
+*.safetensors
+
+# ─── LaTeX ────────────────────────────────────────────────────────────────────
+docs/latex/*.aux
+docs/latex/*.log
+docs/latex/*.out
+docs/latex/*.toc
+docs/latex/*.lof
+docs/latex/*.lot
+docs/latex/*.fls
+docs/latex/*.fdb_latexmk
+docs/latex/*.synctex.gz
+docs/latex/*.bbl
+docs/latex/*.blg
+docs/latex/_minted-*/
+docs/latex/*.pdf
+
+# ─── Editors & OS ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Environment files ────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ─── MLflow / Experiment tracking ────────────────────────────────────────────
+mlruns/
+mlartifacts/

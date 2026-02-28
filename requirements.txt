@@ -1,0 +1,23 @@
+# ─── Core ML / Data Science ───────────────────────────────────────────────────
+numpy
+pandas
+scikit-learn
+matplotlib
+seaborn
+
+# ─── NLP (Modello 1 – Rischio Suicidario) ────────────────────────────────────
+transformers
+torch
+datasets
+
+# ─── API ──────────────────────────────────────────────────────────────────────
+fastapi
+uvicorn
+
+# ─── Notebook ─────────────────────────────────────────────────────────────────
+jupyter
+ipykernel
+
+# ─── Utilities ────────────────────────────────────────────────────────────────
+python-dotenv
+pydantic
