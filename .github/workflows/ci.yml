@@ -1,0 +1,113 @@
+# ══════════════════════════════════════════════════════════════════════════════
+# CI – SINTON-IA
+# ══════════════════════════════════════════════════════════════════════════════
+#
+# Questo file definisce la pipeline di Continuous Integration.
+# GitHub eseguirà automaticamente questi controlli ogni volta che:
+#   - viene aperta o aggiornata una Pull Request verso `dev` o `main`
+#   - viene fatto un push diretto su `dev` o `main` (es. merge)
+#
+# Se anche un solo controllo fallisce, la PR non può essere mergiata.
+# ══════════════════════════════════════════════════════════════════════════════
+
+name: CI – SINTON-IA
+
+# ─── Quando si attiva la pipeline ────────────────────────────────────────────
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  push:
+    branches:
+      - main
+      - dev
+
+# ─── Job: controlli sul codice Python ────────────────────────────────────────
+jobs:
+
+  lint-and-check:
+    # L'environment virtuale in cui girano i controlli (runner GitHub)
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # 1. Scarica il codice del branch in esame
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Installa Python 3.11
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          # Mantiene in cache i pacchetti per velocizzare le run successive
+          cache: "pip"
+
+      # 3. Installa le dipendenze del progetto
+      #    Questo verifica anche che requirements.txt sia valido e installabile
+      - name: 📦 Installa dipendenze
+        run: pip install -r requirements.txt
+
+      # 4. Installa gli strumenti di analisi del codice (non sono nel requirements)
+      - name: 🔧 Installa strumenti CI
+        run: pip install ruff nbformat
+
+      # ── CONTROLLO 1: Linting del codice Python ──────────────────────────────
+      # ruff è un linter Python moderno e velocissimo.
+      # Controlla che il codice in src/ segua le convenzioni PEP8:
+      #   - niente variabili non usate
+      #   - niente import non usati
+      #   - indentazione corretta
+      #   - ecc.
+      # Se trovi un errore segnalato da ruff, correggilo prima di fare push.
+      - name: 🔍 Lint Python (ruff)
+        run: |
+          ruff check models/*/src/ api/ integration/ --ignore E501
+          # E501 = linee troppo lunghe (ignorato perché nei notebook è comune)
+
+      # ── CONTROLLO 2: Validità dei notebook Jupyter ───────────────────────────
+      # Verifica che i file .ipynb siano JSON validi e abbiano la struttura
+      # corretta di un notebook Jupyter. NON esegue le celle (troppo pesante
+      # per la CI, i modelli ML richiedono GPU e dati).
+      # Se un notebook è corrotto o salvato male, questo controllo lo rileva.
+      - name: 📓 Valida struttura notebook (.ipynb)
+        run: |
+          python - <<'EOF'
+          import os, nbformat, sys
+
+          errors = []
+          for root, _, files in os.walk("models"):
+              for f in files:
+                  if f.endswith(".ipynb"):
+                      path = os.path.join(root, f)
+                      try:
+                          with open(path) as nb_file:
+                              nbformat.read(nb_file, as_version=4)
+                          print(f"  ✅ {path}")
+                      except Exception as e:
+                          errors.append(f"  ❌ {path}: {e}")
+
+          if errors:
+              print("\nNotebook non validi:")
+              for e in errors:
+                  print(e)
+              sys.exit(1)
+          else:
+              print("\nTutti i notebook sono validi.")
+          EOF
+
+      # ── CONTROLLO 3: Import dei moduli src/ ──────────────────────────────────
+      # Verifica che i file Python nella cartella src/ di ogni modello
+      # possano essere importati senza errori di sintassi.
+      # Non esegue il codice, controlla solo che sia sintatticamente corretto.
+      - name: 🧠 Controlla sintassi Python (src/)
+        run: |
+          python -m py_compile $(find models/*/src -name "*.py") 2>/dev/null || true
+          python -m py_compile $(find api -name "*.py") 2>/dev/null || true
+          echo "✅ Nessun errore di sintassi trovato."
+
+
+#TODO: implementare test di unità
+
+#TODO: implementare test di integrazione

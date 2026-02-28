@@ -24,4 +24,3 @@
 - [ ] Il codice è stato testato localmente
 - [ ] I notebook girano dall'inizio alla fine senza errori
 - [ ] La documentazione è stata aggiornata (se necessario)
-- [ ] Approva ✅ oppure richiedi modifiche con un commento chiaro 💬

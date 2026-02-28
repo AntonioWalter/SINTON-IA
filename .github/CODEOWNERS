@@ -1,0 +1,8 @@
+# CODEOWNERS – SINTON-IA
+#
+# Tutti i file della repository richiedono la review dei proprietari indicati.
+# Sostituisci @username1 @username2 @username3 con i GitHub username del team.
+#
+# Documentazione: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+*   @GiaPol @aleds25 @AntonioWalter

@@ -107,7 +107,7 @@ main
 
 ### Approvazione obbligatoria
 
-> **Sono necessarie almeno 2 approvazioni su 3** prima che una PR possa essere mergiata.
+> **Sono necessarie almeno 2 approvazioni** prima che una PR possa essere mergiata.
 
 Questo garantisce che il codice sia sempre visto da tutto il team. Non è possibile fare self-merge.
 
