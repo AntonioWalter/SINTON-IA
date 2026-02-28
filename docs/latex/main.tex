@@ -7,7 +7,7 @@
 
 % ─── Layout ───────────────────────────────────────────────────────────────────
 \usepackage{geometry}
-\geometry{margin=2.5cm}
+\geometry{margin=2.5cm, bottom=3cm}
 \usepackage{setspace}
 \onehalfspacing
 
@@ -15,6 +15,7 @@
 \usepackage{graphicx}
 \graphicspath{{figures/}}
 \usepackage{xcolor}
+\definecolor{unisablue}{RGB}{0, 56, 116}
 
 % ─── Math ─────────────────────────────────────────────────────────────────────
 \usepackage{amsmath, amssymb}
@@ -26,35 +27,102 @@
 % ─── Hyperlinks ───────────────────────────────────────────────────────────────
 \usepackage[hidelinks]{hyperref}
 
-% ─── Bibliography ─────────────────────────────────────────────────────────────
-\usepackage[backend=biber, style=numeric]{biblatex}
-\addbibresource{references.bib}
+% ─── Header & Footer ──────────────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\usepackage{lastpage}
 
-% ─── Title Info ───────────────────────────────────────────────────────────────
-\title{
-    \vspace{2cm}
-    \textbf{SINTON-IA} \\
-    \large Documentazione Tecnica dei Modelli di Intelligenza Artificiale \\
-    \vspace{0.5cm}
-    \normalsize Sistema di Supporto alla Salute Mentale -- ASL Campania
-}
-\author{Team SINTONIA}
-\date{\today}
+\pagestyle{fancy}
+\fancyhf{}
+% Header: titolo a sinistra, logo SINTON-IA a destra
+\fancyhead[L]{\small\textcolor{unisablue}{\textbf{SINTON-IA} -- Documentazione Tecnica}}
+\fancyhead[R]{\small\textcolor{gray}{A.A. 2024/2025}}
+% Footer: nomi autori a sinistra, numero pagina a destra
+\fancyfoot[L]{\small\textcolor{gray}{De Fusco $\cdot$ Del Sorbo $\cdot$ Policola}}
+\fancyfoot[R]{\small\textcolor{gray}{Pag. \thepage\ di \pageref{LastPage}}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% ─── Bibliography ─────────────────────────────────────────────────────────────
+% Da decommentare quando si aggiungono le prime citazioni:
+% \usepackage[backend=biber, style=numeric]{biblatex}
+% \addbibresource{references.bib}
 
 % ──────────────────────────────────────────────────────────────────────────────
 \begin{document}
 
-\maketitle
+% ─── Pagina di copertina ──────────────────────────────────────────────────────
+\begin{titlepage}
+    \thispagestyle{empty} % niente header/footer sulla copertina
+
+    \begin{center}
+
+        % ── Loghi ─────────────────────────────────────────────────────────────
+        \begin{minipage}{0.35\textwidth}
+            \centering
+            \includegraphics[width=0.72\textwidth]{logo_unisa.png}
+        \end{minipage}
+        \hfill
+        \begin{minipage}{0.35\textwidth}
+            \centering
+            \includegraphics[width=0.85\textwidth]{sintonia-logo-new.jpg}
+        \end{minipage}
+
+        \vspace{0.6cm}
+        \textcolor{unisablue}{\rule{\linewidth}{1.2pt}}
+
+        % ── Intestazione università ───────────────────────────────────────────
+        \vspace{0.4cm}
+        {\large \textbf{Università degli Studi di Salerno}} \\[0.2cm]
+        {\normalsize Dipartimento di Informatica} \\[0.1cm]
+        {\normalsize Corso di \textit{Fondamenti di Intelligenza Artificiale}} \\[0.1cm]
+        {\normalsize Prof. \textbf{Fabio Palomba}} \\
+
+        \vspace{0.6cm}
+        \textcolor{unisablue}{\rule{\linewidth}{0.6pt}}
+        \vspace{1.2cm}
+
+        % ── Titolo principale ─────────────────────────────────────────────────
+        {\fontsize{28}{34}\selectfont \textbf{\textcolor{unisablue}{SINTON-IA}}} \\[0.5cm]
+        {\Large \textit{Documentazione Tecnica dei Modelli}} \\[0.3cm]
+        {\large \textit{di Intelligenza Artificiale}} \\[0.8cm]
+
+        {\normalsize Sistema di Supporto alla Salute Mentale} \\[0.1cm]
+        {\normalsize \textbf{ASL Campania}} \\
+
+        \vspace{1.4cm}
+        \textcolor{unisablue}{\rule{\linewidth}{0.6pt}}
+        \vspace{0.6cm}
+
+        % ── Autori ────────────────────────────────────────────────────────────
+        {\normalsize \textbf{Autori}} \\[0.3cm]
+        \begin{tabular}{c}
+            \large Antonio Walter De Fusco \\[0.2cm]
+            \large Alessio Del Sorbo \\[0.2cm]
+            \large Gianni Policola \\
+        \end{tabular}
+
+        \vfill
+
+        % ── Data ──────────────────────────────────────────────────────────────
+        \textcolor{unisablue}{\rule{\linewidth}{1.2pt}}
+        \vspace{0.3cm}
+        {\normalsize Anno Accademico 2024/2025}
+
+    \end{center}
+\end{titlepage}
+
+% ─── Indice ───────────────────────────────────────────────────────────────────
 \tableofcontents
 \newpage
 
-% Capitoli (da decommentare man mano che vengono scritti)
+% ─── Capitoli (decommentare man mano che vengono scritti) ────────────────────
 % \include{chapters/01_introduction}
 % \include{chapters/02_nlp_suicide_risk}
 % \include{chapters/03_churn_prediction}
 % \include{chapters/04_depression_detection}
 % \include{chapters/05_api_integration}
 
-\printbibliography
+% Da decommentare insieme a biblatex:
+% \printbibliography
 
 \end{document}
