@@ -45,7 +45,18 @@ models/*/data/*
 # ─── LaTeX ────────────────────────────────────────────────────────────────────
 docs/latex/build/
 docs/latex/_minted-*/
+docs/latex/*.aux
+docs/latex/*.bbl
+docs/latex/*.blg
+docs/latex/*.fdb_latexmk
+docs/latex/*.fls
+docs/latex/*.log
+docs/latex/*.out
+docs/latex/*.toc
 docs/latex/*.pdf
+docs/latex/*.synctex.gz
+docs/latex/*.synctex(busy)
+docs/latex/chapters/*.aux
 
 # ─── Editors & OS ─────────────────────────────────────────────────────────
 .idea/
