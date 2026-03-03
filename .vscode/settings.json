@@ -3,30 +3,22 @@
 
     "latex-workshop.latex.recipes": [
         {
-            "name": "pdflatex ➜ biber ➜ pdflatex × 2",
-            "tools": ["pdflatex", "biber", "pdflatex", "pdflatex"]
-        },
-        {
-            "name": "pdflatex (singolo)",
-            "tools": ["pdflatex"]
+            "name": "latexmk (pdf)",
+            "tools": ["latexmk"]
         }
     ],
 
     "latex-workshop.latex.tools": [
         {
-            "name": "pdflatex",
-            "command": "pdflatex",
+            "name": "latexmk",
+            "command": "latexmk",
             "args": [
+                "-pdf",
                 "-synctex=1",
                 "-interaction=nonstopmode",
-                "-output-directory=%OUTDIR%",
+                "-file-line-error",
                 "%DOC%"
             ]
-        },
-        {
-            "name": "biber",
-            "command": "biber",
-            "args": ["--output-directory", "%OUTDIR%", "%DOCFILE%"]
         }
     ],
 

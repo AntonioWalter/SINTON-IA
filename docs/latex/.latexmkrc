@@ -4,7 +4,8 @@ $aux_dir = 'build';
 
 # Usa pdflatex
 $pdf_mode = 1;
-$pdflatex = 'pdflatex -interaction=nonstopmode -output-directory=build %O %S';
+$pdflatex = 'pdflatex -interaction=nonstopmode %O %S';
 
-# Bibtex con supporto alla directory di output
-$bibtex = 'bibtex build/%B';
+# Usa BibTeX (non Biber) per la bibliografia
+$bibtex_use = 1;
+$bibtex = 'bibtex %O %B';
