@@ -148,3 +148,135 @@ Oltre alla qualità della soluzione finale, è necessario fissare obiettivi sull
 
 % Descrivere il piano di lavoro, le fasi previste (secondo CRISP-DM),
 % le milestone principali e la suddivisione dei compiti nel team.
+
+% ── 1.7 ──────────────────────────────────────────────────────────────────────
+\clearpage
+\section{Analisi Costi-Benefici e Valutazione delle Risorse}
+\label{sec:costi_benefici}
+
+Prima di avviare la fase operativa del progetto, è necessario condurre un'analisi strutturata delle risorse disponibili e dei costi associati allo sviluppo e al mantenimento dei modelli di Intelligenza Artificiale. Questa sezione mappa le risorse umane, dati e tecnologiche necessarie, quantifica i costi di sviluppo e gestione, e li confronta con i benefici attesi per l'ASL Campania, dimostrando la sostenibilità complessiva dell'iniziativa.
+
+\clearpage
+\subsection{Valutazione e Inventario delle Risorse Necessarie}
+\label{subsec:inventario_risorse}
+
+\subsubsection{Risorse Umane e Competenze}
+\label{subsubsec:risorse_umane}
+
+Il team di sviluppo di SINTON-IA è composto da tre membri --- A.W. De Fusco, A. Del Sorbo e G. Policola --- i quali si suddivideranno equamente le responsabilità secondo il modello organizzativo \textit{Team Data Science Process} (TDSP). Ciascun membro del team ricoprirà trasversalmente i ruoli previsti dal framework:
+
+\begin{itemize}
+    \item \textbf{Data Scientist:} progettazione, addestramento e validazione dei modelli predittivi;
+    \item \textbf{Data Engineer:} costruzione delle pipeline di acquisizione, pulizia e trasformazione dei dati;
+    \item \textbf{Sviluppatore Applicativo:} integrazione dei modelli nell'ecosistema SINTONIA tramite API di servizio.
+\end{itemize}
+
+Un aspetto critico riguarda la \textbf{validazione clinica} dei risultati prodotti dai modelli. Per garantire che le predizioni siano clinicamente significative e affidabili, sarà necessario il coinvolgimento futuro di \textit{esperti di dominio} --- psicologi clinici affiliati alle ASL campane --- che dovranno supervisionare l'etichettatura dei dati testuali (in particolare per il modello di Red Flag Detection) e validare la coerenza delle stime prodotte. Tuttavia, nella fase attuale del progetto, questa collaborazione non è ancora operativa: la validazione clinica formale è prevista come fase successiva, una volta consolidati i modelli di base mediante dataset pubblici.
+
+\subsubsection{Risorse Dati e Vincoli di Privacy}
+\label{subsubsec:risorse_dati}
+
+L'acquisizione dei dati rappresenta una delle sfide più significative del progetto. Nel contesto europeo, i dati relativi alla salute mentale dei pazienti sono soggetti a rigide normative di tutela della privacy (GDPR, Regolamento UE 2016/679), che ne rendono di fatto impossibile l'accesso libero e gratuito per finalità di ricerca accademica non autorizzata.
+
+Questa situazione configura un \textbf{dilemma strategico} che il progetto deve affrontare in modo consapevole:
+
+\begin{itemize}
+    \item \textbf{Dataset pubblici e liberamente accessibili} (es. piattaforme come Kaggle, repository accademici aperti): costituiscono la risorsa primaria per la fase di validazione iniziale dei modelli. Tali dataset sono tipicamente anonimizzati, provenienti da contesti extra-europei (prevalentemente anglofoni) e presentano inevitabili limiti di rappresentatività rispetto alla popolazione target campana. Le differenze linguistiche, culturali e cliniche possono influenzare le performance dei modelli, richiedendo opportune strategie di adattamento (es. traduzione, \textit{transfer learning}, \textit{fine-tuning} su dati più specifici).
+
+    \item \textbf{Dataset per la ricerca clinica autorizzata}: rappresentano la risorsa ideale per affinare e rendere più accurati i modelli in una fase successiva del progetto. L'accesso a tali dati richiede la stipulazione di accordi formali con enti sanitari, l'approvazione di comitati etici e il rispetto di protocolli di anonimizzazione certificati. Questo percorso, pur essendo più oneroso in termini di tempo e burocrazia, garantirebbe dati clinicamente rilevanti e rappresentativi del contesto operativo reale.
+\end{itemize}
+
+La strategia adottata dal progetto prevede pertanto un \textbf{approccio incrementale}: nella fase iniziale si utilizzeranno esclusivamente dataset pubblici per la costruzione e la validazione di base dei modelli, posticipando a una fase successiva la richiesta di autorizzazioni formali laddove si rendesse necessario migliorare l'accuratezza e la completezza delle predizioni su dati più vicini al dominio di riferimento.
+
+Per ciascun modello, le tipologie di dati necessarie sono riconducibili a:
+\begin{itemize}
+    \item \textbf{Red Flag Detection:} dati testuali annotati con etichette di rischio suicidario, contenenti testi redatti in prima persona che esprimano stati emotivi, ideazioni o segnali di disagio;
+    \item \textbf{Depression Prediction:} serie temporali di indicatori emotivi (valenza, intensità) associati a punteggi di questionari clinici validati (PHQ-9 o equivalenti).
+\end{itemize}
+
+Per quanto riguarda il modello di \textbf{Churn Prediction}, non è previsto l'utilizzo di dataset esterni: il sistema si baserà esclusivamente sui dati interni generati dall'interazione degli utenti con la piattaforma SINTONIA (log di utilizzo, frequenza di accesso, pattern di compilazione), sfruttando l'approccio genetico-evolutivo per ottimizzare le strategie di intervento senza necessità di dati di addestramento etichettati.
+
+\subsubsection{Risorse Tecnologiche e di Calcolo}
+\label{subsubsec:risorse_calcolo}
+
+L'infrastruttura di calcolo disponibile per la fase di addestramento dei modelli è costituita da una workstation equipaggiata con GPU \textbf{NVIDIA RTX 2070} dotata di 8 GB di VRAM. Questa configurazione risulta adeguata per le fasi di prototipazione, sperimentazione e addestramento iniziale dei modelli previsti dal progetto.
+
+La GPU consente di eseguire il \textit{fine-tuning} di modelli di linguaggio pre-addestrati di dimensione contenuta, addestrare modelli di regressione su serie temporali e gestire l'esecuzione degli algoritmi genetici per l'ottimizzazione delle strategie di nudging. 
+
+Qualora le fasi successive del progetto richiedessero un incremento significativo della capacità di calcolo, si valuterà il ricorso a piattaforme cloud con GPU dedicate (es. Google Colab Pro) o a risorse di calcolo messe a disposizione dall'infrastruttura dell'Ateneo.
+
+\clearpage
+\subsection{Analisi dei Costi (CAPEX e OPEX)}
+\label{subsec:analisi_costi}
+
+Nella presente fase, il progetto SINTON-IA si colloca interamente all'interno di un contesto accademico universitario: le risorse umane sono costituite da studenti, l'infrastruttura di calcolo è di proprietà del team e i dataset utilizzati sono pubblici e gratuiti. Di conseguenza, \textbf{i costi effettivi sostenuti per la prototipazione sono pari a zero}. Tuttavia, al fine di valutare la sostenibilità economica di un'eventuale adozione del sistema da parte dell'ASL Campania, è opportuno stimare i costi che si presenterebbero in uno scenario produttivo reale, suddividendoli nelle due categorie standard di analisi finanziaria: CAPEX (spese in conto capitale) e OPEX (spese operative ricorrenti).
+
+\subsubsection{Costi di Sviluppo (CAPEX)}
+\label{subsubsec:capex}
+
+I costi CAPEX rappresentano gli investimenti iniziali necessari per portare il sistema dalla fase di prototipazione alla messa in produzione. In uno scenario di adozione reale da parte dell'ASL, le principali voci di costo sarebbero le seguenti:
+
+\begin{itemize}
+    \item \textbf{Risorse umane specializzate:} il coinvolgimento di figure professionali quali Data Scientist, Data Engineer e sviluppatori applicativi, ciascuno con competenze specifiche nel dominio della salute mentale e dell'Intelligenza Artificiale. A queste si aggiungerebbero le ore di consulenza di psicologi clinici per la supervisione e la validazione dei modelli.
+
+    \item \textbf{Acquisizione e preparazione dei dati:} l'effort legato alla raccolta di dataset clinici autorizzati, alla loro anonimizzazione conforme al GDPR e alla fase di annotazione manuale (in particolare per i testi del diario necessari al modello di Red Flag Detection). Questa voce include anche eventuali costi legali per la stipulazione degli accordi con gli enti sanitari.
+
+    \item \textbf{Infrastruttura di calcolo per l'addestramento:} il noleggio di risorse GPU necessarie per addestrare i modelli. A titolo indicativo, il noleggio di una GPU cloud di fascia alta ha un costo medio compreso tra 2 e 4 \texteuro/ora, rendendo l'addestramento di un singolo modello un investimento contenuto nell'ordine di poche centinaia di euro.
+
+    \item \textbf{Integrazione nell'ecosistema SINTONIA:} lo sviluppo delle API di servizio, l'adattamento dell'interfaccia dell'applicazione per visualizzare gli output dei modelli (alert, grafici di andamento, notifiche strategiche) e i test di integrazione end-to-end.
+\end{itemize}
+
+\subsubsection{Costi Operativi e di Mantenimento (OPEX)}
+\label{subsubsec:opex}
+
+I costi OPEX rappresentano le spese ricorrenti necessarie per mantenere il sistema operativo una volta in produzione. A differenza dei costi CAPEX, che vengono sostenuti una sola volta, gli OPEX si ripetono con cadenza periodica:
+
+\begin{itemize}
+    \item \textbf{Costi di inferenza:} ogni volta che un paziente scrive una pagina di diario, il modello di Red Flag Detection deve analizzare il testo in tempo reale. Analogamente, le predizioni PHQ-9 e le valutazioni di churn richiedono elaborazioni periodiche. Questi costi sono proporzionali al numero di utenti attivi e alla frequenza di utilizzo della piattaforma. Utilizzando servizi cloud, il costo unitario per singola inferenza è nell'ordine di frazioni di centesimo, ma può accumularsi con volumi elevati di utenti.
+
+    \item \textbf{Model monitoring e manutenzione:} il monitoraggio continuo delle performance dei modelli in produzione è fondamentale per rilevare fenomeni di \textit{data drift} --- l'evoluzione nel tempo delle caratteristiche dei dati in ingresso che può degradare progressivamente l'accuratezza delle predizioni. Questa attività richiede strumenti di monitoraggio, dashboard dedicate e personale tecnico in grado di interpretare le metriche e decidere quando intervenire.
+
+    \item \textbf{Ri-addestramento periodico:} per contrastare il data drift e incorporare nuovi dati clinici, i modelli dovranno essere periodicamente ri-addestrati. Ogni ciclo di ri-addestramento comporta costi di calcolo GPU e di validazione clinica da parte degli esperti di dominio.
+\end{itemize}
+
+\clearpage
+\subsection{Valutazione dei Benefici e Ritorno sull'Investimento}
+\label{subsec:benefici_roi}
+
+La sostenibilità di un progetto come SINTON-IA non può essere valutata esclusivamente in termini economici: il valore primario del sistema risiede nella sua capacità di \textbf{salvare vite umane} e di trasformare radicalmente la qualità del monitoraggio psicologico durante una delle fasi più critiche e vulnerabili del percorso di cura. I benefici attesi si articolano su tre livelli complementari.
+
+\subsubsection{Benefici Clinici: Monitoraggio Continuo e Prevenzione del Rischio}
+\label{subsubsec:benefici_clinici}
+
+Il beneficio più significativo e non negoziabile dell'intero progetto è la capacità di \textbf{intercettare tempestivamente situazioni di rischio suicidario} che, nel sistema attuale, resterebbero invisibili per giorni o settimane.
+
+Come evidenziato nella Sezione~\ref{sec:flusso_psicologo}, il sistema di alert attuale è intrinsecamente limitato dalla periodicità dei questionari: un paziente che esprime segnali di pericolo nel proprio diario nei giorni che intercorrono tra una somministrazione e l'altra non viene identificato. SINTON-IA colma questo vuoto critico attraverso il modello di \textit{Red Flag Detection}, che analizza in tempo reale e in modo completamente anonimo ogni pagina scritta nel diario, generando un alert clinico immediato al primo riscontro di pattern linguistici riconducibili a ideazione suicidaria.
+
+L'impatto clinico di questa funzionalità è potenzialmente incommensurabile: \textbf{anche un solo caso intercettato in tempo può rappresentare la differenza tra la vita e la morte di un paziente}. In termini economici, la prevenzione di un singolo episodio di emergenza psichiatrica acuta --- che comporta ospedalizzazione d'urgenza, degenza in reparto psichiatrico, trattamenti farmacologici intensivi e follow-up prolungato --- genera un risparmio per il Sistema Sanitario Regionale stimabile in diverse migliaia di euro per episodio evitato. Tuttavia, ridurre il valore di questa funzionalità a un mero calcolo economico sarebbe profondamente riduttivo: il vero ritorno sull'investimento è la protezione della persona.
+
+Analogamente, il modello di \textit{Depression Prediction} estende il monitoraggio ben oltre le finestre temporali dei questionari, offrendo allo psicologo una visione continua e granulare dell'andamento emotivo del paziente. La possibilità di rilevare un peggioramento del quadro depressivo \textit{prima} che si manifesti nella compilazione successiva del PHQ-9 consente interventi preventivi che possono evitare l'aggravamento della condizione clinica, riducendo il rischio di cronicizzazione e i costi sanitari ad essa associati.
+
+\subsubsection{Benefici Operativi: Supporto alla Supervisione dello Psicologo}
+\label{subsubsec:benefici_operativi}
+
+Nella versione attuale della piattaforma, le possibilità operative dello psicologo sono circoscritte: il professionista può supervisionare i questionari compilati dai pazienti in attesa, accettare o gestire gli alert clinici generati dal sistema e, una volta effettuata la presa in carico, il percorso del paziente sulla piattaforma si conclude. All'interno di questo perimetro, SINTON-IA introduce due benefici operativi concreti.
+
+In primo luogo, il modello di \textit{Depression Prediction} trasforma radicalmente la \textbf{fase di revisione dei questionari}. Attualmente lo psicologo è costretto a procedere con controlli a campione casuali, sperando di imbattersi in compilazioni palesemente incongruenti --- un processo lento, dispendioso e con basse probabilità di successo. Grazie alla predizione del punteggio PHQ-9 basata sugli stati d'animo registrati dal paziente, il sistema può confrontare automaticamente il valore atteso con quello effettivamente dichiarato nel questionario, \textbf{segnalando in modo mirato le compilazioni sospette} anziché costringere il professionista a cercarle alla cieca. Lo psicologo potrà così dedicare il proprio tempo esclusivamente alla verifica dei casi evidenziati, con un'efficacia incomparabilmente superiore.
+
+In secondo luogo, le predizioni del modello offrono allo psicologo una \textbf{visione continua dell'andamento emotivo} di ciascun paziente. Attraverso i grafici generati dalla stima quotidiana del punteggio PHQ-9, il professionista può osservare l'evoluzione dell'umore nel tempo, individuare tendenze al peggioramento e disporre di un quadro clinico più ricco al momento della presa in carico. Questa informazione, altrimenti inaccessibile nei lunghi intervalli tra una somministrazione e l'altra, consente decisioni più informate e tempestive.
+
+\subsubsection{Benefici di Servizio: Retention e Qualità dell'Assistenza Pubblica}
+\label{subsubsec:benefici_servizio}
+
+Il terzo livello di benefici riguarda la qualità complessiva del servizio offerto dal sistema sanitario pubblico campano. Uno dei problemi più insidiosi dell'attuale modello di attesa è l'\textbf{abbandono silenzioso}: pazienti che, scoraggiati dall'assenza di interazione e dalla percezione di abbandono istituzionale, smettono di utilizzare la piattaforma o rinunciano del tutto alle cure.
+
+Il modello di \textit{Churn Prediction} affronta direttamente questo problema, identificando i pazienti a rischio di abbandono e attivando strategie di \textit{nudging} personalizzate --- notifiche mirate, promemoria, contenuti di supporto --- che trasformano il periodo di attesa da una fase passiva e frustrante in un percorso di \textbf{presa in carico attiva}.
+
+I benefici di questa trasformazione sono molteplici:
+\begin{itemize}
+    \item la continuità nell'utilizzo della piattaforma garantisce la raccolta costante dei dati comportamentali, alimentando il triage dinamico e migliorando l'accuratezza di tutti i modelli predittivi;
+    \item il paziente percepisce un'attenzione concreta e personalizzata da parte del servizio sanitario, riducendo il senso di abbandono e rafforzando la fiducia nell'istituzione;
+    \item l'ASL migliora significativamente la propria immagine pubblica, dimostrando di investire in strumenti innovativi e di adottare un approccio proattivo alla salute mentale dei cittadini.
+\end{itemize}
+
+In sintesi, il ritorno sull'investimento di SINTON-IA non si misura esclusivamente in termini economici, ma nella capacità del sistema di \textbf{rendere il servizio di supporto psicologico pubblico più reattivo, più umano e, soprattutto, più sicuro} per i cittadini campani in attesa di presa in carico.
