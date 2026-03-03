@@ -22,6 +22,94 @@
 % - Rilevamento precoce della depressione
 
 % ── 1.3 ──────────────────────────────────────────────────────────────────────
+\section{Criteri di Successo e Metriche di Valutazione}
+\label{sec:criteri_successo}
+
+Per garantire che il progetto SINTON-IA produca un impatto concreto e misurabile, è indispensabile definire fin dalla fase di \textit{Business Understanding} i criteri attraverso cui verrà valutato il successo dell'iniziativa. In questa sezione vengono stabiliti i \textbf{Criteri di Successo Aziendale} (\textit{Business Success Criteria}), ossia i KPI clinico-operativi rilevanti per l'ASL Campania, e i corrispondenti \textbf{Obiettivi Tecnici}, ossia le metriche matematiche che guideranno lo sviluppo, l'addestramento e la validazione dei modelli di Machine Learning.
+
+La definizione congiunta di questi due livelli di valutazione è essenziale per assicurare che le performance tecniche dei modelli si traducano effettivamente in un beneficio tangibile per pazienti e operatori sanitari.
+
+\subsection{Criteri di Successo Aziendale}
+\label{subsec:business_success}
+
+I criteri di successo aziendale rappresentano le metriche operative e cliniche attraverso cui l'ASL Campania e il team di progetto potranno valutare l'efficacia dell'integrazione dei modelli di Intelligenza Artificiale nella piattaforma SINTONIA. Per ciascun modello descritto nella Sezione~\ref{sec:funzionalita_implementate}, vengono identificati i KPI più significativi.
+
+\subsubsection{Sistema di Alert Suicidario}
+\label{subsubsec:kpi_alert}
+
+Per il modello di \textit{Red Flag Detection} (Sezione~\ref{subsec:red_flag}), i KPI aziendali si articolano su due direttrici principali:
+
+\begin{itemize}
+    \item \textbf{Tempo di reazione:} riduzione del tempo medio di intervento sui casi critici rispetto al processo tradizionale basato esclusivamente sulla somministrazione periodica dei questionari. Il sistema di alert, operando in tempo reale sulle pagine del diario, deve consentire allo psicologo di essere notificato entro poche ore dalla scrittura di contenuti a rischio, anziché attendere la scadenza del successivo ciclo di questionari (tipicamente 14 giorni).
+    \item \textbf{Sostenibilità operativa:} il volume di alert generati dal modello deve essere \textit{gestibile} dall'organico di psicologi attualmente disponibile presso la ASL di riferimento. Un sistema che producesse centinaia di segnalazioni giornaliere risulterebbe operativamente insostenibile e verrebbe rapidamente ignorato dal personale, vanificandone l'utilità clinica.
+\end{itemize}
+
+\subsubsection{Trend Depressivo (PHQ-9)}
+\label{subsubsec:kpi_phq9}
+
+Per il modello di \textit{Depression Prediction} (Sezione~\ref{subsec:depression}), l'impatto clinico viene misurato attraverso:
+
+\begin{itemize}
+    \item \textbf{Tasso di intervento preventivo:} percentuale di peggioramenti significativi del quadro depressivo che vengono intercettati \textit{prima} della visita di controllo programmata. L'obiettivo è permettere agli psicologi di intervenire proattivamente sui pazienti il cui andamento emotivo, stimato dal modello, evidenzi un deterioramento rispetto alla traiettoria attesa, senza dover attendere la compilazione del questionario PHQ-9 successivo.
+    \item \textbf{Riduzione delle revisioni manuali:} diminuzione del tempo dedicato dallo psicologo alla revisione a campione dei questionari per individuare compilazioni incongruenti, grazie al meccanismo automatico di confronto tra punteggio predetto e punteggio dichiarato.
+\end{itemize}
+
+\subsubsection{Prevenzione dell'Abbandono (Churn)}
+\label{subsubsec:kpi_churn}
+
+Per il modello di \textit{Churn Prediction} (Sezione~\ref{subsec:churn}), il criterio di successo aziendale primario è la \textbf{User Retention}: l'obiettivo è mantenere l'utilizzo attivo dell'applicazione --- inteso come inserimento regolare di diari, stati d'animo e compilazione dei questionari --- da parte di almeno il \textbf{75\%} dei pazienti durante l'intero periodo di attesa precedente la presa in carico.
+
+Tale soglia è motivata dal fatto che la qualità del triage dinamico e l'efficacia degli altri modelli predittivi dipendono direttamente dalla continuità e dalla ricchezza dei dati comportamentali raccolti. Un tasso di abbandono superiore al 25\% comprometterebbe significativamente la capacità del sistema di generare predizioni affidabili.
+
+\subsection{Obiettivi Tecnici: Metriche di Valutazione dei Modelli ML}
+\label{subsec:metriche_ml}
+
+Gli obiettivi tecnici traducono i criteri di successo aziendale in metriche matematiche formali, ciascuna calibrata sulla tipologia di task affrontato dal rispettivo modello e sul livello di rischio clinico associato agli errori di predizione.
+
+\subsubsection{Rischio Suicidario --- Classificazione Binaria}
+\label{subsubsec:metriche_redflag}
+
+Il modello di \textit{Red Flag Detection} affronta un task di classificazione binaria ad elevatissima criticità clinica. In questo contesto, il fallimento tecnico più grave è il \textbf{Falso Negativo}: non segnalare un paziente che manifesta reali indicatori di rischio suicidario. Le conseguenze di un mancato allarme sono, per definizione, irreversibili.
+
+Per questa ragione, l'obiettivo primario è la \textbf{massimizzazione della Recall} (Sensibilità), fissando un target minimo pari a:
+\[
+    \text{Recall} \geq 0{,}95
+\]
+ovvero il modello deve essere in grado di identificare correttamente almeno il 95\% dei casi effettivamente a rischio.
+
+Il raggiungimento di una Recall così elevata comporta inevitabilmente un numero maggiore di \textbf{Falsi Positivi} (pazienti segnalati come a rischio che in realtà non lo sono). Tuttavia, nel dominio clinico in esame, un Falso Positivo produce un costo operativo contenuto (una verifica aggiuntiva da parte dello psicologo), mentre un Falso Negativo può avere esiti catastrofici. Si definisce pertanto un limite inferiore di tolleranza sulla Precision:
+\[
+    \text{Precision} \geq 0{,}40
+\]
+Tale soglia implica che, su 10 alert generati dal sistema, almeno 4 devono corrispondere a casi realmente critici, garantendo la sostenibilità operativa del carico di lavoro per gli psicologi (coerentemente con il KPI aziendale definito nella Sezione~\ref{subsubsec:kpi_alert}).
+
+\subsubsection{Predizione PHQ-9 --- Regressione}
+\label{subsubsec:metriche_phq9}
+
+Il modello di \textit{Depression Prediction} è formulato come un task di regressione: stimare il punteggio numerico che il paziente otterrebbe compilando il questionario PHQ-9, su una scala da 0 a 27 \cite{kroenke2001phq9}. La metrica di valutazione primaria è il \textbf{Mean Absolute Error} (MAE), con un obiettivo massimo di:
+\[
+    \text{MAE} \leq 3 \text{ punti}
+\]
+
+La scelta della soglia di 3 punti è motivata dalla struttura clinica del PHQ-9, le cui fasce di severità hanno un'ampiezza di 5 punti (0--4 minima, 5--9 lieve, 10--14 moderata, 15--19 moderatamente grave, 20--27 grave). Un errore medio contenuto entro 3 punti preserva, nella maggior parte dei casi, la capacità del modello di collocare correttamente il paziente nella fascia di severità appropriata o in quella immediatamente adiacente.
+
+\subsubsection{Prevenzione Churn --- Ottimizzazione tramite Algoritmo Genetico}
+\label{subsubsec:metriche_churn}
+
+A differenza dei modelli precedenti, il sistema di prevenzione dell'abbandono non si configura come un task di classificazione o regressione, bensì come un \textbf{problema di ottimizzazione} risolto mediante un \textit{Algoritmo Genetico} (GA). L'obiettivo è evolvere strategie di \textit{nudging} --- combinazioni ottimali di tipo, frequenza e tempistica delle notifiche --- che massimizzino la probabilità di mantenere attivo il paziente sulla piattaforma. I criteri di successo tecnico si articolano pertanto su due assi complementari: la qualità della soluzione ottenuta e la performance algoritmica del processo evolutivo.
+
+\paragraph{Qualità della Soluzione (Funzione di Fitness).}
+La funzione di fitness quantifica l'efficacia complessiva di ciascuna strategia di nudging candidata. Essa dovrà bilanciare molteplici obiettivi, tra cui la massimizzazione della \textit{user retention}, la minimizzazione del numero di notifiche inviate (per evitare effetti di saturazione) e il rispetto della finestra temporale ottimale di invio. L'obiettivo tecnico è che la migliore soluzione prodotta dall'algoritmo raggiunga un valore di fitness target definito in fase di sperimentazione, coerente con il KPI aziendale di retention $\geq$ 75\% (Sezione~\ref{subsubsec:kpi_churn}).
+
+\paragraph{Performance Algoritmica.}
+Oltre alla qualità della soluzione finale, è necessario fissare obiettivi sulla \textbf{performance del processo di ottimizzazione} stesso:
+\begin{itemize}
+    \item \textbf{Velocità di convergenza:} il GA deve raggiungere una soluzione di qualità accettabile entro un numero ragionevole di generazioni, garantendo che l'ottimizzazione possa essere rieseguita periodicamente per adattare le strategie di nudging all'evoluzione del comportamento degli utenti.
+    \item \textbf{Diversità delle soluzioni:} la popolazione finale deve preservare un sufficiente grado di diversità genetica, evitando la convergenza prematura verso ottimi locali. Ciò assicura la disponibilità di un ventaglio di strategie alternative da poter impiegare per sottogruppi diversi di pazienti.
+    \item \textbf{Budget computazionale:} il tempo di esecuzione complessivo dell'algoritmo deve rimanere compatibile con i vincoli infrastrutturali della piattaforma, consentendo l'aggiornamento periodico delle strategie senza impatti sulla latenza del sistema.
+\end{itemize}
+
+% ── 1.4 ──────────────────────────────────────────────────────────────────────
 \section{Valutazione della Situazione Attuale}
 \label{sec:situazione_attuale}
 
@@ -44,7 +132,7 @@
 
 % Identificare i principali rischi di progetto e le strategie di mitigazione.
 
-% ── 1.4 ──────────────────────────────────────────────────────────────────────
+% ── 1.5 ──────────────────────────────────────────────────────────────────────
 \section{Obiettivi di Data Mining}
 \label{sec:obiettivi_dm}
 
@@ -54,7 +142,7 @@
 % - Rilevamento automatico della depressione
 % - Integrazione dei modelli tramite API
 
-% ── 1.5 ──────────────────────────────────────────────────────────────────────
+% ── 1.6 ──────────────────────────────────────────────────────────────────────
 \section{Piano di Progetto}
 \label{sec:piano_progetto}
 
