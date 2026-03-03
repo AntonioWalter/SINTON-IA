@@ -40,8 +40,8 @@ I criteri di successo aziendale rappresentano le metriche operative e cliniche a
 Per il modello di \textit{Red Flag Detection} (Sezione~\ref{subsec:red_flag}), i KPI aziendali si articolano su due direttrici principali:
 
 \begin{itemize}
-    \item \textbf{Tempo di reazione:} riduzione del tempo medio di intervento sui casi critici rispetto al processo tradizionale basato esclusivamente sulla somministrazione periodica dei questionari. Il sistema di alert, operando in tempo reale sulle pagine del diario, deve consentire allo psicologo di essere notificato entro poche ore dalla scrittura di contenuti a rischio, anziché attendere la scadenza del successivo ciclo di questionari (tipicamente 14 giorni).
-    \item \textbf{Sostenibilità operativa:} il volume di alert generati dal modello deve essere \textit{gestibile} dall'organico di psicologi attualmente disponibile presso la ASL di riferimento. Un sistema che producesse centinaia di segnalazioni giornaliere risulterebbe operativamente insostenibile e verrebbe rapidamente ignorato dal personale, vanificandone l'utilità clinica.
+    \item \textbf{Tempo di reazione:} riduzione del tempo di rilevamento dei casi critici dall'attuale massimo di 14 giorni (intervallo tra due somministrazioni successive dei questionari) a un massimo di \textbf{24 ore} dalla scrittura nel diario. Il sistema di alert, operando in tempo reale sulle pagine del diario, deve consentire allo psicologo di essere notificato entro una giornata lavorativa dalla comparsa di contenuti a rischio.
+    \item \textbf{Sostenibilità operativa:} considerando che ciascuno psicologo della ASL gestisce in media 8 pazienti in carico, il volume di alert generati dal modello non deve superare i \textbf{2--3 segnalazioni per psicologo per giornata lavorativa}. Tale soglia garantisce che la verifica degli alert (stimata in circa 15 minuti ciascuna) rimanga compatibile con il carico di lavoro ordinario, evitando il fenomeno di \textit{alert fatigue} che porterebbe il personale a ignorare sistematicamente le notifiche.
 \end{itemize}
 
 \subsubsection{Trend Depressivo (PHQ-9)}
@@ -54,17 +54,19 @@ Per il modello di \textit{Depression Prediction} (Sezione~\ref{subsec:depression
     \item \textbf{Riduzione delle revisioni manuali:} diminuzione del tempo dedicato dallo psicologo alla revisione a campione dei questionari per individuare compilazioni incongruenti, grazie al meccanismo automatico di confronto tra punteggio predetto e punteggio dichiarato.
 \end{itemize}
 
+I valori numerici specifici di questi KPI verranno calibrati durante la fase di \textit{Evaluation}, sulla base dei risultati sperimentali ottenuti e del confronto con il flusso di lavoro pre-intervento.
+
 \subsubsection{Prevenzione dell'Abbandono (Churn)}
 \label{subsubsec:kpi_churn}
 
-Per il modello di \textit{Churn Prediction} (Sezione~\ref{subsec:churn}), il criterio di successo aziendale primario è la \textbf{User Retention}: l'obiettivo è mantenere l'utilizzo attivo dell'applicazione --- inteso come inserimento regolare di diari, stati d'animo e compilazione dei questionari --- da parte di almeno il \textbf{75\%} dei pazienti durante l'intero periodo di attesa precedente la presa in carico.
+Per il modello di \textit{Churn Prediction} (Sezione~\ref{subsec:churn}), il criterio di successo aziendale primario è la \textbf{User Retention}: l'obiettivo è mantenere l'utilizzo attivo dell'applicazione da parte di almeno il \textbf{75\%} dei pazienti durante l'intero periodo di attesa precedente la presa in carico, dove per \textit{utilizzo attivo} si intende l'inserimento di almeno un'interazione significativa (diario, stato d'animo o questionario) nell'arco di ogni finestra di 7 giorni.
 
-Tale soglia è motivata dal fatto che la qualità del triage dinamico e l'efficacia degli altri modelli predittivi dipendono direttamente dalla continuità e dalla ricchezza dei dati comportamentali raccolti. Un tasso di abbandono superiore al 25\% comprometterebbe significativamente la capacità del sistema di generare predizioni affidabili.
+La letteratura scientifica evidenzia che le applicazioni mobile per la salute mentale presentano tassi di abbandono estremamente elevati: studi recenti riportano che fino al 50--80\% degli utenti cessa l'utilizzo entro le prime due settimane dall'installazione \cite{baumel2019mhealth}. In questo contesto, un obiettivo di retention del 75\% sull'intero periodo di attesa rappresenta un target ambizioso ma clinicamente necessario, e costituisce il benchmark rispetto al quale misurare l'efficacia delle strategie di \textit{nudging} prodotte dall'algoritmo genetico. La qualità del triage dinamico e l'efficacia degli altri modelli predittivi dipendono inoltre direttamente dalla continuità dei dati comportamentali raccolti: un tasso di abbandono superiore al 25\% renderebbe di fatto inefficace il sistema di prioritizzazione clinica.
 
 \subsection{Obiettivi Tecnici: Metriche di Valutazione dei Modelli ML}
 \label{subsec:metriche_ml}
 
-Gli obiettivi tecnici traducono i criteri di successo aziendale in metriche matematiche formali, ciascuna calibrata sulla tipologia di task affrontato dal rispettivo modello e sul livello di rischio clinico associato agli errori di predizione.
+Gli obiettivi tecnici traducono i criteri di successo aziendale in metriche matematiche formali, ciascuna calibrata sulla tipologia di task affrontato dal rispettivo modello e sul livello di rischio clinico associato agli errori di predizione. Le soglie definite di seguito dovranno essere raggiunte su un test set indipendente, estratto mediante campionamento stratificato al fine di preservare la distribuzione originale delle classi e garantire la validità statistica della valutazione.
 
 \subsubsection{Rischio Suicidario --- Classificazione Binaria}
 \label{subsubsec:metriche_redflag}
@@ -83,6 +85,8 @@ Il raggiungimento di una Recall così elevata comporta inevitabilmente un numero
 \]
 Tale soglia implica che, su 10 alert generati dal sistema, almeno 4 devono corrispondere a casi realmente critici, garantendo la sostenibilità operativa del carico di lavoro per gli psicologi (coerentemente con il KPI aziendale definito nella Sezione~\ref{subsubsec:kpi_alert}).
 
+Oltre al monitoraggio separato delle soglie di Recall e Precision, le performance globali del modello in fase di validazione verranno riassunte tramite l'$F_{\beta}$\textbf{-Score} (con $\beta > 1$, in particolare $F_{2}$). A differenza dell'$F_{1}$-Score, che bilancia equamente Precision e Recall, l'$F_{\beta}$-Score consente di pesare matematicamente l'importanza della Recall rispetto alla Precision di un fattore pari a $\beta^{2}$, riflettendo in modo formale la natura \textit{life-critical} del task: un singolo caso non intercettato ha un costo incomparabilmente superiore a quello di un falso allarme.
+
 \subsubsection{Predizione PHQ-9 --- Regressione}
 \label{subsubsec:metriche_phq9}
 
@@ -92,6 +96,8 @@ Il modello di \textit{Depression Prediction} è formulato come un task di regres
 \]
 
 La scelta della soglia di 3 punti è motivata dalla struttura clinica del PHQ-9, le cui fasce di severità hanno un'ampiezza di 5 punti (0--4 minima, 5--9 lieve, 10--14 moderata, 15--19 moderatamente grave, 20--27 grave). Un errore medio contenuto entro 3 punti preserva, nella maggior parte dei casi, la capacità del modello di collocare correttamente il paziente nella fascia di severità appropriata o in quella immediatamente adiacente.
+
+Accanto al MAE, verrà monitorata la metrica \textbf{RMSE} (\textit{Root Mean Squared Error}). Poiché l'RMSE penalizza in modo quadratico gli scostamenti più ampi, il suo contenimento assicurerà che il modello non commetta errori di predizione di elevata magnitudo su singoli pazienti --- ad esempio, sottostimare di 10 punti un caso di depressione severa, facendolo apparire come lieve e impedendo l'attivazione tempestiva di un intervento. Il monitoraggio congiunto di MAE e RMSE garantisce pertanto sia un'accuratezza media accettabile sia l'assenza di errori clinicamente pericolosi sui casi singoli.
 
 \subsubsection{Prevenzione Churn --- Ottimizzazione tramite Algoritmo Genetico}
 \label{subsubsec:metriche_churn}
