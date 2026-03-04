@@ -45,7 +45,7 @@
     "latex-workshop.formatting.latex": "latexindent",
 
     "[latex]": {
-        "editor.formatOnSave": true,
+        "editor.formatOnSave": false,
         "editor.defaultFormatter": "James-Yu.latex-workshop"
     },
 

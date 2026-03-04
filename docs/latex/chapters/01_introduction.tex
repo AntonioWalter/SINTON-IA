@@ -8,14 +8,14 @@
 \label{sec:contesto_campania}
 Nel contesto attuale della sanità pubblica campana, l'accesso ai servizi di supporto psicologico risulta spesso complesso, caratterizzato da lunghe liste d'attesa che possono protrarsi per diversi mesi prima dell'effettiva presa in carico da parte di uno psicologo dell'ASL. Durante l'attesa, i cittadini non dispongono di strumenti o servizi digitali che possano sostenerli. Questa mancanza unita al forte distacco istituzionale provoca spesso un crescente senso di abbandono e una percezione di scarsa attenzione da parte del servizio sanitario pubblico.
 
-Negli ultimi anni, in particolar modo a causa delle conseguenze post-pandemiche, la domanda di assistenza psicologica è aumentata in modo significativo, mentre la capacità di risposta delle strutture pubbliche, limitata dalla carenza di personale e fondi, è rimasta per molti versi invariata. Questa situazione evidenzia la profonda assenza di strumenti automatizzati che possano assistere i cittadini durante i mesi di attesa e migliorare la gestione delle richieste in carico alle strutture. 
+Negli ultimi anni, in particolar modo a causa delle conseguenze post-pandemiche, la domanda di assistenza psicologica è aumentata in modo significativo, mentre la capacità di risposta delle strutture pubbliche, limitata dalla carenza di personale e fondi, è rimasta per molti versi invariata. Questa situazione evidenzia la profonda assenza di strumenti automatizzati che possano assistere i cittadini durante i mesi di attesa e migliorare la gestione delle richieste in carico alle strutture.
 
 In risposta a queste criticità è nata \textbf{SINTONIA}, una piattaforma applicativa innovativa, concepita specificatamente per ridurre l'impatto psicologico scaturito dall'attesa e migliorare l'efficienza dei processi di presa in carico del cittadino, promuovendo un approccio di cura preventiva e inclusiva. SINTONIA rappresenta un passo concreto verso un sistema di supporto psicologico pubblico più accessibile, moderno, e tempestivo sul territorio Campano.
 
 \clearpage
 \section{La Piattaforma SINTONIA e il Monitoraggio Attivo}
 \label{sec:sintonia_app}
-Per comprendere il valore e il contesto di fondo in cui si collocano i modelli di Intelligenza Artificiale oggetto di questo documento (\textit{SINTON-IA}), risulta cruciale comprendere le funzionalità e gli obiettivi dell'ecosistema sorgente.
+Per comprendere il valore e il contesto di fondo del progetto \textit{SINTON-IA}, risulta cruciale comprendere le funzionalità e gli obiettivi dell'ecosistema sorgente.
 
 SINTONIA risolve il problema delle estenuanti liste di attesa integrando un software di monitoraggio continuo per la salute mentale. Tramite l'impiego di questionari clinici e di autovalutazione certificati (es. PHQ-9, GAD-7, PC-PTSD-5), l'applicazione è in grado di ricalcolare costantemente l'urgenza di ogni paziente, generando una priorità clinica e una lista di attesa dinamica in grado di favorire l'intervento tempestivo a supporto dei casi più gravi.
 
@@ -37,9 +37,9 @@ Nella versione attuale del sistema \cite{sintonia_repo}, lo psicologo dispone di
 \vspace{0.4cm}
 \begin{itemize}
     \item \textbf{Revisione manuale dispendiosa:} Lo psicologo è costretto ad effettuare controlli e \textit{revisioni a campione casuale} dei questionari per scovare false compilazioni, distrazioni o palesi incongruenze. Si tratta di una procedura farraginosa che comporta un pesante confronto incrociato manuale con lo storico clinico, rallentando drasticamente il processo di \textit{triage}.
-    
+
     \item \textbf{Barriere di privacy nel monitoraggio:} A tutela della privacy pre-presa in carico, il professionista non ha l'autorizzazione per leggere il contenuto integrale del \textit{diario personale} del paziente. L'osservazione testuale diretta rimane rilegata unicamente alle porzioni pubbliche del sistema, come il forum anonimo.
-    
+
     \item \textbf{Gestione degli Alert disconnessa dal tempo reale:} Il sistema genera allarmi (Alert Clinici) quando le risposte a un questionario (es. PHQ-9) delineano un profilo di rischio gravissimo. L'enorme criticità risiede tuttavia nella \textit{frequenza} di questi test, somministrati a intervalli regolari (es. ogni 14 giorni). Questo schema temporale rende il sistema "congelato" nei restanti giorni: se il paziente esplicita intenti autolesivi nel proprio diario nei giorni che intercorrono tra un test e un altro, l'allarme non ha alcun modo di innescarsi.
 \end{itemize}
 
@@ -49,9 +49,9 @@ Questi evidenti vuoti di granularità temporale e di carico cognitivo sullo psic
 % Sezione 1.2 – Funzionalità Implementate
 % ──────────────────────────────────────────────────────────────────────────────
 \clearpage
-\section{Integrazione con Modelli AI: Funzionalità Previste}
+\section{Integrazione AI: Funzionalità Previste}
 \label{sec:funzionalita_implementate}
-Il progetto SINTON-IA prevede l'integrazione di tre modelli di Intelligenza Artificiale, ciascuno progettato per colmare una specifica lacuna operativa dell'attuale piattaforma SINTONIA. In questa fase introduttiva ci si limita a descrivere la finalità e il tipo di task affrontato da ciascun modello, rimandando ai capitoli successivi l'analisi tecnica e architetturale.
+Il progetto SINTON-IA prevede l'integrazione di tre componenti di Intelligenza Artificiale, ciascuno progettato per colmare una specifica lacuna operativa dell'attuale piattaforma SINTONIA. In questa fase introduttiva ci si limita a descrivere la finalità e il tipo di task affrontato da ciascun componente, rimandando ai capitoli successivi l'analisi tecnica e architetturale.
 
 \subsection{Red Flag Detection (Rischio Suicidario)}
 \label{subsec:red_flag}
@@ -70,11 +70,11 @@ Le predizioni generate dal modello saranno impiegate con una duplice finalità:
     \item \textbf{Rilevazione di compilazioni incongruenti}: confrontando il punteggio predetto dal modello con quello effettivamente ottenuto nella compilazione del questionario, il sistema potrà evidenziare automaticamente discrepanze significative. Questo meccanismo supporterà concretamente gli psicologi nell'identificazione di false compilazioni, riducendo drasticamente il carico della revisione manuale a campione.
 \end{itemize}
 
-\subsection{Churn Prediction}
+\subsection{Churn Prevention}
 \label{subsec:churn}
-Il terzo e ultimo modello adotta un \textbf{approccio di tipo genetico-evolutivo} per affrontare il problema della previsione dell'abbandono dell'applicazione (\textit{churn}) da parte dei pazienti durante la fase di attesa.
+La prevenzione dell'abbandono dell'applicazione (\textit{churn}) da parte dei pazienti durante la fase di attesa viene affrontata mediante un \textbf{approccio di tipo genetico-evolutivo}.
 
-L'obiettivo è stimare la probabilità che un utente smetta di utilizzare attivamente SINTONIA prima della presa in carico, evento che comprometterebbe la raccolta dei dati necessari al corretto funzionamento del triage dinamico. Sulla base delle predizioni del modello, il sistema invierà \textit{notifiche strategiche e personalizzate} agli utenti a rischio di abbandono, incentivandoli a mantenere un utilizzo costante della piattaforma.
+L'obiettivo è stimare la probabilità che un utente smetta di utilizzare attivamente SINTONIA prima della presa in carico, evento che comprometterebbe la raccolta dei dati necessari al corretto funzionamento del triage dinamico. Sulla base delle stime prodotte, il sistema invierà \textit{notifiche strategiche e personalizzate} agli utenti a rischio di abbandono, incentivandoli a mantenere un utilizzo costante della piattaforma.
 
-Questo modello riveste un ruolo trasversale: garantendo la continuità nell'acquisizione dei dati comportamentali, esso contribuisce indirettamente all'efficacia di tutti gli altri modelli e al funzionamento complessivo del sistema di prioritizzazione clinica.
+Il Churn Prevention riveste un ruolo trasversale: garantendo la continuità nell'acquisizione dei dati comportamentali, contribuisce indirettamente all'efficacia degli altri due modelli e al funzionamento complessivo del sistema di prioritizzazione clinica.
 
