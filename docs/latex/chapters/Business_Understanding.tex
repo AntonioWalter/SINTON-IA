@@ -110,46 +110,70 @@ Oltre alla qualità della soluzione finale, è necessario fissare obiettivi sull
     \item \textbf{Budget computazionale:} il tempo di esecuzione complessivo dell'algoritmo deve rimanere compatibile con i vincoli infrastrutturali della piattaforma, consentendo l'aggiornamento periodico delle strategie senza impatti sulla latenza del sistema.
 \end{itemize}
 
-% ── 1.4 ──────────────────────────────────────────────────────────────────────
-\section{Valutazione della Situazione Attuale}
-\label{sec:situazione_attuale}
+% ── 1.3 ──────────────────────────────────────────────────────────────────────
+\section{Valutazione dei Rischi}
+\label{sec:valutazione_rischi}
 
-% Descrivere lo stato attuale dei servizi di salute mentale nella ASL,
-% le risorse disponibili, i vincoli e le criticità esistenti.
+Il processo di integrazione dell'Intelligenza Artificiale all'interno dell'ecosistema SINTONIA comporta una serie di criticità intrinseche relative al trattamento dei dati sanitari, all'interazione tra modelli matematici e giudizio umano e alle variazioni operative nel tempo. Di seguito si analizzano i principali fattori di rischio associati ai modelli predittivi, suddivisi per ambito organizzativo e tecnologico, al fine di garantire l'efficacia a lungo termine e la sicurezza del sistema.
 
-\subsection{Risorse Disponibili}
-\label{subsec:risorse}
+\subsection*{Rischi Tecnici}
 
-% Dettagliare le risorse umane, tecnologiche e dati disponibili.
+Di seguito si analizzano le principali sfide di natura tecnica legate all'addestramento, all'affidabilità dei dati in ingresso e al ciclo di vita dei modelli di Machine Learning.
 
-\subsection{Vincoli e Requisiti}
-\label{subsec:vincoli}
+\begin{itemize}
+    \item \textbf{Domain shift:} I modelli previsionali verranno addestrati sfruttando dataset provenienti da fonti pubbliche, le quali presentano inevitabilmente variazioni linguistiche, di distribuzione demografica e di contesto socioculturale rispetto alla reale popolazione dei pazienti in carico all'ASL Campania. Questa discrepanza rappresenta il rischio tecnico più critico dell'intero progetto (come evidenziato in merito alle risorse disponibili e ai loro limiti), potendo tradursi in una degradazione inattesa delle performance del modello in fase di produzione, nonostante valutazioni soddisfacenti durante il ciclo di addestramento e validazione.
+    \item \textbf{Qualità dei dati in input (GIGO):} I pazienti in attesa potrebbero ingaggiare l'applicazione mobile in maniera intermittente o superficiale, arrivando a inserire stati d'animo casuali testuali brevi e ambigui o, nell'ipotesi più grave, a smettere progressivamente di compilare il diario. Tali comportamenti producono input inaffidabili che si ripercuotono a cascata sulle predizioni dei tre modelli, compromettendo irrimediabilmente la qualità del \textit{triage} dinamico (\textit{Garbage In, Garbage Out}).
+    \item \textbf{Drift del modello nel tempo:} I modelli di Intelligenza Artificiale tendono a subire un calo fisiologico delle performance nel corso del tempo a causa dei mutamenti nel comportamento, nel linguaggio e nelle abitudini dell'utenza. Tale deragliamento statistico richiederà inevitabilmente la necessità di sessioni di re-training periodiche, introducendo un fattore di costo strutturale e di aggiornamento infrastrutturale già computato globalmente nelle stime OPEX dei requisiti di progetto.
+\end{itemize}
 
-% Elencare i vincoli normativi (es. GDPR, normative sanitarie),
-% vincoli tecnici e requisiti non funzionali.
+\subsection*{Rischi Organizzativi}
 
-\subsection{Rischi}
-\label{subsec:rischi}
+L'efficacia del sistema non dipende unicamente dalla precisione algoritmica, ma anche dalla corretta interazione tra le previsioni dell'Intelligenza Artificiale e l'operatività quotidiana degli utenti finali (es. personale sanitario e pazienti in attesa).
 
-% Identificare i principali rischi di progetto e le strategie di mitigazione.
+\begin{itemize}
+    \item \textbf{Alert fatigue:} Qualora il modello di Red Flag Detection per il rischio suicidario presenti, in scenario reale, un tasso di Falsi Positivi eccessivamente sproporzionato, l'elevato volume di allerte inattese finirebbe per desensibilizzare gli psicologi preposti alla gestione del triage. Tale fenomeno (\textit{Alert fatigue}) indurrebbe il personale sanitario a ignorare sistematicamente, o a declassare mentalmente, le notifiche di emergenza, vanificando la finalità stessa del modulo predittivo e il conseguimento del KPI di sostenibilità operativa stabilito nella Sezione \ref{sec:criteri_successo}.
+    \item \textbf{Resistenza clinica:} Il personale psichiatrico e psicologico potrebbe sviluppare una diffidenza intrinseca verso le previsioni fornite dagli algoritmi (in particolar modo per il calcolo del trend depressivo PHQ-9 e del rischio suicidario), percependole non come un ausilio al filtro organizzativo ma come un'interferenza meccanica nel proprio giudizio diagnostico-clinico. Questa potenziale ostilità renderebbe estremamente complessa l'adozione e l'integrazione fluida degli applicativi nel panorama lavorativo reale delle ASL coinvolte.
+    \item \textbf{Abbandono dell'app da parte dei pazienti:} Il monitoraggio e la valutazione dei vari rischi sono subalterni all'utilizzo stabile e continuativo della piattaforma. Qualora il tasso di abbandono (\textit{churn}) dei pazienti prima del primo incontro terapeutico raggiungesse livelli elevati, verrebbero a mancare l'intero insieme dei segnali clinici (diari e questionari) alla base dell'alimentazione dei tre modelli e dell'aggiornamento automatico della lista di priorità dei pazienti in attesa.
+\end{itemize}
 
-% ── 1.5 ──────────────────────────────────────────────────────────────────────
-\section{Obiettivi di Data Mining}
-\label{sec:obiettivi_dm}
+\subsection*{Rischi di Sicurezza}
 
-% Tradurre gli obiettivi di business in obiettivi tecnici di data mining:
-% - Classificazione del rischio suicidario tramite NLP
-% - Predizione del churn terapeutico
-% - Rilevamento automatico della depressione
-% - Integrazione dei modelli tramite API
+Trattandosi di un'applicazione operante nel delicato dominio della salute mentale, emergono rischi critici legati alla riservatezza, all'inviolabilità e alla gestione etica delle informazioni sensibili.
 
-% ── 1.6 ──────────────────────────────────────────────────────────────────────
-\section{Piano di Progetto}
-\label{sec:piano_progetto}
+\begin{itemize}
+    \item \textbf{Sensibilità estrema dei dati trattati:} Le interazioni dei pazienti, ed in particolar modo le trascrizioni dei diari personali in formato testo libero e il registro dello stato d'animo giornaliero, costituiscono informazioni cliniche di natura psicologica ad un livello di riservatezza severo altissimo. Un'architettura di sistema carente e l'eventualità anche remota di compromissione o cattiva aggregazione del dato grezzo, causerebbero una grave esposizione con conseguenti danni personali incalcolabili ai soggetti tutelati implicati.
+    \item \textbf{Vincolo di anonimizzazione operativa:} Affinché si crei e si mantenga intatta la validità clinica garantendo un ambiente percepito come totalmente confidenziale e protetto pre-presa in carico da parte dei soggetti assistiti prima ancora di assegnare le terapie del supporto psicologico pubblico campano; ai medici ed agli operatori stessi \textbf{non} è e non sarà mai consentito di procedere ed accedere operativamente in prima analisi in modo autogestito ai tesi redatti quotidianamente senza eccezioni in deroga al vincolo privacy. Ne segue formalmente e architetturalmente l'esigenza vincolante forte per la quale tutti i testi analitici o le NLP features processate dal software per ricavarne sentiment score, flag alert suicidari ed estratti testuali anonimizati che generano le allarmità dirette vengano manipolati in scatole nere di back-end invisibilmente al riparo assoluto fin dentro allo strumento stesso preposto, al fine rigoroso d'evitare ogni genere esposizione logica dell'intero output dell'eventuale predetta analisi da possibili ricollegamenti informativi da e/o a qualsiasi specifico profilato individuo.
+\end{itemize}
 
-% Descrivere il piano di lavoro, le fasi previste (secondo CRISP-DM),
-% le milestone principali e la suddivisione dei compiti nel team.
+\subsection*{Piani di Contingenza}
 
+\vspace{0.3cm}
+\begin{table}[h]
+\centering
+\renewcommand{\arraystretch}{1.5}
+\small
+\begin{tabular}{|p{0.20\textwidth}|p{0.15\textwidth}|p{0.55\textwidth}|}
+\hline
+\textbf{Rischio} & \textbf{Categoria} & \textbf{Piano di Contingenza} \\
+\hline
+Domain shift & Tecnico & Validazione dei modelli su campioni rappresentativi del contesto italiano prima del deployment; previsione di una fase di fine-tuning su dati reali non appena disponibili. \\
+\hline
+GIGO & Tecnico & Introduzione di meccanismi automatici di rilevamento delle anomalie nei pattern di compilazione (es. sequenze di valori identici o tempi di compilazione anomali). \\
+\hline
+Drift del modello & Tecnico & Pianificazione di cicli periodici di monitoraggio delle performance e re-training, coerentemente con quanto previsto nelle voci OPEX. \\
+\hline
+Alert fatigue & Organizzativo & Definizione di una soglia minima di confidenza per la generazione degli alert, calibrata sul KPI di sostenibilità operativa descritto nella relativa sezione. \\
+\hline
+Resistenza clinica & Organizzativo & Progettazione di interfacce di output semplici e non invasive, orientate al supporto e non alla sostituzione del giudizio clinico. \\
+\hline
+Abbandono dell'app & Organizzativo & Il modello di Churn Prediction costituisce in sé stesso la misura preventiva primaria contro questo rischio. \\
+\hline
+Sensibilità dei dati & Sicurezza & Separazione architetturale rigida tra i dati identificativi o anagrafici del paziente e le informazioni sensibili processate dai server di addestramento o dai modelli in inferenza. \\
+\hline
+Vincolo di anonimizzazione & Sicurezza & L'architettura del sistema applicativo assicura di default come alcun output o derivato esplicito del NLP text analysis module sui diari confidenziali esprima ed inoltri esposizione o un modo oggettivo per ricondurlo dal report o diario a referto per poter ricostruire la reale stringa all'occhio psichiatra /psicologo valutatore al netto d'eventuale alert severo ed indicatore score allarme prima dell'effettiva assegnazione. \\
+\hline
+\end{tabular}
+\end{table}
 % ── 1.7 ──────────────────────────────────────────────────────────────────────
 \clearpage
 \section{Analisi Costi-Benefici e Valutazione delle Risorse}
