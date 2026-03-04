@@ -26,63 +26,65 @@ Declinando questo valore sui singoli moduli previsionali, si definiscono i segue
 \section{Criteri di Successo e Metriche di Valutazione}
 \label{sec:criteri_successo}
 
-Per garantire che il progetto SINTON-IA produca un impatto concreto e misurabile, è indispensabile definire fin dalla fase di \textit{Business Understanding} i criteri attraverso cui verrà valutato il successo dell'iniziativa. In questa sezione vengono stabiliti i \textbf{Criteri di Successo Aziendale} (\textit{Business Success Criteria}), ossia i KPI clinico-operativi rilevanti per l'ASL Campania, e i corrispondenti \textbf{Obiettivi Tecnici}, ossia le metriche matematiche che guideranno lo sviluppo, l'addestramento e la validazione dei modelli di Machine Learning.
+Dopo aver delineato gli obiettivi del progetto e le funzionalità previste (Capitolo~\ref{ch:introduzione}), è necessario stabilire criteri concreti per valutare se tali obiettivi saranno effettivamente raggiunti. Questa sezione definisce due livelli complementari di valutazione: i \textbf{Criteri di Successo} (\textit{Business Success Criteria}), ossia i KPI clinico-operativi con cui l'ASL Campania misurerà l'impatto dei componenti sul flusso di lavoro e sulla qualità dell'assistenza, e i corrispondenti \textbf{Obiettivi Tecnici}, ossia le soglie metriche che guideranno sviluppo e validazione dei componenti. La separazione tra i due piani assicura che ogni miglioramento nelle performance tecniche si traduca in un beneficio tangibile per pazienti e operatori sanitari.
 
-La definizione congiunta di questi due livelli di valutazione è essenziale per assicurare che le performance tecniche dei modelli si traducano effettivamente in un beneficio tangibile per pazienti e operatori sanitari.
-
-\subsection{Criteri di Successo Aziendale}
+\subsection{Criteri di Successo}
 \label{subsec:business_success}
 
-I criteri di successo aziendale rappresentano le metriche operative e cliniche attraverso cui l'ASL Campania e il team di progetto potranno valutare l'efficacia dell'integrazione dei modelli di Intelligenza Artificiale nella piattaforma SINTONIA. Per ciascun modello descritto nella Sezione~\ref{sec:funzionalita_implementate}, vengono identificati i KPI più significativi.
+I criteri di successo rappresentano le metriche operative e cliniche attraverso cui l'ASL Campania potrà valutare l'efficacia dell'integrazione dei componenti di Intelligenza Artificiale nella piattaforma SINTONIA. Per ciascun componente descritto nella Sezione~\ref{sec:funzionalita_implementate}, vengono identificati i KPI più significativi.
 
 \subsubsection{Sistema di Alert Suicidario}
 \label{subsubsec:kpi_alert}
 
-Per il modello di \textit{Red Flag Detection} (Sezione~\ref{subsec:red_flag}), i KPI aziendali si articolano su due direttrici principali:
+Per il componente di \textit{Red Flag Detection} (Sezione~\ref{subsec:red_flag}), i criteri di successo misurano il valore operativo che l'aggiunta dell'analisi del diario come canale di sorveglianza produce.
 
 \begin{itemize}
-    \item \textbf{Tempo di reazione:} riduzione del tempo medio di intervento sui casi critici rispetto al processo tradizionale basato esclusivamente sulla somministrazione periodica dei questionari. Il sistema di alert, operando in tempo reale sulle pagine del diario, deve consentire allo psicologo di essere notificato entro poche ore dalla scrittura di contenuti a rischio, anziché attendere la scadenza del successivo ciclo di questionari (tipicamente 14 giorni).
-    \item \textbf{Sostenibilità operativa:} il volume di alert generati dal modello deve essere \textit{gestibile} dall'organico di psicologi attualmente disponibile presso la ASL di riferimento. Un sistema che producesse centinaia di segnalazioni giornaliere risulterebbe operativamente insostenibile e verrebbe rapidamente ignorato dal personale, vanificandone l'utilità clinica.
+    \item \textbf{Estensione della finestra di sorveglianza:} la copertura del monitoraggio del rischio suicidario, intesa come rapporto tra i giorni in cui il paziente è coperto da almeno un canale di sorveglianza e il totale dei giorni nel periodo di attesa, deve passare dall'attuale \textbf{7\%} (1 giorno ogni 14, corrispondente ai soli giorni di somministrazione del questionario) ad almeno il \textbf{50\%}. L'analisi del diario rende possibile questo salto poiché una pagina può essere scritta in qualsiasi giorno, a prescindere dal calendario dei questionari, estendendo la rete di sicurezza da un evento periodico a un monitoraggio distribuito lungo l'intero periodo di attesa.
+
+    \item \textbf{Riduzione dei tentativi di suicidio durante il periodo di attesa:} la letteratura evidenzia che fino a \textbf{1 paziente su 6} tenta il suicidio mentre è in lista d'attesa per un trattamento psicologico \cite{we_need_to_talk2014}, dato che riflette l'assenza di strumenti di sorveglianza attiva nei periodi non coperti da contatto clinico. Poiché il 75\% delle persone decedute per suicidio ha negato intenti suicidari nell'ultimo contatto con un professionista sanitario \cite{busch2003clinical}, il diario personale --- in cui il paziente si esprime liberamente e senza interlocutore --- rappresenta un canale potenzialmente più rivelatore rispetto ai questionari a risposta chiusa. L'obiettivo è ridurre di almeno il \textbf{30\%} gli episodi critici (tentativi di suicidio, accessi al pronto soccorso per crisi psichiatriche, segnalazioni d'emergenza da parte di familiari) tra i pazienti in attesa, intercettando tempestivamente i segnali di rischio attraverso l'analisi del diario e attivando l'intervento clinico prima che la crisi si manifesti.
 \end{itemize}
 
-\subsubsection{Trend Depressivo (PHQ-9)}
+\subsubsection{Depression Prediction}
 \label{subsubsec:kpi_phq9}
 
-Per il modello di \textit{Depression Prediction} (Sezione~\ref{subsec:depression}), l'impatto clinico viene misurato attraverso:
+I criteri di successo per il componente di \textit{Depression Prediction} (Sezione~\ref{subsec:depression}) misurano il valore operativo prodotto dal sistema nel migliorare il processo di verifica della validità clinica dei dati raccolti.
 
 \begin{itemize}
-    \item \textbf{Tasso di intervento preventivo:} percentuale di peggioramenti significativi del quadro depressivo che vengono intercettati \textit{prima} della visita di controllo programmata. L'obiettivo è permettere agli psicologi di intervenire proattivamente sui pazienti il cui andamento emotivo, stimato dal modello, evidenzi un deterioramento rispetto alla traiettoria attesa, senza dover attendere la compilazione del questionario PHQ-9 successivo.
-    \item \textbf{Riduzione delle revisioni manuali:} diminuzione del tempo dedicato dallo psicologo alla revisione a campione dei questionari per individuare compilazioni incongruenti, grazie al meccanismo automatico di confronto tra punteggio predetto e punteggio dichiarato.
+    \item \textbf{Copertura della verifica di validità:} la percentuale di compilazioni PHQ-9 sottoposte a controlli sistematici di congruenza deve passare dall'attuale copertura parziale e non deterministica (revisione a campione casuale, stimabile intorno al \textbf{10--15\%} del totale) al \textbf{100\% dei questionari valutabili}. Per \textit{valutabilità} si intende la preesistenza di una densità minima di input comportamentali (stati d'animo registrati) sufficienti ad alimentare una predizione affidabile. Su questi casi, il sistema garantisce che nessuna compilazione sospetta possa sfuggire all'attenzione degli psicologi, eliminando la dipendenza dalla casualità dell'ispezione manuale.
+
+    \item \textbf{Riduzione delle compilazioni inattendibili nel flusso clinico:} la letteratura sul \textit{careless responding} stima che il \textbf{10--15\%} dei rispondenti a questionari autosomministrati produce risposte disattente, casuali o deliberatamente falsate \cite{meade2012careless}, percentuale sufficiente a introdurre bias significativi nelle decisioni cliniche. Nel contesto di SINTONIA, compilazioni PHQ-9 incongruenti possono alterare il punteggio di priorità del triage dinamico, facendo salire o scendere indebitamente un paziente nella lista d'attesa. L'obiettivo è dimezzare la quota di compilazioni inattendibili che entrano nel flusso decisionale clinico \textit{senza essere segnalate allo psicologo}, portandola dal \textbf{10--15\%} stimato dalla letteratura a meno del \textbf{5\%}: il sistema evidenzia automaticamente le discrepanze significative tra punteggio predetto e punteggio dichiarato, sottopone i casi sospetti all'attenzione dello psicologo, il quale valuta e decide in ultima istanza se confermare o escludere l'incongruenza.
 \end{itemize}
 
 \subsubsection{Prevenzione dell'Abbandono (Churn)}
 \label{subsubsec:kpi_churn}
 
-Per il modello di \textit{Churn Prediction} (Sezione~\ref{subsec:churn}), il criterio di successo aziendale primario è la \textbf{User Retention}: l'obiettivo è mantenere l'utilizzo attivo dell'applicazione --- inteso come inserimento regolare di diari, stati d'animo e compilazione dei questionari --- da parte di almeno il \textbf{75\%} dei pazienti durante l'intero periodo di attesa precedente la presa in carico.
+Per il componente di \textit{Churn Prevention} (Sezione~\ref{subsec:churn}), il criterio di successo primario è la \textbf{User Retention}: l'obiettivo è mantenere l'utilizzo attivo dell'applicazione da parte di almeno il \textbf{75\%} dei pazienti durante l'intero periodo di attesa precedente la presa in carico, dove per \textit{utilizzo attivo} si intende l'inserimento di almeno un'interazione significativa (diario, stato d'animo o questionario) nell'arco di ogni finestra di 7 giorni.
 
-Tale soglia è motivata dal fatto che la qualità del triage dinamico e l'efficacia degli altri modelli predittivi dipendono direttamente dalla continuità e dalla ricchezza dei dati comportamentali raccolti. Un tasso di abbandono superiore al 25\% comprometterebbe significativamente la capacità del sistema di generare predizioni affidabili.
+La letteratura scientifica evidenzia che le applicazioni mobile per la salute mentale presentano tassi di abbandono estremamente elevati: studi recenti riportano che fino al 50--80\% degli utenti cessa l'utilizzo entro le prime due settimane dall'installazione \cite{baumel2019mhealth}. In questo contesto, un obiettivo di retention del 75\% sull'intero periodo di attesa rappresenta un target ambizioso ma clinicamente necessario, e costituisce il benchmark rispetto al quale misurare l'efficacia delle strategie di \textit{nudging} prodotte dall'algoritmo genetico. La continuità dei dati comportamentali raccolti è inoltre un prerequisito per l'efficacia del triage dinamico e degli altri componenti predittivi: un tasso di abbandono elevato ridurrebbe progressivamente la quantità e la rappresentatività dei dati disponibili, degradando la qualità delle predizioni e della prioritizzazione clinica.
 
-\subsection{Obiettivi Tecnici: Metriche di Valutazione dei Modelli ML}
+\subsection{Obiettivi Tecnici: Metriche di Valutazione}
 \label{subsec:metriche_ml}
 
-Gli obiettivi tecnici traducono i criteri di successo aziendale in metriche matematiche formali, ciascuna calibrata sulla tipologia di task affrontato dal rispettivo modello e sul livello di rischio clinico associato agli errori di predizione.
+Gli obiettivi tecnici traducono i criteri di successo in metriche matematiche formali, ciascuna calibrata sulla tipologia di task affrontato dal rispettivo componente e sul livello di rischio clinico associato agli errori di predizione. Le soglie definite di seguito dovranno essere raggiunte su un test set indipendente, estratto mediante campionamento stratificato al fine di preservare la distribuzione originale delle classi e garantire la validità statistica della valutazione.
 
 \subsubsection{Rischio Suicidario --- Classificazione Binaria}
 \label{subsubsec:metriche_redflag}
 
 Il modello di \textit{Red Flag Detection} affronta un task di classificazione binaria ad elevatissima criticità clinica. In questo contesto, il fallimento tecnico più grave è il \textbf{Falso Negativo}: non segnalare un paziente che manifesta reali indicatori di rischio suicidario. Le conseguenze di un mancato allarme sono, per definizione, irreversibili.
 
-Per questa ragione, l'obiettivo primario è la \textbf{massimizzazione della Recall} (Sensibilità), fissando un target minimo pari a:
+Per questa ragione, l'obiettivo primario è la \textbf{massimizzazione della Recall}, fissando un target minimo pari a:
 \[
-    \text{Recall} \geq 0{,}95
+    \text{Recall} \geq 0{,}90
 \]
-ovvero il modello deve essere in grado di identificare correttamente almeno il 95\% dei casi effettivamente a rischio.
+ovvero il modello deve essere in grado di identificare correttamente almeno il 90\% dei casi effettivamente a rischio.
 
-Il raggiungimento di una Recall così elevata comporta inevitabilmente un numero maggiore di \textbf{Falsi Positivi} (pazienti segnalati come a rischio che in realtà non lo sono). Tuttavia, nel dominio clinico in esame, un Falso Positivo produce un costo operativo contenuto (una verifica aggiuntiva da parte dello psicologo), mentre un Falso Negativo può avere esiti catastrofici. Si definisce pertanto un limite inferiore di tolleranza sulla Precision:
+Il raggiungimento di una Recall elevata comporta inevitabilmente un numero maggiore di \textbf{Falsi Positivi} (pazienti segnalati come a rischio che in realtà non lo sono). Tuttavia, nel dominio clinico in esame, se da un lato un Falso Negativo può avere esiti catastrofici, dall'altro un eccesso di falsi allarmi produrrebbe un costo operativo insostenibile (troppe verifiche aggiuntive da parte dello psicologo) e il rischio di desensibilizzazione (\textit{alert fatigue}). Si definisce pertanto un limite inferiore rigoroso sulla Precision:
 \[
-    \text{Precision} \geq 0{,}40
+    \text{Precision} \geq 0{,}70
 \]
-Tale soglia implica che, su 10 alert generati dal sistema, almeno 4 devono corrispondere a casi realmente critici, garantendo la sostenibilità operativa del carico di lavoro per gli psicologi (coerentemente con il KPI aziendale definito nella Sezione~\ref{subsubsec:kpi_alert}).
+Tale soglia implica che, su 10 alert generati dal sistema, almeno 7 devono corrispondere a casi realmente critici, garantendo un eccellente bilanciamento tra la sicurezza del paziente e la sostenibilità operativa del carico di lavoro per gli psicologi.
+
+Oltre al monitoraggio separato delle soglie di Recall e Precision, le performance globali del modello in fase di validazione verranno riassunte tramite l'$F_{\beta}$\textbf{-Score} (con $\beta > 1$). A differenza dell'$F_{1}$-Score, che bilancia equamente Precision e Recall, l'$F_{\beta}$-Score consente di pesare matematicamente l'importanza della Recall rispetto alla Precision di un fattore pari a $\beta^{2}$. Questa scelta riflette formalmente la criticità del dominio: pur esigendo un'alta affidabilità degli allarmi generati (Precision $\geq 0{,}70$), il costo clinico di un singolo caso non intercettato (Falso Negativo) rimane strutturalmente maggiore di quello associato a un'allerta superflua.
 
 \subsubsection{Predizione PHQ-9 --- Regressione}
 \label{subsubsec:metriche_phq9}
@@ -92,22 +94,31 @@ Il modello di \textit{Depression Prediction} è formulato come un task di regres
     \text{MAE} \leq 3 \text{ punti}
 \]
 
-La scelta della soglia di 3 punti è motivata dalla struttura clinica del PHQ-9, le cui fasce di severità hanno un'ampiezza di 5 punti (0--4 minima, 5--9 lieve, 10--14 moderata, 15--19 moderatamente grave, 20--27 grave). Un errore medio contenuto entro 3 punti preserva, nella maggior parte dei casi, la capacità del modello di collocare correttamente il paziente nella fascia di severità appropriata o in quella immediatamente adiacente.
+La scelta della soglia di 3 punti è motivata dalla struttura clinica del PHQ-9, le cui fasce di severità hanno un'ampiezza di 5 punti (0--4 minima, 5--9 lieve, 10--14 moderata, 15--19 moderatamente grave, 20--27 grave). Un errore medio contenuto entro 3 punti accetta fisiologicamente il rumore e la soggettività insiti nei dati \textit{self-report}, ma preserva, nella stragrande maggioranza dei casi, la capacità del modello di collocare correttamente il paziente nella fascia di severità appropriata o in quella immediatamente adiacente.
+
+Accanto al MAE, viene fissato un obiettivo sulla metrica \textbf{RMSE} (\textit{Root Mean Squared Error}):
+\[
+    \text{RMSE} \leq 4{,}5 \text{ punti}
+\]
+Poiché l'RMSE penalizza in modo quadratico gli scostamenti più ampi, il rispetto di questa soglia assicura che la \textit{baseline} predittiva generata dal modello rimanga stabile anche nei casi limite. Nel contesto del rilevamento delle compilazioni sospette, una predizione errata del modello non innesca un mancato intervento clinico, ma genera un ``falso allarme di incongruenza'', costringendo lo psicologo a revisionare manualmente un questionario che in realtà era veritiero e compilato in buona fede. La soglia di 4,5 punti --- volutamente inferiore all'ampiezza di una singola fascia di severità del PHQ-9 (5 punti) --- garantisce che il modello non produca mai errori isolati di magnitudo tale da invalidare ingiustamente le risposte oneste dei pazienti. Il monitoraggio congiunto di MAE e RMSE assicura pertanto un metro di paragone affidabile per l'intero processo di garanzia della qualità dei dati.
 
 \subsubsection{Prevenzione Churn --- Ottimizzazione tramite Algoritmo Genetico}
 \label{subsubsec:metriche_churn}
 
-A differenza dei modelli precedenti, il sistema di prevenzione dell'abbandono non si configura come un task di classificazione o regressione, bensì come un \textbf{problema di ottimizzazione} risolto mediante un \textit{Algoritmo Genetico} (GA). L'obiettivo è evolvere strategie di \textit{nudging} --- combinazioni ottimali di tipo, frequenza e tempistica delle notifiche --- che massimizzino la probabilità di mantenere attivo il paziente sulla piattaforma. I criteri di successo tecnico si articolano pertanto su due assi complementari: la qualità della soluzione ottenuta e la performance algoritmica del processo evolutivo.
+A differenza dei componenti precedenti, il sistema di prevenzione dell'abbandono non si configura come un task di classificazione o regressione, bensì come un \textbf{problema di ottimizzazione} risolto mediante un \textit{Algoritmo Genetico} (GA). L'obiettivo è evolvere strategie di \textit{nudging} --- combinazioni ottimali di tipo, frequenza e tempistica delle notifiche --- che massimizzino la probabilità di mantenere attivo il paziente sulla piattaforma. I criteri di successo tecnico si articolano pertanto su due assi complementari: la qualità della soluzione ottenuta e la performance algoritmica del processo evolutivo.
 
 \paragraph{Qualità della Soluzione (Funzione di Fitness).}
-La funzione di fitness quantifica l'efficacia complessiva di ciascuna strategia di nudging candidata. Essa dovrà bilanciare molteplici obiettivi, tra cui la massimizzazione della \textit{user retention}, la minimizzazione del numero di notifiche inviate (per evitare effetti di saturazione) e il rispetto della finestra temporale ottimale di invio. L'obiettivo tecnico è che la migliore soluzione prodotta dall'algoritmo raggiunga un valore di fitness target definito in fase di sperimentazione, coerente con il KPI aziendale di retention $\geq$ 75\% (Sezione~\ref{subsubsec:kpi_churn}).
+La qualità di ciascuna strategia di \textit{nudging} candidata ($S$) viene quantificata attraverso una funzione di fitness formulata come combinazione lineare (somma pesata) dei singoli obiettivi:
+\[
+    \text{Fitness}(S) = w_1 \cdot \text{Retention}(S) - w_2 \cdot \text{Penalty\textsubscript{Freq}}(S) - w_3 \cdot \text{Penalty\textsubscript{Time}}(S)
+\]
+dove $\text{Retention}(S)$ stima il tasso di mantenimento atteso (coerente con l'obiettivo clinico $\geq 75\%$), $\text{Penalty\textsubscript{Freq}}$ modella una penalità esponenziale per l'invio eccessivo di notifiche (al fine di prevenire la \textit{notification fatigue}) e $\text{Penalty\textsubscript{Time}}$ penalizza l'invio in finestre temporali sub-ottimali o clinicamente sconsigliate. I pesi $w_1, w_2, w_3$ verranno calibrati empiricamente in fase di \textit{tuning} per garantire la priorità assoluta alla retention, imponendo al contempo soglie anti-spam ferree. L'algoritmo genetico ottimizzerà questo unico valore scalare per identificare la singola strategia migliore in modo diretto ed efficiente.
 
 \paragraph{Performance Algoritmica.}
-Oltre alla qualità della soluzione finale, è necessario fissare obiettivi sulla \textbf{performance del processo di ottimizzazione} stesso:
+Affinché il GA possa essere impiegato come componente operativo nel \textit{backend} di SINTONIA, vengono fissati obiettivi quantitativi sul processo di ottimizzazione:
 \begin{itemize}
-    \item \textbf{Velocità di convergenza:} il GA deve raggiungere una soluzione di qualità accettabile entro un numero ragionevole di generazioni, garantendo che l'ottimizzazione possa essere rieseguita periodicamente per adattare le strategie di nudging all'evoluzione del comportamento degli utenti.
-    \item \textbf{Diversità delle soluzioni:} la popolazione finale deve preservare un sufficiente grado di diversità genetica, evitando la convergenza prematura verso ottimi locali. Ciò assicura la disponibilità di un ventaglio di strategie alternative da poter impiegare per sottogruppi diversi di pazienti.
-    \item \textbf{Budget computazionale:} il tempo di esecuzione complessivo dell'algoritmo deve rimanere compatibile con i vincoli infrastrutturali della piattaforma, consentendo l'aggiornamento periodico delle strategie senza impatti sulla latenza del sistema.
+    \item \textbf{Velocità di convergenza:} l'algoritmo deve convergere verso un \textit{plateau} di fitness soddisfacente entro un numero limitato di generazioni (indicativamente $G \leq 100$), dimostrando un'efficienza esplorativa idonea ad adattarsi ai cambiamenti comportamentali nel tempo.
+    \item \textbf{Diversità genetica e prevenzione degli ottimi locali:} l'algoritmo deve mantenere un adeguato livello di diversità esplorativa durante le sue iterazioni, evitando una convergenza prematura verso sub-ottimi locali prima di aver scandagliato a fondo lo spazio delle soluzioni. Tale diversità viene monitorata quantificando costantemente la \textit{Distanza di Hamming} media tra i cromosomi della popolazione: l'obiettivo tecnico è che questo indicatore di varietà genetica non decada al di sotto di una soglia minima di guardia (es. il 15\% della distanza massima teorica) prima di aver raggiunto almeno la metà del budget generazionale prefissato.
 \end{itemize}
 
 % ── 1.3 ──────────────────────────────────────────────────────────────────────
@@ -259,7 +270,11 @@ I costi OPEX rappresentano le spese ricorrenti necessarie per mantenere il siste
 \begin{itemize}
     \item \textbf{Costi di inferenza:} ogni volta che un paziente scrive una pagina di diario, il modello di Red Flag Detection deve analizzare il testo in tempo reale. Analogamente, le predizioni PHQ-9 e le valutazioni di churn richiedono elaborazioni periodiche. Questi costi sono proporzionali al numero di utenti attivi e alla frequenza di utilizzo della piattaforma. Utilizzando servizi cloud, il costo unitario per singola inferenza è nell'ordine di frazioni di centesimo, ma può accumularsi con volumi elevati di utenti.
 
-    \item \textbf{Model monitoring e manutenzione:} il monitoraggio continuo delle performance dei modelli in produzione è fondamentale per rilevare fenomeni di \textit{data drift} --- l'evoluzione nel tempo delle caratteristiche dei dati in ingresso che può degradare progressivamente l'accuratezza delle predizioni. Questa attività richiede strumenti di monitoraggio, dashboard dedicate e personale tecnico in grado di interpretare le metriche e decidere quando intervenire.
+% Tradurre gli obiettivi di business in obiettivi tecnici di data mining:
+% - Classificazione del rischio suicidario tramite NLP
+% - Prevenzione del churn terapeutico
+% - Rilevamento automatico della depressione
+% - Integrazione dei modelli tramite API
 
     \item \textbf{Ri-addestramento periodico:} per contrastare il data drift e incorporare nuovi dati clinici, i modelli dovranno essere periodicamente ri-addestrati. Ogni ciclo di ri-addestramento comporta costi di calcolo GPU e di validazione clinica da parte degli esperti di dominio.
 \end{itemize}
