@@ -1,128 +1,115 @@
 \documentclass[12pt, a4paper]{report}
 
-% ─── Encoding & Language ──────────────────────────────────────────────────────
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[italian]{babel}
+\usepackage{csquotes}
 
-% ─── Layout ───────────────────────────────────────────────────────────────────
+\usepackage[default]{opensans}
+
 \usepackage{geometry}
 \geometry{margin=2.5cm, bottom=3cm}
+\setlength{\headheight}{13.6pt}
 \usepackage{setspace}
 \onehalfspacing
 
-% ─── Graphics & Colors ────────────────────────────────────────────────────────
 \usepackage{graphicx}
-\graphicspath{{figures/}}
+\graphicspath{{docs/latex/figures/}{figures/}}
 \usepackage{xcolor}
-\definecolor{unisablue}{RGB}{0, 56, 116}
+\definecolor{DeepCyanBlue}{HTML}{0D475D}
+\definecolor{DeepAquaBlue}{HTML}{276B75}
+\definecolor{SoftAquaBlue}{HTML}{83B9C1}
+\definecolor{MintTeal}{HTML}{61A889}
+\definecolor{SoftMintGreen}{HTML}{81BD85}
 
-% ─── Math ─────────────────────────────────────────────────────────────────────
 \usepackage{amsmath, amssymb}
 
-% ─── Code Listings ────────────────────────────────────────────────────────────
+\usepackage{sectsty}
+\chapterfont{\color{DeepCyanBlue}}
+\sectionfont{\color{DeepCyanBlue}}
+\subsectionfont{\color{DeepCyanBlue}}
+\subsubsectionfont{\color{DeepCyanBlue}}
+
+\usepackage{titlesec}
+\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+\titlespacing*{\section}{0pt}{20pt}{10pt}
+\titlespacing*{\subsection}{0pt}{15pt}{5pt}
+
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily\small, breaklines=true}
 
-% ─── Hyperlinks ───────────────────────────────────────────────────────────────
 \usepackage[hidelinks]{hyperref}
 
-% ─── Header & Footer ──────────────────────────────────────────────────────────
 \usepackage{fancyhdr}
 \usepackage{lastpage}
 
 \pagestyle{fancy}
 \fancyhf{}
-% Header: titolo a sinistra, logo SINTON-IA a destra
-\fancyhead[L]{\small\textcolor{unisablue}{\textbf{SINTON-IA} -- Documentazione Tecnica}}
-\fancyhead[R]{\small\textcolor{gray}{A.A. 2024/2025}}
-% Footer: nomi autori a sinistra, numero pagina a destra
+\fancyhead[L]{\small\textcolor{DeepCyanBlue}{\textbf{SINTON-IA} -- Documentazione Tecnica}}
+\fancyhead[R]{\small\textcolor{gray}{A.A. 2025/2026}}
 \fancyfoot[L]{\small\textcolor{gray}{De Fusco $\cdot$ Del Sorbo $\cdot$ Policola}}
 \fancyfoot[R]{\small\textcolor{gray}{Pag. \thepage\ di \pageref{LastPage}}}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
 
-% ─── Bibliography ─────────────────────────────────────────────────────────────
-% Da decommentare quando si aggiungono le prime citazioni:
-% \usepackage[backend=biber, style=numeric]{biblatex}
-% \addbibresource{references.bib}
+% ─────────────────────────────────────────────────────────────────────────────
+\bibliographystyle{unsrt}
 
-% ──────────────────────────────────────────────────────────────────────────────
+% ─────────────────────────────────────────────────────────────────────────────
 \begin{document}
 
-% ─── Pagina di copertina ──────────────────────────────────────────────────────
 \begin{titlepage}
-    \thispagestyle{empty} % niente header/footer sulla copertina
-
+    \thispagestyle{empty}
     \begin{center}
 
-        % ── Loghi ─────────────────────────────────────────────────────────────
-        \begin{minipage}{0.35\textwidth}
-            \centering
-            \includegraphics[width=0.72\textwidth]{logo_unisa.png}
-        \end{minipage}
-        \hfill
-        \begin{minipage}{0.35\textwidth}
-            \centering
-            \includegraphics[width=0.85\textwidth]{sintonia-logo-new.jpg}
-        \end{minipage}
+        \vspace*{0.2cm}
 
-        \vspace{0.6cm}
-        \textcolor{unisablue}{\rule{\linewidth}{1.2pt}}
+        \includegraphics[height=3.2cm]{logo_unisa.png}
+        \hspace{1cm}
+        \includegraphics[height=3.2cm]{sintonia-logo-new.jpg}
 
-        % ── Intestazione università ───────────────────────────────────────────
-        \vspace{0.4cm}
-        {\large \textbf{Università degli Studi di Salerno}} \\[0.2cm]
-        {\normalsize Dipartimento di Informatica} \\[0.1cm]
-        {\normalsize Corso di \textit{Fondamenti di Intelligenza Artificiale}} \\[0.1cm]
-        {\normalsize Prof. \textbf{Fabio Palomba}} \\
+        \vspace{1cm}
 
-        \vspace{0.6cm}
-        \textcolor{unisablue}{\rule{\linewidth}{0.6pt}}
-        \vspace{1.2cm}
+        {\Large \textbf{Università degli Studi di Salerno}} \\[0.2cm]
+        {\large Corso di \textit{Fondamenti di Intelligenza Artificiale}} \\[0.2cm]
+        {\large Prof. \textbf{Fabio Palomba}} \\
 
-        % ── Titolo principale ─────────────────────────────────────────────────
-        {\fontsize{28}{34}\selectfont \textbf{\textcolor{unisablue}{SINTON-IA}}} \\[0.5cm]
-        {\Large \textit{Documentazione Tecnica dei Modelli}} \\[0.3cm]
-        {\large \textit{di Intelligenza Artificiale}} \\[0.8cm]
+        \vspace{2cm}
 
-        {\normalsize Sistema di Supporto alla Salute Mentale} \\[0.1cm]
-        {\normalsize \textbf{ASL Campania}} \\
-
-        \vspace{1.4cm}
-        \textcolor{unisablue}{\rule{\linewidth}{0.6pt}}
-        \vspace{0.6cm}
-
-        % ── Autori ────────────────────────────────────────────────────────────
-        {\normalsize \textbf{Autori}} \\[0.3cm]
-        \begin{tabular}{c}
-            \large Antonio Walter De Fusco \\[0.2cm]
-            \large Alessio Del Sorbo \\[0.2cm]
-            \large Gianni Policola \\
-        \end{tabular}
+        {\fontsize{36}{44}\selectfont \textbf{\textcolor{DeepCyanBlue}{SINTON-IA}}} \\[0.6cm]
+        {\Large \textbf{Documentazione Tecnica dei Modelli}} \\[0.2cm]
+        {\Large \textbf{di Intelligenza Artificiale}} \\[0.3cm]
 
         \vfill
 
-        % ── Data ──────────────────────────────────────────────────────────────
-        \textcolor{unisablue}{\rule{\linewidth}{1.2pt}}
-        \vspace{0.3cm}
-        {\normalsize Anno Accademico 2024/2025}
+        {\Large \textbf{Team SINTON-IA}} \\[0.4cm]
+        \begin{tabular}{c}
+            \Large Antonio Walter De Fusco \\[0.2cm]
+            \Large Alessio Del Sorbo       \\[0.2cm]
+            \Large Gianni Policola         \\
+        \end{tabular}
+
+        \vspace{1cm}
+
+        \textcolor{DeepCyanBlue}{\rule{\linewidth}{1.2pt}}
+        \vspace{0.2cm}
+        {\large Anno Accademico 2025/2026}
 
     \end{center}
 \end{titlepage}
 
-% ─── Indice ───────────────────────────────────────────────────────────────────
 \tableofcontents
 \newpage
 
-% ─── Capitoli (decommentare man mano che vengono scritti) ────────────────────
-% \include{chapters/01_introduction}
-% \include{chapters/02_nlp_suicide_risk}
-% \include{chapters/03_churn_prediction}
-% \include{chapters/04_depression_detection}
-% \include{chapters/05_api_integration}
+\clearpage
+\include{chapters/01_introduction}
 
-% Da decommentare insieme a biblatex:
-% \printbibliography
+\clearpage
+\include{chapters/Business_Understanding}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\clearpage
+\addcontentsline{toc}{chapter}{Bibliografia}
+\bibliography{references}
 
 \end{document}
