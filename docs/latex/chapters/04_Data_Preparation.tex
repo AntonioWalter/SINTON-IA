@@ -1,0 +1,104 @@
+\chapter{Data Preparation}
+\label{ch:data_preparation}
+
+Questa fase ha lo scopo di organizzare, pulire e trasformare i dati grezzi estratti precedentemente. L'obiettivo è ottenere un dataset formattato in modo ottimale per le fasi successive di addestramento dei modelli di Intelligenza Artificiale.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Modello Red Flag Detection (NLP)}
+\label{sec:prep_red_flag}
+
+A seguito dell'esplorazione del dataset (come illustrato nel Capitolo~\ref{ch:data_understanding}), abbiamo messo a punto uno script Python per ripulire i testi. Le decisioni prese in questa fase sono fondamentali: dobbiamo assicurarci di rimuovere tutto il "rumore" del web senza però cancellare le sfumature cliniche ed emotive che potrebbero rivelare un rischio suicidario.
+
+Di seguito analizziamo i vari passaggi eseguiti, disponibili e riproducibili all'interno del Notebook di analisi \texttt{02\_RedFlag\_DataPreparation.ipynb}.
+
+\subsection{1. Rimozione del Testo Inutile (Noise Removal)}
+I post analizzati provengono da Reddit e sono spesso pieni di link, indirizzi email o formattazioni sfasate (come doverosi a capo multipli). 
+Abbiamo eliminato tutti questi elementi tramite \textit{Espressioni Regolari (RegEx)} perché non aggiungono alcun significato utile al riconoscimento del rischio.
+
+\begin{lstlisting}[language=Python, caption=Cancellazione di URL e Newlines, float=H]
+import re
+
+def remove_urls_and_newlines(text):
+    # Rimuove URL espliciti completi
+    text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
+    # Comprime ritorni a capo multipli in un unico spazio
+    text = re.sub(r'\n+', ' ', text)
+    return text
+\end{lstlisting}
+
+\subsection{2. Lowercasing e Conservazione della Punteggiatura}
+Abbiamo trasformato tutte le lettere in minuscolo (\textit{lowercasing}) per insegnare al modello che "Aiuto" e "aiuto" sono la stessa identica parola, semplificando così il vocabolario totale.
+
+Per i modelli di elaborazione del linguaggio naturale utilizzati un tempo, l'istinto era cancellare tutta la punteggiatura. Noi abbiamo scelto invece di \textbf{mantenere i segni chiave come punti fermi, virgole, punti interrogativi ed esclamativi}. In contesti di ansia, panico o depressione, un utente che abusa di esclamazioni (es. "Aiuto!!!") esprime uno stato di forte alterazione che il modello di Intelligenza Artificiale deve essere in grado di leggere e non ignorare.
+
+\begin{lstlisting}[language=Python, caption=Conversione in minuscolo e salvataggio punteggiatura, float=H]
+def clean_chars_and_lower(text):
+    text = text.lower()
+    # Manteniamo esclusivamente la punteggiatura utile (. , ! ?)
+    text = re.sub(r'[^a-zA-Z0-9\s\.,!\?]', '', text)
+    
+    # Stacchiamo la punteggiatura per isolarla dalle parole
+    text = re.sub(r'([\.,!\?])', r' \1 ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
+\end{lstlisting}
+
+\subsection{3. Gestione di Stop-Words e Lemmatizzazione}
+Le parole di collegamento della lingua inglese (come articoli "the", pronomi "it", congiunzioni "and") occupavano oltre il 40\% di tutto il testo, distogliendo l'attenzione del modello. Tramite la libreria \texttt{NLTK} abbiamo eliminato gran parte di queste "Stop-Words".
+
+Tuttavia, abbiamo dovuto fare estrema attenzione alle \textbf{negazioni}. Parole come "not", "don't" o "never" sono state escluse dalla lista di rimozione e conservate forzatamente nel testo. Se le avessimo rimosse, la frase "I am not suicidal" si sarebbe trasformata in "I am suicidal", scatenando un allarme falso e pericoloso per la piattaforma. 
+Successivamente abbiamo applicato la \textbf{Lemmatizzazione}, un processo che riporta i verbi e i vocaboli alla loro radice del dizionario (ad esempio "depressed", "depressing" vengono convertiti nel concetto unico "depress").
+
+\begin{lstlisting}[language=Python, caption=Epurazione parole inutili e applicazione del Lemma, float=H]
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+
+default_stopwords = set(stopwords.words('english'))
+# Lista di eccezioni intoccabili per via del loro significato clinico
+words_to_keep = {'not', 'no', 'nor', 'don', "don't", "isn't", "wasn't", 'never'}
+custom_stopwords = default_stopwords - words_to_keep
+
+lemmatizer = WordNetLemmatizer()
+
+def remove_stops_and_lemmatize(text):
+    words = text.split()
+    cleaned_words = []
+    
+    for word in words:
+        if word in ['.', ',', '!', '?']:
+            cleaned_words.append(word)
+        elif word not in custom_stopwords: # Se non e' una parola vietata
+            cleaned_words.append(lemmatizer.lemmatize(word))
+            
+    return ' '.join(cleaned_words)
+\end{lstlisting}
+
+\subsection{4. Adeguamento al Limite Architetturale (Max 2000 caratteri)}
+Il dataset originale su Kaggle ospitava post lunghissimi, simili a romanzi. Purtroppo, l'applicativo reale SINTON-IA, all'interno del quale il paziente compila il suo diario, possiede un limite di immissione fissato a 2.000 caratteri per evitare l'abuso dello strumento. 
+Per allineare il comportamento durante l'addestramento dell'Intelligenza Artificiale ai veri dati che vedrà in produzione, abbiamo imposto una rigorosa troncatura a 2000 caratteri a tutti i documenti processati. Sono stati volutamente \textbf{preservati i frammenti molto brevi} (es. frasi da 2-3 parole come "I'm done"), poiché i comportamenti perentori e in apparenza sbrigativi costituiscono un comprovato segnale psicologico di allarme imminente.
+
+\begin{lstlisting}[language=Python, caption=Troncatura in base ai parametri di backend SINTON-IA, float=H]
+def truncate_to_sintonia_limit(text):
+    if len(str(text)) > 2000:
+        return str(text)[:2000]
+    return str(text)
+\end{lstlisting}
+
+\subsection{5. Gestione del Language Gap (Zero-Shot Cross-Lingual Transfer)}
+Un enorme divario tra questa fase e la futura operatività è la lingua: il nostro dataset di partenza è in Inglese, ma gli utenti campani della piattaforma SINTON-IA scriveranno i diari in Italiano. 
+Solitamente in questi casi si tenta di tradurre interamente il dataset iniziale (Machine Translation), pratica che degrada la qualità dei dati, annacqua i modi di dire dello "slang" depressivo (ad es. "feeling blue") e risulta temporalmente onerosa in fase di caricamento ed addestramento. 
+
+La soluzione progettata per il modello SINTON-IA adotta l'approccio \textbf{Zero-Shot Cross-Lingual Transfer}.
+L'idea consiste nell'utilizzare come "cervello di base" un modello Transformer Multilingua aspecifico preparato in precedenza da ricercatori terzi (ad es. XLM-RoBERTa), che è capace di capire 100 lingue diverse in contemporanea. Noi addestreremo l'Intelligenza Artificiale sfruttando nativamente i post in inglese. La logica pregressa del Transformer sarà in grado di riconoscere i "concetti appresi" (il comportamento suicidario) e replicarne in autonomia l'identificazione anche quando, una volta installato in reparto, l'input live del paziente proverrà tradotto sintatticamente in lingua italiana.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\clearpage
+\section{Modello Depression Prediction}
+\label{sec:prep_depression}
+\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team.}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\clearpage
+\section{Modello Churn Prediction (Log Dati Aziendali)}
+\label{sec:prep_churn}
+\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team. Riguarderà manipolazione scalare e codifica numerica in vettori categoriali dei formati estrapolati in formato tabellare CSV/JSON strutturato SINTONIA.}
