@@ -15,7 +15,7 @@ Di seguito analizziamo i vari passaggi eseguiti, disponibili e riproducibili all
 I post analizzati provengono da Reddit e sono spesso pieni di link, indirizzi email o formattazioni sfasate (come doverosi a capo multipli). 
 Abbiamo eliminato tutti questi elementi tramite \textit{Espressioni Regolari (RegEx)} perché non aggiungono alcun significato utile al riconoscimento del rischio.
 
-\begin{lstlisting}[language=Python, caption=Cancellazione di URL e Newlines, float=H]
+\begin{lstlisting}[language=Python, caption={Cancellazione di URL e Newlines}]
 import re
 
 def remove_urls_and_newlines(text):
@@ -31,7 +31,7 @@ Abbiamo trasformato tutte le lettere in minuscolo (\textit{lowercasing}) per ins
 
 Per i modelli di elaborazione del linguaggio naturale utilizzati un tempo, l'istinto era cancellare tutta la punteggiatura. Noi abbiamo scelto invece di \textbf{mantenere i segni chiave come punti fermi, virgole, punti interrogativi ed esclamativi}. In contesti di ansia, panico o depressione, un utente che abusa di esclamazioni (es. "Aiuto!!!") esprime uno stato di forte alterazione che il modello di Intelligenza Artificiale deve essere in grado di leggere e non ignorare.
 
-\begin{lstlisting}[language=Python, caption=Conversione in minuscolo e salvataggio punteggiatura, float=H]
+\begin{lstlisting}[language=Python, caption={Conversione in minuscolo e salvataggio punteggiatura}]
 def clean_chars_and_lower(text):
     text = text.lower()
     # Manteniamo esclusivamente la punteggiatura utile (. , ! ?)
@@ -49,7 +49,7 @@ Le parole di collegamento della lingua inglese (come articoli "the", pronomi "it
 Tuttavia, abbiamo dovuto fare estrema attenzione alle \textbf{negazioni}. Parole come "not", "don't" o "never" sono state escluse dalla lista di rimozione e conservate forzatamente nel testo. Se le avessimo rimosse, la frase "I am not suicidal" si sarebbe trasformata in "I am suicidal", scatenando un allarme falso e pericoloso per la piattaforma. 
 Successivamente abbiamo applicato la \textbf{Lemmatizzazione}, un processo che riporta i verbi e i vocaboli alla loro radice del dizionario (ad esempio "depressed", "depressing" vengono convertiti nel concetto unico "depress").
 
-\begin{lstlisting}[language=Python, caption=Epurazione parole inutili e applicazione del Lemma, float=H]
+\begin{lstlisting}[language=Python, caption={Epurazione parole inutili e applicazione del Lemma}]
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 
@@ -77,7 +77,7 @@ def remove_stops_and_lemmatize(text):
 Il dataset originale su Kaggle ospitava post lunghissimi, simili a romanzi. Purtroppo, l'applicativo reale SINTON-IA, all'interno del quale il paziente compila il suo diario, possiede un limite di immissione fissato a 2.000 caratteri per evitare l'abuso dello strumento. 
 Per allineare il comportamento durante l'addestramento dell'Intelligenza Artificiale ai veri dati che vedrà in produzione, abbiamo imposto una rigorosa troncatura a 2000 caratteri a tutti i documenti processati. Sono stati volutamente \textbf{preservati i frammenti molto brevi} (es. frasi da 2-3 parole come "I'm done"), poiché i comportamenti perentori e in apparenza sbrigativi costituiscono un comprovato segnale psicologico di allarme imminente.
 
-\begin{lstlisting}[language=Python, caption=Troncatura in base ai parametri di backend SINTON-IA, float=H]
+\begin{lstlisting}[language=Python, caption={Troncatura in base ai parametri di backend SINTON-IA}]
 def truncate_to_sintonia_limit(text):
     if len(str(text)) > 2000:
         return str(text)[:2000]
