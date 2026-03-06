@@ -1,0 +1,95 @@
+% ──────────────────────────────────────────────────────────────────────────────
+%  Capitolo 3 – Data Understanding
+% ──────────────────────────────────────────────────────────────────────────────
+\chapter{Data Understanding}
+\label{ch:data_understanding}
+
+Il presente capitolo è dedicato all'esplorazione, comprensione e preparazione dei dati necessari per l'addestramento dei modelli di Intelligenza Artificiale previsti dal progetto SINTON-IA. Per ciascun modello vengono dettagliate le fonti di acquisizione, le motivazioni della scelta e la struttura tecnica dei dataset identificati.
+
+% ── 3.1 ──────────────────────────────────────────────────────────────────────
+\section{Dataset per il Modello di Red Flag Detection}
+\label{sec:data_red_flag}
+
+\subsection{Acquisizione Dati}
+\label{subsec:acquisizione_red_flag}
+
+Come parzialmente anticipato nella fase di Business Understanding, l'acquisizione di dati clinici legati alla salute mentale è fortemente ostacolata da stringenti normative sulla privacy. Lo sviluppo di un modello di NLP specializzato nell'identificazione del rischio suicidario necessita di dati testuali massivi in cui gli autori esprimano i propri stati d'animo in contesti non strutturati (es. diari, blog, forum), corredati da etichette di rischio affidabili.
+
+Nel corso della ricerca sulle fonti dati, sono stati individuati due dataset primari, ciascuno con caratteristiche e livelli di accessibilità differenti.
+
+Il primo è \textbf{UMD Reddit Suicidality Dataset} \cite{umd_reddit_suicidality}, realizzato dall'Università del Maryland. Si tratta di un dataset accademico di altissimo livello qualitativo: i post estrapolati da Reddit sono stati annotati sia tramite \textit{crowdsourcing} sia da esperti clinici utilizzando la scala standard \textbf{C-SSRS} (Columbia-Suicide Severity Rating Scale). Rappresenta il \textit{gold standard} per questo tipo di task predittivi.
+Tuttavia, a causa della delicatezza dei contenuti, gli autori ne hanno reso pubblica solo una versione fortemente ridotta e anonimizzata contenente circa 500 istanze, un numero totalmente insufficiente per addestrare da zero o affinare (fine-tuning) un modello di NLP moderno (es. \textit{Transformers}). L'accesso al dataset completo richiede una formale approvazione da parte di un Comitato Etico Istituzionale (IRB) e l'implementazione di rigidi protocolli di sicurezza per la conservazione dei dati protetti.
+
+Il secondo dataset individuato è \textbf{Suicide Watch Dataset} \cite{suicide_watch_dataset}, disponibile pubblicamente sulla piattaforma Kaggle. Sebbene non raggiunga il livello di validazione clinica certificata tramite C-SSRS del dataset UMD, esso si basa anch'esso sull'estrapolazione massiva di testi dalla piattaforma Reddit (tipicamente dai subreddit \textit{r/SuicideWatch} e altri forum dedicati al supporto psicologico o temi generali). 
+
+Alla luce di questi vincoli, è stata definita la seguente strategia: \textbf{il dataset "Suicide Watch" di Kaggle verrà impiegato per la fase prototipale del progetto}. La sua natura pubblica e la mole di dati disponibile ne consentono l'impiego immediato per validare l'architettura del modello, sintonizzare gli iperparametri e dimostrare la fattibilità tecnica del sistema \textit{Red Flag}. Come sviluppo futuro in caso di adozione reale del sistema, il team richiederà l'autorizzazione etica per accedere al dataset UMD (o equivalenti clinici), al fine di specializzare e ri-calibrare il modello con dati certificati in maniera professionale.
+
+\subsection{Descrizione dei Dati}
+\label{subsec:descrizione_red_flag}
+
+Il dataset pubblico \textit{Suicide Watch} scelto per l'addestramento prototipale si presenta in formato puramente testuale e tabellare (file CSV). 
+
+La sua struttura è volutamente essenziale per favorire task di classificazione binaria nell'ambito del \textit{Natural Language Processing}. Di seguito le caratteristiche principali:
+
+\begin{itemize}
+    \item \textbf{Volume dei dati:} Il dataset comprende oltre 230.000 record complessivi, un volume più che adeguato per eseguire il \textit{fine-tuning} di modelli pre-addestrati come BERT o varianti più leggere (DistilBERT).
+    \item \textbf{Bilanciamento delle classi:} Le istanze sono suddivise in modo pressoché paritetico ($\sim$50/50) tra le due classi bersaglio, mitigando il problema dello sbilanciamento tipico dei dati clinici e facilitando l'apprendimento delle \textit{feature} testuali discriminanti da parte della rete neurale.
+\end{itemize}
+
+Ogni record (riga) del dataset è descritto da due colonne fondamentali:
+\begin{enumerate}
+    \item \textbf{\texttt{text}} (Stringa): contiene il contenuto testuale non strutturato scritto dall'utente. Questi testi rispecchiano fedelmente le dinamiche dello \textit{user-generated content} (UGC) online: variano notevolmente in lunghezza, presentano spesso un registro informale, errori ortografici, e descrivono pensieri, vicende personali o espressioni dirette di dolore emotivo. Questa eterogeneità stilistica li rende una "palestra" eccellente per simulare l'imprevedibilità formale dei testi che i pazienti inseriranno nei diari di SINTONIA.
+    \item \textbf{\texttt{class}} (Label): è la variabile target del modello, che si presenta sotto forma di etichetta testuale per distinguere:
+    \begin{itemize}
+        \item \texttt{suicide}: indica che il testo contiene espressioni di ideazione suicidaria, intenti autolesionistici gravi o disperazione acuta tale da far presumere un pericolo imminente.
+        \item \texttt{non-suicide}: indica che il testo esplora argomenti di tipo generale o, pur trattando esperienze di tristezza, ansia o difficoltà, non manifesta i pattern critici ed emergenti associabili al rischio estremo.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Esplorazione e Qualità dei Dati}
+\label{subsec:esplorazione_red_flag}
+
+Al fine di validare l'idoneità del dataset e pianificare le opportune strategie di \textit{Data Preparation}, è stata condotta un'analisi esplorativa (Exploratory Data Analysis, EDA) documentata all'interno dei Jupyter Notebook associati al repository del modello. 
+
+\textbf{Bilanciamento del Dataset:} L'analisi ha confermato la totale assenza di valori nulli (\textit{missing values}) strutturali nelle colonne principali e un equilibrio perfetto delle etichette: su un totale esatto di 232.074 record, figurano 116.037 istanze per la classe \texttt{suicide} e 116.037 istanze per la classe \texttt{non-suicide} (Figura~\ref{fig:rf_class_balance}). Questa simmetria garantisce che la rete non svilupperà intrinsecamente un \textit{bias} verso la classe maggioritaria.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.65\textwidth]{rf_class_balance.png}
+    \caption{Bilanciamento perfetto delle classi nel dataset "Suicide Watch".}
+    \label{fig:rf_class_balance}
+\end{figure}
+
+\textbf{Distribuzione delle Lunghezze e Limiti Architetturali (2000 Caratteri):}
+Un aspetto essenziale emerso durante il \textit{Business Understanding} è che la piattaforma SINTON-IA imporrà un limite tassativo di \textbf{2.000 caratteri} per la compilazione dei diari da parte dei pazienti. Pertanto, analizzare la lunghezza dei testi del dataset non in "numero di parole" ma in "numero di caratteri" è cruciale per prevenire un \textit{bias} strutturale. 
+
+Lo script di analisi ha rilevato una lunghezza testuale media di circa 690 caratteri per post, con la maggior parte della distribuzione (mediana) concentrata intorno ai 315 caratteri. Tuttavia, focalizzandosi sul limite di tolleranza pattuito, l'esplorazione (Figura~\ref{fig:rf_char_len_dist}) ha evidenziato che \textbf{oltre 17.000 record (il 7,3\% del totale) superano la soglia dei 2.000 caratteri}, con picchi estremi superiori ai 40.000 caratteri.
+Addestrare un modello su documenti lunghissimi per poi impiegarlo in inferenza su frammenti corti (limitati dal frontend) causerebbe un crollo drammatico dell'accuratezza in fase di produzione.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{rf_char_len_dist.png}
+    \caption{Distribuzione della lunghezza dei testi in caratteri. La linea rossa tratteggiata indica il limite di 2.000 caratteri previsto per l'app SINTON-IA.}
+    \label{fig:rf_char_len_dist}
+\end{figure}
+
+\textbf{Analisi del Rumore Testuale (Noise):} 
+L'estrapolazione di dati da una piattaforma web non regolamentata come Reddit comporta l'introduzione di notevole "rumore" sintattico e semantico. L'analisi quantitativa tramite espressioni regolari ha messo in luce:
+\begin{itemize}
+    \item L'inclusione di \textbf{URL / Link esterni} in oltre 7.100 post (circa il 3,1\% del dataset).
+    \item Una \textbf{formattazione complessa o dispersiva} (sequenze multiple di \textit{newline} o ritorni a capo) presente nel 36,7\% dei record, tipica dei forum online ma inverosimile per la textarea di un diario clinico privato.
+    \item Un'ingente presenza di \textbf{Stop Words} (le parole grammaticali di contorno, es. pronomi, articoli, preposizioni), che saturano mediamente il 45,4\% di ciascun documento senza apportare semantica discriminante ai fini predittivi del rischio e minacciando l'efficienza dei layer di \textit{Attention} dei Transformers impiegati.
+\end{itemize}
+
+Le evidenze raccolte impongono, dunque, una fase di manipolazione preliminare severa. La \textit{Data Preparation} successiva dovrà obbligatoriamente implementare filtri per eliminare il rumore (URL e formattazioni errate), decurtare le stop-words e, soprattutto, imporre una troncatura e ri-scansione delle sequenze testuali superiori alla soglia architetturale di 2.000 caratteri imposta dal frontend dell'applicativo.
+
+
+% ── 3.2 ──────────────────────────────────────────────────────────────────────
+\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team.}
+
+% ── 3.3 ──────────────────────────────────────────────────────────────────────
+\clearpage
+\section{Dati per il Modello di Churn Prediction}
+\label{sec:data_churn}
+
+\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team. Come definito in fase di Business Understanding, questo modello utilizzerà dati interni generati dalla piattaforma SINTONIA.}
