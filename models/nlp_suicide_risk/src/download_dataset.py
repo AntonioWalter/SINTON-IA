@@ -1,7 +1,6 @@
 import os
 import argparse
 from datasets import load_dataset
-import pandas as pd
 
 def download_and_save(token=None):
     print("🔄 Connessione all'Hub Hugging Face sicura...")
