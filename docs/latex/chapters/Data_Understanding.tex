@@ -89,7 +89,88 @@ Le evidenze raccolte impongono, dunque, una fase di manipolazione preliminare se
 
 % ── 3.3 ──────────────────────────────────────────────────────────────────────
 \clearpage
-\section{Dati per il Modello di Churn Prediction}
+\section{Dati per il Churn Prevention}
 \label{sec:data_churn}
 
-\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team. Come definito in fase di Business Understanding, questo modello utilizzerà dati interni generati dalla piattaforma SINTONIA.}
+\subsection{Natura del Problema e Approccio ai Dati}
+\label{subsec:natura_churn}
+
+Il Churn Prevention si distingue radicalmente dai due componenti precedenti per la natura stessa del task affrontato. Mentre il Red Flag Detection e il Depression Prediction sono rispettivamente problemi di classificazione e regressione --- paradigmi di \textit{apprendimento supervisionato} che necessitano di dataset esterni etichettati per l'addestramento --- il sistema di prevenzione dell'abbandono è formulato come un \textbf{problema di ottimizzazione} risolto mediante un Algoritmo Genetico (GA).
+
+Questa differenza fondamentale comporta tre conseguenze dirette sull'approccio ai dati:
+\begin{enumerate}
+    \item \textbf{Nessun dataset esterno:} il GA non ``impara'' da esempi storici etichettati. Il suo compito è \textit{evolvere} strategie di \textit{nudging} (notifiche personalizzate) che massimizzino la probabilità di mantenere attivo l'utente sulla piattaforma. Non è quindi necessario reperire dataset pubblici o accademici da fonti terze.
+    \item \textbf{Dati interni come sorgente esclusiva:} l'algoritmo si alimenta esclusivamente dei dati comportamentali generati dall'interazione dei pazienti con la piattaforma SINTONIA.
+    \item \textbf{Nessuna etichettatura necessaria:} a differenza del ML supervisionato, il GA non richiede label. La qualità delle soluzioni candidate viene valutata da una \textbf{funzione di fitness} che utilizza gli indicatori comportamentali dell'utente come input per calcolare un punteggio di bontà della strategia proposta.
+\end{enumerate}
+
+Di conseguenza, la \textit{Data Understanding} per questo modello non consiste nell'esplorare un dataset scaricato, bensì nel \textbf{mappare sistematicamente quali dati il backend di SINTONIA produce e persiste}, valutandone l'idoneità come input per la funzione di fitness dell'Algoritmo Genetico.
+
+\subsection{Inventario degli Indicatori Comportamentali}
+\label{subsec:inventario_indicatori}
+
+L'analisi dello schema del database relazionale di SINTONIA (implementato tramite Drizzle ORM su PostgreSQL) ha permesso di identificare \textbf{sette entità} le cui informazioni risultano direttamente rilevanti per la costruzione della funzione di fitness del GA. Per ciascuna entità vengono riportati i campi significativi e l'indicatore comportamentale derivabile.
+
+\subsubsection{Stato d'Animo (\texttt{stato\_animo})}
+
+La tabella \texttt{stato\_animo} registra ogni inserimento dello stato emotivo da parte del paziente. I campi rilevanti sono: \texttt{umore} (un valore categorico tra 10 stati predefiniti: Felice, Sereno, Energico, Neutro, Stanco, Triste, Ansioso, Arrabbiato, Spaventato, Confuso), \texttt{intensita} (valore intero) e \texttt{data\_inserimento} (timestamp).
+
+Questa tabella costituisce la fonte primaria di indicatori per il GA. Dalla sequenza temporale degli inserimenti è possibile derivare:
+\begin{itemize}
+    \item La \textbf{frequenza di registrazione del mood} in una finestra temporale (es. inserimenti negli ultimi 7 giorni), direttamente proporzionale al livello di engagement dell'utente.
+    \item La \textbf{regolarità} della compilazione (streak), calcolata come percentuale di giorni con almeno un inserimento sul totale dei giorni della finestra di osservazione. Il sistema di Streak già implementato nella piattaforma si basa esattamente su questo dato.
+    \item Il \textbf{trend della valenza emotiva}: una predominanza persistente di umori a valenza negativa (Triste, Ansioso, Spaventato) potrebbe correlare con un aumento del rischio di abbandono.
+\end{itemize}
+
+\subsubsection{Pagine del Diario (\texttt{pagina\_diario})}
+
+La tabella \texttt{pagina\_diario} memorizza le pagine scritte nel diario personale, con i campi \texttt{titolo}, \texttt{testo} e \texttt{data\_inserimento}.
+
+Gli indicatori derivabili sono:
+\begin{itemize}
+    \item La \textbf{frequenza di scrittura} nel diario, indicativa dell'interesse del paziente verso lo strumento terapeutico.
+    \item La \textbf{lunghezza media dei testi} (in caratteri), che permette di distinguere compilazioni genuine e riflessive da inserimenti superficiali o frettolosi.
+    \item I \textbf{giorni trascorsi dall'ultima pagina scritta}, un potente segnale di disengagement quando il valore è elevato.
+\end{itemize}
+
+\subsubsection{Questionari (\texttt{questionario})}
+
+La tabella \texttt{questionario} traccia le compilazioni dei questionari clinici, includendo \texttt{score}, \texttt{data\_compilazione}, i flag \texttt{revisionato} e \texttt{invalidato}.
+
+Da questa entità si ricavano:
+\begin{itemize}
+    \item Il \textbf{tasso di compliance}: rapporto tra questionari effettivamente completati e questionari previsti dal calendario di somministrazione. Un calo della compliance è un indicatore precoce di disengagement.
+    \item Il \textbf{tasso di invalidazione}: percentuale di compilazioni successivamente invalidate dallo psicologo, potenziale segnale di \textit{careless responding} tipico di utenti che stanno perdendo interesse.
+\end{itemize}
+
+\subsubsection{Forum (\texttt{domanda\_forum})}
+
+La tabella \texttt{domanda\_forum} registra le domande pubblicate dal paziente nel forum comunitario, con \texttt{titolo}, \texttt{testo}, \texttt{categoria} e \texttt{data\_inserimento}.
+
+L'indicatore derivabile è il livello di \textbf{engagement sociale}: un paziente che interagisce attivamente nel forum è presumibilmente più coinvolto nell'ecosistema SINTONIA rispetto a uno che non vi partecipa.
+
+\subsubsection{Notifiche (\texttt{notifica})}
+
+La tabella \texttt{notifica} è di particolare importanza strategica per il GA. Oltre ai campi \texttt{titolo}, \texttt{tipologia}, \texttt{descrizione} e \texttt{data\_invio}, essa include il campo \texttt{letto} (boolean): un flag che indica se l'utente ha effettivamente visualizzato la notifica.
+
+Questo campo costituisce il \textbf{meccanismo di feedback diretto} per l'Algoritmo Genetico: consente di valutare se le notifiche generate da una strategia di \textit{nudging} vengono effettivamente lette o sistematicamente ignorate dall'utente. Il \textbf{tasso di lettura} delle notifiche (rapporto \texttt{letto = true} / totale inviate) diventa così un componente fondamentale della funzione di fitness.
+
+\subsubsection{Paziente (\texttt{paziente})}
+
+La tabella anagrafica \texttt{paziente} contiene il campo \texttt{data\_ingresso} (data di inserimento nella lista d'attesa), dal quale si calcola il numero di \textbf{giorni in lista d'attesa}. Questo indicatore è cruciale poiché la letteratura evidenzia una correlazione diretta tra la durata dell'attesa e la probabilità di abbandono \cite{baumel2019mhealth}. Risultano inoltre rilevanti il campo \texttt{id\_priorita} (livello di priorità nel triage) e \texttt{id\_psicologo} (che indica se il paziente è già stato preso in carico).
+
+\subsubsection{Badge (\texttt{acquisizione\_badge})}
+
+La tabella \texttt{acquisizione\_badge} traccia i traguardi di gamification raggiunti dal paziente, con \texttt{nome\_badge} e \texttt{data\_acquisizione}. Il numero totale di badge ottenuti e la loro distribuzione temporale forniscono un indicatore dell'\textbf{engagement con il sistema di gamification} integrato nella piattaforma.
+
+\subsection{Dati Non Attualmente Tracciati}
+\label{subsec:dati_mancanti_churn}
+
+L'analisi dello schema ha evidenziato l'assenza di due categorie di dati potenzialmente utili:
+
+\begin{itemize}
+    \item \textbf{Sessioni di accesso:} il backend gestisce l'autenticazione tramite JWT e integrazione SPID, ma non persiste in una tabella dedicata i timestamp di login/logout degli utenti. Ne consegue l'impossibilità di calcolare direttamente la frequenza di apertura dell'applicazione e la durata media delle sessioni.
+    \item \textbf{Durata delle sessioni:} non essendo tracciato il momento di inizio e fine di ciascuna sessione, non è possibile distinguere accessi brevi (apertura accidentale o consultazione rapida) da sessioni di utilizzo prolungato e significativo.
+\end{itemize}
+
+Questa lacuna, tuttavia, \textbf{non risulta bloccante} per il funzionamento dell'Algoritmo Genetico. Il pattern di utilizzo dell'utente è ricostruibile indirettamente con buona approssimazione analizzando i timestamp (\texttt{data\_inserimento}) presenti nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario} e \texttt{domanda\_forum}: ogni azione registrata implica necessariamente un accesso alla piattaforma in quel momento. Pertanto, la distribuzione temporale delle azioni funge da \textit{proxy} affidabile della frequenza e del pattern orario di utilizzo.
