@@ -99,6 +99,79 @@ L'idea consiste nell'utilizzare come "cervello di base" un modello Transformer M
 
 % ─────────────────────────────────────────────────────────────────────────────
 \clearpage
-\section{Modello Churn Prediction (Log Dati Aziendali)}
+\section{Modello Churn Prevention}
 \label{sec:prep_churn}
-\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team. Riguarderà manipolazione scalare e codifica numerica in vettori categoriali dei formati estrapolati in formato tabellare CSV/JSON strutturato SINTONIA.}
+
+\subsection{Nota Metodologica}
+
+Come illustrato nel Capitolo~\ref{ch:data_understanding} (Sezione~\ref{subsec:natura_churn}), il Churn Prevention opera secondo un paradigma radicalmente diverso dai modelli di Red Flag Detection e Depression Prediction. Per l'Algoritmo Genetico, la fase di \textit{Data Preparation} non consiste nella pulizia e trasformazione di un dataset testuale o tabellare scaricato da fonti esterne, bensì nella \textbf{trasformazione dei record grezzi presenti nel database di SINTONIA in indicatori comportamentali aggregati}, utilizzabili dalla funzione di fitness per valutare la qualità delle strategie di \textit{nudging} candidate.
+
+Le operazioni descritte di seguito preparano i dati operativi della piattaforma affinché siano computazionalmente adatti all'impiego da parte del GA.
+
+\subsection{Aggregazione Temporale degli Indicatori}
+\label{subsec:aggregazione_temporale}
+
+Il primo passaggio consiste nel trasformare i record puntuali (singoli inserimenti di mood, pagine di diario, compilazioni di questionari) in \textbf{indicatori aggregati su una finestra temporale definita}.
+
+La finestra di osservazione scelta è di \textbf{7 giorni}, coerentemente con la definizione di ``utilizzo attivo'' stabilita nella fase di Business Understanding (Sezione~\ref{subsubsec:kpi_churn}): \textit{``almeno un'interazione significativa nell'arco di ogni finestra di 7 giorni''}. Questa scelta garantisce allineamento tra la granularità temporale della preparazione dei dati e il criterio di valutazione del KPI di retention.
+
+Per ciascun paziente attivo, gli indicatori aggregati calcolati sulla finestra di osservazione sono:
+
+\begin{enumerate}
+    \item \textbf{Frequenza di mood tracking} (\texttt{mood\_frequency\_7d}): numero di inserimenti nella tabella \texttt{stato\_animo} negli ultimi 7 giorni. Range: $[0, n]$ dove $n$ dipende dalla frequenza massima di inserimento consentita.
+    
+    \item \textbf{Regolarità del mood tracking} (\texttt{mood\_consistency\_7d}): rapporto tra i giorni con almeno un inserimento di stato d'animo e i 7 giorni della finestra. Range naturale: $[0{,}0\ ;\ 1{,}0]$.
+    
+    \item \textbf{Valenza emotiva media} (\texttt{avg\_mood\_valence\_7d}): media della valenza associata agli umori registrati. A ciascuno dei 10 stati dell'enum \texttt{umore} viene assegnato un valore numerico su scala bipolare (es. Felice $= +1{,}0$, Neutro $= 0{,}0$, Triste $= -1{,}0$). Il valore risultante sintetizza la tonalità emotiva prevalente del paziente nella finestra.
+    
+    \item \textbf{Frequenza di scrittura del diario} (\texttt{diary\_entries\_7d}): numero di pagine inserite nella tabella \texttt{pagina\_diario} negli ultimi 7 giorni.
+    
+    \item \textbf{Lunghezza media del diario} (\texttt{avg\_diary\_length\_7d}): media della lunghezza (in caratteri) dei testi inseriti nel diario nella finestra.
+    
+    \item \textbf{Tasso di compliance ai questionari} (\texttt{questionnaire\_compliance}): rapporto tra questionari effettivamente compilati e questionari previsti dal calendario di somministrazione, calcolato sull'intero storico del paziente.
+    
+    \item \textbf{Engagement nel forum} (\texttt{forum\_activity\_7d}): numero di domande pubblicate nella tabella \texttt{domanda\_forum} negli ultimi 7 giorni.
+    
+    \item \textbf{Tasso di lettura delle notifiche} (\texttt{notification\_read\_rate}): rapporto tra notifiche con \texttt{letto = true} e totale notifiche inviate al paziente, calcolato sulle ultime $k$ notifiche inviate (con $k$ configurabile).
+    
+    \item \textbf{Giorni in lista d'attesa} (\texttt{days\_in\_waitlist}): differenza in giorni tra la data corrente e il campo \texttt{data\_ingresso} dalla tabella \texttt{paziente}.
+    
+    \item \textbf{Engagement con la gamification} (\texttt{badges\_total}): numero totale di badge acquisiti dal paziente dalla tabella \texttt{acquisizione\_badge}.
+\end{enumerate}
+
+\subsection{Normalizzazione e Scalatura}
+\label{subsec:normalizzazione_churn}
+
+Affinché gli indicatori siano comparabili all'interno della funzione di fitness, è necessario riportarli su una scala omogenea. Si adotta la \textbf{normalizzazione min-max}, che trasforma ciascun indicatore nell'intervallo $[0, 1]$:
+\[
+    x_{\text{norm}} = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
+\]
+
+dove $x_{\min}$ e $x_{\max}$ rappresentano i valori minimo e massimo osservati (o attesi) per ciascun indicatore. Qualora $x_{\min} = x_{\max}$, il valore normalizzato viene fissato a $0{,}5$ per evitare divisioni per zero.
+
+Questa scelta è motivata da due ragioni:
+\begin{itemize}
+    \item \textbf{Confrontabilità:} indicatori con scale naturalmente diverse (es. \texttt{days\_in\_waitlist} $\in [0, 365]$ vs \texttt{mood\_consistency\_7d} $\in [0, 1]$) vengono resi direttamente confrontabili, evitando che valori numericamente più grandi dominino indebitamente il calcolo della fitness.
+    \item \textbf{Compatibilità con la codifica genetica:} la normalizzazione in $[0, 1]$ facilita la futura integrazione con la rappresentazione cromosomiale delle strategie, che verrà dettagliata nella fase di Modeling.
+\end{itemize}
+
+Gli indicatori che presentano già un range naturale in $[0, 1]$ (come \texttt{mood\_consistency\_7d} e \texttt{notification\_read\_rate}) non necessitano di ulteriore trasformazione.
+
+\subsection{Strategia di Simulazione dei Dati}
+\label{subsec:simulazione_churn}
+
+Un vincolo intrinseco del progetto è che, nella fase prototipale, \textbf{non sono disponibili dati reali di utilizzo della piattaforma SINTONIA}: la base utenti attiva non è ancora sufficientemente ampia né temporalmente consolidata per fornire serie storiche di comportamento rappresentative. Risulta pertanto necessario adottare una strategia di \textit{data simulation} per validare il corretto funzionamento dell'Algoritmo Genetico prima del deployment in ambiente reale.
+
+La strategia prevede la generazione di \textbf{profili utente sintetici}, ciascuno caratterizzato da un pattern di utilizzo realistico costruito sulla base della letteratura scientifica relativa all'abbandono nelle applicazioni mobile per la salute mentale \cite{baumel2019mhealth}. I profili individuati sono:
+
+\begin{enumerate}
+    \item \textbf{Utente \textit{Engaged}:} simula un paziente costante e motivato, con frequenza di mood tracking e diario elevata ($> 80\%$ dei giorni), compliance ai questionari prossima al $100\%$, tasso di lettura delle notifiche alto ($> 70\%$). Rappresenta il target ideale di retention.
+    \item \textbf{Utente Moderato:} simula un utilizzo intermittente ma non preoccupante, con mood tracking irregolare ($40$--$60\%$ dei giorni), scrittura del diario sporadica, e tasso di lettura delle notifiche nella media ($40$--$60\%$).
+    \item \textbf{Utente a Rischio:} simula il pattern tipico pre-abbandono: calo progressivo della frequenza di inserimento del mood, assenza prolungata di scrittura nel diario ($> 4$ giorni), notifiche largamente ignorate (tasso lettura $< 30\%$).
+    \item \textbf{Utente \textit{Ghost}:} simula un utente che ha di fatto cessato ogni attività sulla piattaforma pur senza cancellare il proprio account. Nessuna interazione registrata nella finestra di osservazione corrente.
+\end{enumerate}
+
+Per ciascun profilo, lo script Python \texttt{generate\_synthetic\_data.py} (sviluppato e integrato nella repository del progetto) produce record sintetici nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario} e \texttt{notifica}, rispettando le distribuzioni temporali e i range di valori coerenti con il profilo assegnato. L'Algoritmo Genetico verrà quindi testato su questa popolazione simulata (fissata in fase prototipale a 500 pazienti su uno storico di 90 giorni), verificando che le strategie di \textit{nudging} evolute dal GA riescano effettivamente a discriminare i profili a rischio e a produrre interventi differenziati.
+
+Questa fase è strettamente prototipale: una volta che la piattaforma SINTONIA sarà operativa con una base utenti reale, i dati sintetici verranno progressivamente sostituiti con dati di utilizzo autentici, e i parametri del GA verranno ri-calibrati di conseguenza.
+
