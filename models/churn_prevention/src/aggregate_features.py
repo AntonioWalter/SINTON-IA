@@ -91,16 +91,26 @@ def aggregate_features(input_dir: str, output_dir: str):
         # ─────────────────────────────────────────────────────────────
         d_7d = diaries[(diaries["id_paziente"] == pid) & (diaries["data_inserimento"] >= start_7d)]
         diary_freq = len(d_7d)
-        avg_diary_len = d_7d["lunghezza_testo"].mean() if diary_freq > 0 else 0.0
+        
+        # Consideriamo il campo testo per evitare TypeErrors, in dataframe simulato è una stringa
+        if diary_freq > 0 and 'testo' in d_7d.columns:
+            avg_diary_len = d_7d["testo"].str.len().mean()
+        else:
+            avg_diary_len = 0.0
         
         # ─────────────────────────────────────────────────────────────
         # 6. Questionari Compliance (Storico totale)
         # ─────────────────────────────────────────────────────────────
+        total_days = (reference_date - p["data_ingresso"]).days
+        expected_quests = total_days // 14  # Frequenza tipica 14 giorni
+        
         q_storico = quests[quests["id_paziente"] == pid]
-        if len(q_storico) > 0:
-            quest_compl = q_storico["compilato"].sum() / len(q_storico)
+        filled_quests = len(q_storico)
+        
+        if expected_quests > 0:
+            quest_compl = min(1.0, filled_quests / expected_quests)
         else:
-            quest_compl = 0.5 # default per assenza di sondaggi
+            quest_compl = 1.0 if filled_quests > 0 else 0.5
             
         # ─────────────────────────────────────────────────────────────
         # 7. Forum (7d)

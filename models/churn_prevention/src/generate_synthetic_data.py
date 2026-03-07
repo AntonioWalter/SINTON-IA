@@ -73,7 +73,7 @@ MOOD_WEIGHTS = {
 FREQUENZA_QUESTIONARI = 14
 
 # Tipologie di questionario presenti in SINTONIA
-TIPOLOGIE_QUESTIONARIO = ["PHQ-9", "GAD-7", "PC-PTSD-5"]
+TIPOLOGIE_QUESTIONARIO = ["PHQ-9", "GAD-7", "PC-PTSD-5", "WHO-5"]
 
 # Tipologie di notifica
 TIPOLOGIE_NOTIFICA = ["Promemoria", "Motivazionale", "Informativa", "Questionario"]
@@ -278,11 +278,12 @@ def generate_diary_entries(patients_df: pd.DataFrame, rng: np.random.Generator) 
             if rng.random() < adjusted_prob:
                 day_date = today - timedelta(days=(total_days - day_idx))
                 text_length = int(rng.integers(len_min, len_max + 1))
+                testo = "A" * text_length
 
                 records.append({
                     "id_pagina_diario": str(uuid.uuid4()),
                     "titolo": f"Pagina del {day_date.strftime('%d/%m/%Y')}",
-                    "lunghezza_testo": text_length,
+                    "testo": testo,
                     "data_inserimento": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
                     "id_paziente": patient["id_paziente"],
                 })
@@ -322,20 +323,16 @@ def generate_questionnaires(patients_df: pd.DataFrame, rng: np.random.Generator)
                 score = float(rng.integers(score_min, score_max + 1))
                 # Piccola probabilità di invalidazione
                 invalidato = bool(rng.random() < 0.05) if profile in ("A Rischio", "Ghost") else False
-            else:
-                score = None
-                invalidato = False
 
-            records.append({
-                "id_questionario": str(uuid.uuid4()),
-                "score": score,
-                "data_compilazione": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S") if compiled else None,
-                "compilato": compiled,
-                "revisionato": bool(rng.random() < 0.3),
-                "invalidato": invalidato,
-                "nome_tipologia": tipologia,
-                "id_paziente": patient["id_paziente"],
-            })
+                records.append({
+                    "id_questionario": str(uuid.uuid4()),
+                    "score": score,
+                    "data_compilazione": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                    "revisionato": bool(rng.random() < 0.3),
+                    "invalidato": invalidato,
+                    "nome_tipologia": tipologia,
+                    "id_paziente": patient["id_paziente"],
+                })
 
     return pd.DataFrame(records)
 
@@ -405,6 +402,7 @@ def generate_forum_entries(patients_df: pd.DataFrame, rng: np.random.Generator) 
                     "id_domanda": str(uuid.uuid4()),
                     "titolo": f"Domanda dal paziente {profile}",
                     "testo": "Testo della domanda...",
+                    "categoria": "Supporto Generale",
                     "data_inserimento": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
                     "id_paziente": patient["id_paziente"],
                 })
@@ -413,9 +411,12 @@ def generate_forum_entries(patients_df: pd.DataFrame, rng: np.random.Generator) 
 
 
 def generate_badges(patients_df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
-    """Genera acquisizione di badge per ogni paziente."""
-    records = []
+    # Generazione dinamica di badge fittizi (quanti ne servono a seconda del max)
+    max_possible_badges = max(params.get("badges_total_range", (0, 30))[1] for params in PROFILE_PARAMS.values())
+    BADGE_NAMES = [f"Badge_Livello_{i}" for i in range(1, max_possible_badges + 1)]
+    
     today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    records = []
 
     for _, patient in patients_df.iterrows():
         profile = patient["profilo"]
@@ -425,14 +426,17 @@ def generate_badges(patients_df: pd.DataFrame, rng: np.random.Generator) -> pd.D
         
         n_badges = int(rng.integers(b_min, b_max + 1))
         
-        for _ in range(n_badges):
+        # Un paziente non puo' acquisire lo stesso badge due volte
+        n_badges = min(n_badges, len(BADGE_NAMES))
+        acquired_badges = rng.choice(BADGE_NAMES, size=n_badges, replace=False)
+        
+        for badge_name in acquired_badges:
             day_offset = int(rng.integers(0, total_days))
             day_date = today - timedelta(days=(total_days - day_offset))
             
             records.append({
-                "id_acquisizione": str(uuid.uuid4()),
                 "data_acquisizione": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
-                "id_badge": str(uuid.uuid4()), # ID fittizio del badge
+                "nome_badge": badge_name,
                 "id_paziente": patient["id_paziente"],
             })
 
@@ -489,9 +493,8 @@ def main(n_patients: int = 500, days_range: int = 90):
     quest_df = generate_questionnaires(patients_df, rng)
     quest_path = os.path.join(output_dir, "questionario.csv")
     quest_df.to_csv(quest_path, index=False)
-    compiled = quest_df["compilato"].sum()
     total = len(quest_df)
-    print(f"   [OK] {total:,} somministrazioni ({compiled:,} compilate, {total - compiled:,} mancate)")
+    print(f"   [OK] {total:,} somministrazioni compilate")
 
     # 5. Genera notifiche
     print("\n[*] Generazione notifiche...")
