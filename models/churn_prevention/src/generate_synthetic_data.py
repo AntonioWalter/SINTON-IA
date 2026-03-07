@@ -13,6 +13,8 @@ Tabelle generate (CSV):
     - pagina_diario.csv   : pagine del diario personale
     - questionario.csv    : compilazioni di questionari clinici
     - notifica.csv        : notifiche inviate e relativo stato di lettura
+    - domanda_forum.csv   : domande postate nel forum comunitario
+    - acquisizione_badge.csv: badge della gamification ottenuti
 
 Profili utente simulati:
     - Engaged   (30%) : utilizzo costante e motivato
@@ -94,6 +96,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (2, 4),         # notifiche ricevute a settimana
         "forum_weekly_prob":     (0.15, 0.35),    # prob. di postare nel forum a settimana
         "ghost_after_day":       None,            # mai diventa ghost
+        "badges_total_range":    (10, 30),        # range totale badge acquisiti
     },
     "Moderato": {
         "mood_daily_prob":       (0.40, 0.65),
@@ -105,6 +108,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (2, 5),
         "forum_weekly_prob":     (0.05, 0.15),
         "ghost_after_day":       None,
+        "badges_total_range":    (5, 15),
     },
     "A Rischio": {
         "mood_daily_prob":       (0.50, 0.70),    # inizia ok, poi cala
@@ -116,6 +120,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (3, 6),
         "forum_weekly_prob":     (0.02, 0.08),
         "ghost_after_day":       (0.50, 0.80),    # diventa inattivo dopo 50-80% dei giorni
+        "badges_total_range":    (2, 8),
     },
     "Ghost": {
         "mood_daily_prob":       (0.30, 0.50),    # attività iniziale breve
@@ -127,6 +132,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (2, 5),
         "forum_weekly_prob":     (0.00, 0.05),
         "ghost_after_day":       (0.10, 0.35),    # sparisce molto presto (10-35% dei giorni)
+        "badges_total_range":    (0, 3),
     },
 }
 
@@ -373,6 +379,66 @@ def generate_notifications(patients_df: pd.DataFrame, rng: np.random.Generator) 
     return pd.DataFrame(records)
 
 
+def generate_forum_entries(patients_df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
+    """Genera i post nel forum per ogni paziente."""
+    records = []
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    for _, patient in patients_df.iterrows():
+        profile = patient["profilo"]
+        params = PROFILE_PARAMS[profile]
+        total_days = patient["days_in_platform"]
+        forum_prob = rng.uniform(*params["forum_weekly_prob"])
+        
+        total_weeks = max(1, total_days // 7)
+
+        for week_idx in range(total_weeks):
+            # L'utente posta nel forum o no in base alla probabilità settimanale
+            if rng.random() < forum_prob:
+                day_offset = week_idx * 7 + int(rng.integers(0, 7))
+                if day_offset >= total_days:
+                    continue
+
+                day_date = today - timedelta(days=(total_days - day_offset))
+
+                records.append({
+                    "id_domanda": str(uuid.uuid4()),
+                    "titolo": f"Domanda dal paziente {profile}",
+                    "testo": "Testo della domanda...",
+                    "data_inserimento": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                    "id_paziente": patient["id_paziente"],
+                })
+
+    return pd.DataFrame(records)
+
+
+def generate_badges(patients_df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
+    """Genera acquisizione di badge per ogni paziente."""
+    records = []
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    for _, patient in patients_df.iterrows():
+        profile = patient["profilo"]
+        params = PROFILE_PARAMS[profile]
+        total_days = patient["days_in_platform"]
+        b_min, b_max = params["badges_total_range"]
+        
+        n_badges = int(rng.integers(b_min, b_max + 1))
+        
+        for _ in range(n_badges):
+            day_offset = int(rng.integers(0, total_days))
+            day_date = today - timedelta(days=(total_days - day_offset))
+            
+            records.append({
+                "id_acquisizione": str(uuid.uuid4()),
+                "data_acquisizione": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                "id_badge": str(uuid.uuid4()), # ID fittizio del badge
+                "id_paziente": patient["id_paziente"],
+            })
+
+    return pd.DataFrame(records)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  Main
 # ─────────────────────────────────────────────────────────────────────────────
@@ -435,6 +501,20 @@ def main(n_patients: int = 500, days_range: int = 90):
     read_count = notif_df["letto"].sum()
     print(f"   [OK] {len(notif_df):,} notifiche ({read_count:,} lette, {len(notif_df) - read_count:,} ignorate)")
 
+    # 6. Genera forum
+    print("\n[*] Generazione post nel forum...")
+    forum_df = generate_forum_entries(patients_df, rng)
+    forum_path = os.path.join(output_dir, "domanda_forum.csv")
+    forum_df.to_csv(forum_path, index=False)
+    print(f"   [OK] {len(forum_df):,} domande nel forum generate")
+
+    # 7. Genera badges
+    print("\n[*] Generazione acquisizione badge...")
+    badges_df = generate_badges(patients_df, rng)
+    badges_path = os.path.join(output_dir, "acquisizione_badge.csv")
+    badges_df.to_csv(badges_path, index=False)
+    print(f"   [OK] {len(badges_df):,} badge assegnati")
+
     # Riepilogo
     print("\n" + "=" * 65)
     print("  [OK] GENERAZIONE COMPLETATA")
@@ -445,6 +525,8 @@ def main(n_patients: int = 500, days_range: int = 90):
     print(f"     - pagina_diario.csv  ({len(diary_df):>6,} record)")
     print(f"     - questionario.csv   ({len(quest_df):>6,} record)")
     print(f"     - notifica.csv       ({len(notif_df):>6,} record)")
+    print(f"     - domanda_forum.csv  ({len(forum_df):>6,} record)")
+    print(f"     - acquisizione_badge.csv ({len(badges_df):>6,} record)")
     print()
 
 
