@@ -17,7 +17,7 @@ api/
 |---|---|---|
 | `POST` | `/predict/suicide-risk` | NLP Rischio Suicidario |
 | `POST` | `/predict/churn` | Churn Prediction |
-| `POST` | `/predict/depression` | Depression Detection |
+| `POST` | `/predict/depression` | Depression Prediction |
 
 ## Avvio locale
 

@@ -128,13 +128,6 @@ Per ciascun paziente, i 14 giorni di check-in emotivi vengono sintetizzati in un
 
 Le 8 feature estratte sono state analizzate tramite matrice di correlazione di Pearson (Figura~\ref{fig:feature_corr}) per verificare due proprietà fondamentali: (i) che ciascuna feature presenti una correlazione significativa con il target PHQ-9, confermandone la rilevanza predittiva; (ii) che nessuna feature raggiunga una correlazione così elevata ($> 0.95$) da configurare un rischio di \textit{data leakage}.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.80\textwidth]{dp_feature_correlation.png}
-    \caption{Matrice di correlazione di Pearson tra le 8 feature estratte e il punteggio PHQ-9 target.}
-    \label{fig:feature_corr}
-\end{figure}
-
 \subsection{Standardizzazione e Definizione del Target}
 \label{subsec:scaling_depression}
 
@@ -147,6 +140,13 @@ che impone a ciascuna colonna una media $\mu = 0$ e una deviazione standard $\si
 La \textbf{variabile target} è il punteggio PHQ-9 continuo (0--27), formulato come problema di \textbf{regressione}. A differenza di un approccio di classificazione binaria (``depresso'' vs ``non depresso''), la regressione consente una granularità clinica superiore: il modello può rilevare peggioramenti graduali (ad esempio, da score 8 a score 15) prima che il paziente attraversi una soglia critica, permettendo interventi preventivi tempestivi.
 
 Il dataset finale, contenente le 8 feature standardizzate e il target PHQ-9 in un unico file (\texttt{depression\_\allowbreak{}model\_\allowbreak{}dataset.csv}), è pronto per l'addestramento dei modelli di \textit{Machine Learning} (Capitolo 5).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.80\textwidth]{dp_feature_correlation.png}
+    \caption{Matrice di correlazione di Pearson tra le 8 feature estratte e il punteggio PHQ-9 target.}
+    \label{fig:feature_corr}
+\end{figure}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \clearpage
