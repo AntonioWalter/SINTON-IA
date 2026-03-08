@@ -20,8 +20,7 @@ Metriche estratte (normalizzate min-max 0-1):
 
 import os
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
+from datetime import timedelta
 from sklearn.preprocessing import MinMaxScaler
 
 VALENZA_UMORE = {
@@ -131,7 +130,8 @@ def aggregate_features(input_dir: str, output_dir: str):
         # 9. & 10. Waitlist e Badges
         # ─────────────────────────────────────────────────────────────
         days_wait = (reference_date - p["data_ingresso"]).days
-        if days_wait < 0: days_wait = 0
+        if days_wait < 0:
+            days_wait = 0
         
         b_storico = badges[badges["id_paziente"] == pid]
         badges_tot = len(b_storico)
