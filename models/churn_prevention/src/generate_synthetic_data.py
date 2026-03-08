@@ -13,6 +13,8 @@ Tabelle generate (CSV):
     - pagina_diario.csv   : pagine del diario personale
     - questionario.csv    : compilazioni di questionari clinici
     - notifica.csv        : notifiche inviate e relativo stato di lettura
+    - domanda_forum.csv   : domande postate nel forum comunitario
+    - acquisizione_badge.csv: badge della gamification ottenuti
 
 Profili utente simulati:
     - Engaged   (30%) : utilizzo costante e motivato
@@ -71,7 +73,7 @@ MOOD_WEIGHTS = {
 FREQUENZA_QUESTIONARI = 14
 
 # Tipologie di questionario presenti in SINTONIA
-TIPOLOGIE_QUESTIONARIO = ["PHQ-9", "GAD-7", "PC-PTSD-5"]
+TIPOLOGIE_QUESTIONARIO = ["PHQ-9", "GAD-7", "PC-PTSD-5", "WHO-5"]
 
 # Tipologie di notifica
 TIPOLOGIE_NOTIFICA = ["Promemoria", "Motivazionale", "Informativa", "Questionario"]
@@ -94,6 +96,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (2, 4),         # notifiche ricevute a settimana
         "forum_weekly_prob":     (0.15, 0.35),    # prob. di postare nel forum a settimana
         "ghost_after_day":       None,            # mai diventa ghost
+        "badges_total_range":    (10, 30),        # range totale badge acquisiti
     },
     "Moderato": {
         "mood_daily_prob":       (0.40, 0.65),
@@ -105,6 +108,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (2, 5),
         "forum_weekly_prob":     (0.05, 0.15),
         "ghost_after_day":       None,
+        "badges_total_range":    (5, 15),
     },
     "A Rischio": {
         "mood_daily_prob":       (0.50, 0.70),    # inizia ok, poi cala
@@ -116,6 +120,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (3, 6),
         "forum_weekly_prob":     (0.02, 0.08),
         "ghost_after_day":       (0.50, 0.80),    # diventa inattivo dopo 50-80% dei giorni
+        "badges_total_range":    (2, 8),
     },
     "Ghost": {
         "mood_daily_prob":       (0.30, 0.50),    # attività iniziale breve
@@ -127,6 +132,7 @@ PROFILE_PARAMS = {
         "notifications_per_week": (2, 5),
         "forum_weekly_prob":     (0.00, 0.05),
         "ghost_after_day":       (0.10, 0.35),    # sparisce molto presto (10-35% dei giorni)
+        "badges_total_range":    (0, 3),
     },
 }
 
@@ -272,11 +278,12 @@ def generate_diary_entries(patients_df: pd.DataFrame, rng: np.random.Generator) 
             if rng.random() < adjusted_prob:
                 day_date = today - timedelta(days=(total_days - day_idx))
                 text_length = int(rng.integers(len_min, len_max + 1))
+                testo = "A" * text_length
 
                 records.append({
                     "id_pagina_diario": str(uuid.uuid4()),
                     "titolo": f"Pagina del {day_date.strftime('%d/%m/%Y')}",
-                    "lunghezza_testo": text_length,
+                    "testo": testo,
                     "data_inserimento": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
                     "id_paziente": patient["id_paziente"],
                 })
@@ -316,20 +323,16 @@ def generate_questionnaires(patients_df: pd.DataFrame, rng: np.random.Generator)
                 score = float(rng.integers(score_min, score_max + 1))
                 # Piccola probabilità di invalidazione
                 invalidato = bool(rng.random() < 0.05) if profile in ("A Rischio", "Ghost") else False
-            else:
-                score = None
-                invalidato = False
 
-            records.append({
-                "id_questionario": str(uuid.uuid4()),
-                "score": score,
-                "data_compilazione": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S") if compiled else None,
-                "compilato": compiled,
-                "revisionato": bool(rng.random() < 0.3),
-                "invalidato": invalidato,
-                "nome_tipologia": tipologia,
-                "id_paziente": patient["id_paziente"],
-            })
+                records.append({
+                    "id_questionario": str(uuid.uuid4()),
+                    "score": score,
+                    "data_compilazione": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                    "revisionato": bool(rng.random() < 0.3),
+                    "invalidato": invalidato,
+                    "nome_tipologia": tipologia,
+                    "id_paziente": patient["id_paziente"],
+                })
 
     return pd.DataFrame(records)
 
@@ -369,6 +372,73 @@ def generate_notifications(patients_df: pd.DataFrame, rng: np.random.Generator) 
                     "letto": bool(rng.random() < read_prob),
                     "id_paziente": patient["id_paziente"],
                 })
+
+    return pd.DataFrame(records)
+
+
+def generate_forum_entries(patients_df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
+    """Genera i post nel forum per ogni paziente."""
+    records = []
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+
+    for _, patient in patients_df.iterrows():
+        profile = patient["profilo"]
+        params = PROFILE_PARAMS[profile]
+        total_days = patient["days_in_platform"]
+        forum_prob = rng.uniform(*params["forum_weekly_prob"])
+        
+        total_weeks = max(1, total_days // 7)
+
+        for week_idx in range(total_weeks):
+            # L'utente posta nel forum o no in base alla probabilità settimanale
+            if rng.random() < forum_prob:
+                day_offset = week_idx * 7 + int(rng.integers(0, 7))
+                if day_offset >= total_days:
+                    continue
+
+                day_date = today - timedelta(days=(total_days - day_offset))
+
+                records.append({
+                    "id_domanda": str(uuid.uuid4()),
+                    "titolo": f"Domanda dal paziente {profile}",
+                    "testo": "Testo della domanda...",
+                    "categoria": "Supporto Generale",
+                    "data_inserimento": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                    "id_paziente": patient["id_paziente"],
+                })
+
+    return pd.DataFrame(records)
+
+
+def generate_badges(patients_df: pd.DataFrame, rng: np.random.Generator) -> pd.DataFrame:
+    # Generazione dinamica di badge fittizi (quanti ne servono a seconda del max)
+    max_possible_badges = max(params.get("badges_total_range", (0, 30))[1] for params in PROFILE_PARAMS.values())
+    BADGE_NAMES = [f"Badge_Livello_{i}" for i in range(1, max_possible_badges + 1)]
+    
+    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    records = []
+
+    for _, patient in patients_df.iterrows():
+        profile = patient["profilo"]
+        params = PROFILE_PARAMS[profile]
+        total_days = patient["days_in_platform"]
+        b_min, b_max = params["badges_total_range"]
+        
+        n_badges = int(rng.integers(b_min, b_max + 1))
+        
+        # Un paziente non puo' acquisire lo stesso badge due volte
+        n_badges = min(n_badges, len(BADGE_NAMES))
+        acquired_badges = rng.choice(BADGE_NAMES, size=n_badges, replace=False)
+        
+        for badge_name in acquired_badges:
+            day_offset = int(rng.integers(0, total_days))
+            day_date = today - timedelta(days=(total_days - day_offset))
+            
+            records.append({
+                "data_acquisizione": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                "nome_badge": badge_name,
+                "id_paziente": patient["id_paziente"],
+            })
 
     return pd.DataFrame(records)
 
@@ -423,9 +493,8 @@ def main(n_patients: int = 500, days_range: int = 90):
     quest_df = generate_questionnaires(patients_df, rng)
     quest_path = os.path.join(output_dir, "questionario.csv")
     quest_df.to_csv(quest_path, index=False)
-    compiled = quest_df["compilato"].sum()
     total = len(quest_df)
-    print(f"   [OK] {total:,} somministrazioni ({compiled:,} compilate, {total - compiled:,} mancate)")
+    print(f"   [OK] {total:,} somministrazioni compilate")
 
     # 5. Genera notifiche
     print("\n[*] Generazione notifiche...")
@@ -434,6 +503,20 @@ def main(n_patients: int = 500, days_range: int = 90):
     notif_df.to_csv(notif_path, index=False)
     read_count = notif_df["letto"].sum()
     print(f"   [OK] {len(notif_df):,} notifiche ({read_count:,} lette, {len(notif_df) - read_count:,} ignorate)")
+
+    # 6. Genera forum
+    print("\n[*] Generazione post nel forum...")
+    forum_df = generate_forum_entries(patients_df, rng)
+    forum_path = os.path.join(output_dir, "domanda_forum.csv")
+    forum_df.to_csv(forum_path, index=False)
+    print(f"   [OK] {len(forum_df):,} domande nel forum generate")
+
+    # 7. Genera badges
+    print("\n[*] Generazione acquisizione badge...")
+    badges_df = generate_badges(patients_df, rng)
+    badges_path = os.path.join(output_dir, "acquisizione_badge.csv")
+    badges_df.to_csv(badges_path, index=False)
+    print(f"   [OK] {len(badges_df):,} badge assegnati")
 
     # Riepilogo
     print("\n" + "=" * 65)
@@ -445,6 +528,8 @@ def main(n_patients: int = 500, days_range: int = 90):
     print(f"     - pagina_diario.csv  ({len(diary_df):>6,} record)")
     print(f"     - questionario.csv   ({len(quest_df):>6,} record)")
     print(f"     - notifica.csv       ({len(notif_df):>6,} record)")
+    print(f"     - domanda_forum.csv  ({len(forum_df):>6,} record)")
+    print(f"     - acquisizione_badge.csv ({len(badges_df):>6,} record)")
     print()
 
 

@@ -183,7 +183,7 @@ Per ciascun paziente attivo, gli indicatori aggregati calcolati sulla finestra d
     
     \item \textbf{Engagement nel forum} (\texttt{forum\_activity\_7d}): numero di domande pubblicate nella tabella \texttt{domanda\_forum} negli ultimi 7 giorni.
     
-    \item \textbf{Tasso di lettura delle notifiche} (\texttt{notification\_read\_rate}): rapporto tra notifiche con \texttt{letto = true} e totale notifiche inviate al paziente, calcolato sulle ultime $k$ notifiche inviate (con $k$ configurabile).
+    \item \textbf{Tasso di lettura delle notifiche} (\texttt{notification\_read\_rate}): rapporto tra notifiche con \texttt{letto = true} e totale notifiche inviate al paziente, calcolato sulle ultime $k$ notifiche inviate (con $k$ configurabile, es. 15).
     
     \item \textbf{Giorni in lista d'attesa} (\texttt{days\_in\_waitlist}): differenza in giorni tra la data corrente e il campo \texttt{data\_ingresso} dalla tabella \texttt{paziente}.
     
@@ -193,12 +193,14 @@ Per ciascun paziente attivo, gli indicatori aggregati calcolati sulla finestra d
 \subsection{Normalizzazione e Scalatura}
 \label{subsec:normalizzazione_churn}
 
+Tutte le operazioni di estrazione, aggregazione su finestra temporale e successiva scalatura sono automatizzate dallo script \texttt{aggregate\_features.py}. 
+
 Affinché gli indicatori siano comparabili all'interno della funzione di fitness, è necessario riportarli su una scala omogenea. Si adotta la \textbf{normalizzazione min-max}, che trasforma ciascun indicatore nell'intervallo $[0, 1]$:
 \[
     x_{\text{norm}} = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
 \]
 
-dove $x_{\min}$ e $x_{\max}$ rappresentano i valori minimo e massimo osservati (o attesi) per ciascun indicatore. Qualora $x_{\min} = x_{\max}$, il valore normalizzato viene fissato a $0{,}5$ per evitare divisioni per zero.
+dove $x_{\min}$ e $x_{\max}$ rappresentano i valori minimo e massimo osservati (o attesi) per ciascun indicatore sull'intero dataset. Qualora $x_{min} = x_{max}$ (varianza nulla sull'intera popolazione), il valore normalizzato mappato di default è $0.0$, coerentemente con il comportamento standard dell'operatore, riflettendo l'assenza di potere discriminante per quella feature.
 
 Questa scelta è motivata da due ragioni:
 \begin{itemize}
@@ -222,7 +224,7 @@ La strategia prevede la generazione di \textbf{profili utente sintetici}, ciascu
     \item \textbf{Utente \textit{Ghost}:} simula un utente che ha di fatto cessato ogni attività sulla piattaforma pur senza cancellare il proprio account. Nessuna interazione registrata nella finestra di osservazione corrente.
 \end{enumerate}
 
-Per ciascun profilo, lo script Python \texttt{generate\_synthetic\_data.py} (sviluppato e integrato nella repository del progetto) produce record sintetici nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario} e \texttt{notifica}, rispettando le distribuzioni temporali e i range di valori coerenti con il profilo assegnato. L'Algoritmo Genetico verrà quindi testato su questa popolazione simulata (fissata in fase prototipale a 500 pazienti su uno storico di 90 giorni), verificando che le strategie di \textit{nudging} evolute dal GA riescano effettivamente a discriminare i profili a rischio e a produrre interventi differenziati.
+Per ciascun profilo, lo script Python \texttt{generate\_synthetic\_data.py} (sviluppato e integrato nella repository del progetto) produce record sintetici nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario}, \texttt{notifica}, \texttt{domanda\_forum} e \texttt{acquisizione\_badge}, rispettando le distribuzioni temporali e i range di valori coerenti con il profilo assegnato. L'Algoritmo Genetico verrà quindi testato su questa popolazione simulata (fissata in fase prototipale a 500 pazienti su uno storico di 90 giorni), verificando che le strategie di \textit{nudging} evolute dal GA riescano effettivamente a discriminare i profili a rischio e a produrre interventi differenziati.
 
 Questa fase è strettamente prototipale: una volta che la piattaforma SINTONIA sarà operativa con una base utenti reale, i dati sintetici verranno progressivamente sostituiti con dati di utilizzo autentici, e i parametri del GA verranno ri-calibrati di conseguenza.
 
