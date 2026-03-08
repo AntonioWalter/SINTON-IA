@@ -74,10 +74,10 @@ def remove_stops_and_lemmatize(text):
 \end{lstlisting}
 
 \subsection{4. Adeguamento al Limite Architetturale (Max 2000 caratteri)}
-Il dataset originale su Kaggle ospitava post lunghissimi, simili a romanzi. Purtroppo, l'applicativo reale SINTON-IA, all'interno del quale il paziente compila il suo diario, possiede un limite di immissione fissato a 2.000 caratteri per evitare l'abuso dello strumento. 
+Il dataset originale su Kaggle ospitava post lunghissimi, simili a romanzi. Purtroppo, l'applicativo reale SINTONIA, all'interno del quale il paziente compila il suo diario, possiede un limite di immissione fissato a 2.000 caratteri per evitare l'abuso dello strumento. 
 Per allineare il comportamento durante l'addestramento dell'Intelligenza Artificiale ai veri dati che vedrà in produzione, abbiamo imposto una rigorosa troncatura a 2000 caratteri a tutti i documenti processati. Sono stati volutamente \textbf{preservati i frammenti molto brevi} (es. frasi da 2-3 parole come "I'm done"), poiché i comportamenti perentori e in apparenza sbrigativi costituiscono un comprovato segnale psicologico di allarme imminente.
 
-\begin{lstlisting}[language=Python, caption={Troncatura in base ai parametri di backend SINTON-IA}]
+\begin{lstlisting}[language=Python, caption={Troncatura in base ai parametri di backend SINTONIA}]
 def truncate_to_sintonia_limit(text):
     if len(str(text)) > 2000:
         return str(text)[:2000]
@@ -85,7 +85,7 @@ def truncate_to_sintonia_limit(text):
 \end{lstlisting}
 
 \subsection{5. Gestione del Language Gap (Zero-Shot Cross-Lingual Transfer)}
-Un enorme divario tra questa fase e la futura operatività è la lingua: il nostro dataset di partenza è in Inglese, ma gli utenti campani della piattaforma SINTON-IA scriveranno i diari in Italiano. 
+Un enorme divario tra questa fase e la futura operatività è la lingua: il nostro dataset di partenza è in Inglese, ma gli utenti campani della piattaforma SINTONIA scriveranno i diari in Italiano. 
 Solitamente in questi casi si tenta di tradurre interamente il dataset iniziale (Machine Translation), pratica che degrada la qualità dei dati, annacqua i modi di dire dello "slang" depressivo (ad es. "feeling blue") e risulta temporalmente onerosa in fase di caricamento ed addestramento. 
 
 La soluzione progettata per il modello SINTON-IA adotta l'approccio \textbf{Zero-Shot Cross-Lingual Transfer}.
@@ -95,7 +95,58 @@ L'idea consiste nell'utilizzare come "cervello di base" un modello Transformer M
 \clearpage
 \section{Modello Depression Prediction}
 \label{sec:prep_depression}
-\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team.}
+
+A seguito della generazione sintetica descritta nel Capitolo~\ref{ch:data_understanding}, il dataset grezzo --- composto da 1.400.000 record (100.000 pazienti $\times$ 14 giorni) --- richiede una fase di trasformazione prima di poter essere utilizzato per l'addestramento di un modello di \textit{Machine Learning}. L'obiettivo di questa fase è condensare la serie temporale di ciascun paziente in un vettore compatto di variabili numeriche (\textit{features}) che catturino i pattern clinici associati alla depressione.
+
+Tutte le operazioni sono documentate e riproducibili nel notebook \texttt{03\_\allowbreak{}Feature\_\allowbreak{}Engineering\_\allowbreak{}and\_\allowbreak{}Prep.ipynb}.
+
+\subsection{Feature Engineering Temporale}
+\label{subsec:feature_eng_depression}
+
+Per ciascun paziente, i 14 giorni di check-in emotivi vengono sintetizzati in un vettore di \textbf{8 feature indipendenti}. Ogni feature è stata progettata per catturare un aspetto specifico delle dinamiche emotive che la letteratura scientifica associa alla depressione:
+
+\begin{enumerate}
+    \item \textbf{\texttt{valence\_mean}}: Media della valenza emotiva sui 14 giorni. Quantifica il tono affettivo complessivo del periodo di osservazione. Un valore mediamente negativo è il primo indicatore di disagio psicologico \cite{kuppens2010inertia}.
+
+    \item \textbf{\texttt{valence\_std}}: Deviazione standard della valenza. Misura la \textit{volatilità emotiva}: un'elevata instabilità è associata a ridotto benessere psicologico, come dimostrato dalla meta-analisi di Houben et al. \cite{houben2015emotion}.
+
+    \item \textbf{\texttt{valence\_ema\_3d}}: Media Mobile Esponenziale (\textit{Exponential Moving Average}) calcolata sugli ultimi 3 punti temporali. Attribuisce peso preponderante alle osservazioni più recenti, catturando il \textit{recency bias} tipico dei questionari clinici a self-report.
+
+    \item \textbf{\texttt{valence\_trend\_5d}}: Pendenza lineare della valenza negli ultimi 5 giorni, calcolata tramite regressione polinomiale di primo grado. Isola la \textit{direzione del cambiamento emotivo}: un trend discendente può segnalare il \textit{critical slowing down} descritto da Wichers et al. \cite{wichers2016critical} come precursore di transizioni depressive.
+
+    \item \textbf{\texttt{max\_neg\_streak}}: Numero massimo di giorni consecutivi in cui la valenza è rimasta negativa ($< 0$). Quantifica la \textit{persistenza} degli stati depressivi, un fenomeno documentato da aan het Rot et al. \cite{aanhetrot2012ema} come caratteristica centrale della depressione nel monitoraggio EMA.
+
+    \item \textbf{\texttt{missing\_ratio}}: Proporzione di giorni in cui il paziente non ha effettuato il check-in. Costituisce un predittore informativo (\textit{informative missingness}): come documentato da Mohr et al. \cite{mohr2017personal}, il disengagement dall'app è di per sé un segnale clinico associato all'anedonia e alla fatica.
+
+    \item \textbf{\texttt{intensity\_mean}}: Media dell'intensità emotiva riportata (scala 1-10). Cattura il fenomeno dell'\textit{appiattimento affettivo}: Rottenberg et al. \cite{rottenberg2005mood} hanno dimostrato che i soggetti depressi sperimentano emozioni meno intense sia in contesti positivi che negativi.
+
+    \item \textbf{\texttt{dominant\_mood\_valence}}: Valenza associata allo stato d'animo più frequente (la moda) nel periodo di osservazione, mappata tramite le coordinate del Modello Circomplesso \cite{russell1980circumplex}. Indica il ``quadrante emotivo dominante'' del paziente.
+\end{enumerate}
+
+\subsection{Analisi delle Correlazioni}
+\label{subsec:correlazioni_depression}
+
+Le 8 feature estratte sono state analizzate tramite matrice di correlazione di Pearson (Figura~\ref{fig:feature_corr}) per verificare due proprietà fondamentali: (i) che ciascuna feature presenti una correlazione significativa con il target PHQ-9, confermandone la rilevanza predittiva; (ii) che nessuna feature raggiunga una correlazione così elevata ($> 0.95$) da configurare un rischio di \textit{data leakage}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.80\textwidth]{dp_feature_correlation.png}
+    \caption{Matrice di correlazione di Pearson tra le 8 feature estratte e il punteggio PHQ-9 target.}
+    \label{fig:feature_corr}
+\end{figure}
+
+\subsection{Standardizzazione e Definizione del Target}
+\label{subsec:scaling_depression}
+
+Le 8 feature presentano ordini di grandezza eterogenei: la deviazione standard della valenza produce valori decimali, mentre il conteggio delle streak negative è un intero che può raggiungere 14. Per garantire che tutti i predittori contribuiscano equamente al processo di apprendimento, le feature vengono standardizzate tramite \texttt{StandardScaler} della libreria \textit{scikit-learn}, applicando la trasformazione $Z$-score:
+\[
+z_i = \frac{x_i - \mu}{\sigma}
+\]
+che impone a ciascuna colonna una media $\mu = 0$ e una deviazione standard $\sigma = 1$. Questa normalizzazione è particolarmente importante per algoritmi sensibili alla scala dei dati, come le reti neurali e le macchine a vettori di supporto.
+
+La \textbf{variabile target} è il punteggio PHQ-9 continuo (0--27), formulato come problema di \textbf{regressione}. A differenza di un approccio di classificazione binaria (``depresso'' vs ``non depresso''), la regressione consente una granularità clinica superiore: il modello può rilevare peggioramenti graduali (ad esempio, da score 8 a score 15) prima che il paziente attraversi una soglia critica, permettendo interventi preventivi tempestivi.
+
+Il dataset finale, contenente le 8 feature standardizzate e il target PHQ-9 in un unico file (\texttt{depression\_\allowbreak{}model\_\allowbreak{}dataset.csv}), è pronto per l'addestramento dei modelli di \textit{Machine Learning} (Capitolo 5).
 
 % ─────────────────────────────────────────────────────────────────────────────
 \clearpage
