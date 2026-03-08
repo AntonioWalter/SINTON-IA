@@ -132,7 +132,7 @@ Per ciascun paziente attivo, gli indicatori aggregati calcolati sulla finestra d
     
     \item \textbf{Engagement nel forum} (\texttt{forum\_activity\_7d}): numero di domande pubblicate nella tabella \texttt{domanda\_forum} negli ultimi 7 giorni.
     
-    \item \textbf{Tasso di lettura delle notifiche} (\texttt{notification\_read\_rate}): rapporto tra notifiche con \texttt{letto = true} e totale notifiche inviate al paziente, calcolato sulle ultime $k$ notifiche inviate (con $k$ configurabile).
+    \item \textbf{Tasso di lettura delle notifiche} (\texttt{notification\_read\_rate}): rapporto tra notifiche con \texttt{letto = true} e totale notifiche inviate al paziente, calcolato sulle ultime $k$ notifiche inviate (con $k$ configurabile, es. 15).
     
     \item \textbf{Giorni in lista d'attesa} (\texttt{days\_in\_waitlist}): differenza in giorni tra la data corrente e il campo \texttt{data\_ingresso} dalla tabella \texttt{paziente}.
     
@@ -149,7 +149,7 @@ Affinché gli indicatori siano comparabili all'interno della funzione di fitness
     x_{\text{norm}} = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
 \]
 
-dove $x_{\min}$ e $x_{\max}$ rappresentano i valori minimo e massimo osservati (o attesi) per ciascun indicatore. Qualora $x_{\min} = x_{\max}$, il valore normalizzato viene fissato a $0{,}5$ per evitare divisioni per zero.
+dove $x_{\min}$ e $x_{\max}$ rappresentano i valori minimo e massimo osservati (o attesi) per ciascun indicatore sull'intero dataset. Qualora $x_{min} = x_{max}$ (varianza nulla sull'intera popolazione), il valore normalizzato mappato di default è $0.0$, coerentemente con il comportamento standard dell'operatore, riflettendo l'assenza di potere discriminante per quella feature.
 
 Questa scelta è motivata da due ragioni:
 \begin{itemize}

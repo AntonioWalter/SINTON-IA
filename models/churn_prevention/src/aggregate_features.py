@@ -119,14 +119,14 @@ def aggregate_features(input_dir: str, output_dir: str):
         forum_freq = len(f_7d)
         
         # ─────────────────────────────────────────────────────────────
-        # 8. Notifiche (Storico o ultime K) - calcoliamo sullo storico per robustezza
+        # 8. Notifiche (Ultime K)
         # ─────────────────────────────────────────────────────────────
-        n_storico = notifs[notifs["id_paziente"] == pid]
-        if len(n_storico) > 0:
-            notif_read = n_storico["letto"].sum() / len(n_storico)
+        K_NOTIFS = 15
+        notif_storico = notifs[notifs["id_paziente"] == pid].sort_values("data_invio", ascending=False).head(K_NOTIFS)
+        if len(notif_storico) > 0:
+            notif_read = notif_storico["letto"].sum() / len(notif_storico)
         else:
-            notif_read = 0.0
-            
+            notif_read = 0.5 # default           
         # ─────────────────────────────────────────────────────────────
         # 9. & 10. Waitlist e Badges
         # ─────────────────────────────────────────────────────────────
@@ -171,7 +171,7 @@ def aggregate_features(input_dir: str, output_dir: str):
         "days_in_waitlist",
         "badges_total"
     ]
-    
+    # Inizializziamo lo scaler standard per riportare tutto in range [0, 1]
     scaler = MinMaxScaler()
     df_features[cols_to_scale] = scaler.fit_transform(df_features[cols_to_scale])
     
