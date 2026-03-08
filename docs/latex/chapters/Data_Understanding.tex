@@ -61,7 +61,7 @@ Al fine di validare l'idoneità del dataset e pianificare le opportune strategie
 \end{figure}
 
 \textbf{Distribuzione delle Lunghezze e Limiti Architetturali (2000 Caratteri):}
-Un aspetto essenziale emerso durante il \textit{Business Understanding} è che la piattaforma SINTON-IA imporrà un limite tassativo di \textbf{2.000 caratteri} per la compilazione dei diari da parte dei pazienti. Pertanto, analizzare la lunghezza dei testi del dataset non in "numero di parole" ma in "numero di caratteri" è cruciale per prevenire un \textit{bias} strutturale. 
+Un aspetto essenziale emerso durante il \textit{Business Understanding} è che la piattaforma SINTONIA imporrà un limite tassativo di \textbf{2.000 caratteri} per la compilazione dei diari da parte dei pazienti. Pertanto, analizzare la lunghezza dei testi del dataset non in "numero di parole" ma in "numero di caratteri" è cruciale per prevenire un \textit{bias} strutturale. 
 
 Lo script di analisi ha rilevato una lunghezza testuale media di circa 690 caratteri per post, con la maggior parte della distribuzione (mediana) concentrata intorno ai 315 caratteri. Tuttavia, focalizzandosi sul limite di tolleranza pattuito, l'esplorazione (Figura~\ref{fig:rf_char_len_dist}) ha evidenziato che \textbf{oltre 17.000 record (il 7,3\% del totale) superano la soglia dei 2.000 caratteri}, con picchi estremi superiori ai 40.000 caratteri.
 Addestrare un modello su documenti lunghissimi per poi impiegarlo in inferenza su frammenti corti (limitati dal frontend) causerebbe un crollo drammatico dell'accuratezza in fase di produzione.
@@ -69,7 +69,7 @@ Addestrare un modello su documenti lunghissimi per poi impiegarlo in inferenza s
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.75\textwidth]{rf_char_len_dist.png}
-    \caption{Distribuzione della lunghezza dei testi in caratteri. La linea rossa tratteggiata indica il limite di 2.000 caratteri previsto per l'app SINTON-IA.}
+    \caption{Distribuzione della lunghezza dei testi in caratteri. La linea rossa tratteggiata indica il limite di 2.000 caratteri previsto per l'app SINTONIA.}
     \label{fig:rf_char_len_dist}
 \end{figure}
 
@@ -85,7 +85,115 @@ Le evidenze raccolte impongono, dunque, una fase di manipolazione preliminare se
 
 
 % ── 3.2 ──────────────────────────────────────────────────────────────────────
-\textit{Nota: La stesura di questa sezione sarà a cura degli altri membri del team.}
+\section{Dati per il Modello di Depression Prediction}
+\label{sec:data_depression}
+
+Il modello di \textit{Depression Prediction} di SINTON-IA ha l'obiettivo di stimare il punteggio di gravità depressiva di ciascun utente --- misurato tramite il questionario clinico standardizzato \textbf{PHQ-9} \cite{kroenke2001phq9} --- a partire dalle serie temporali giornaliere dell'umore registrate dall'applicazione nell'arco di 14 giorni. La scala PHQ-9, validata da Manea et al. \cite{manea2012phq9}, produce un punteggio complessivo compreso tra 0 e 27 che consente di classificare la severità depressiva in cinque fasce cliniche: minima (0--4), lieve (5--9), moderata (10--14), moderatamente severa (15--19) e severa (20--27).
+
+\subsection{Il Problema: Disponibilità di Dati Clinici Longitudinali}
+\label{subsec:problema_dati_depression}
+
+La costruzione di un modello predittivo per la depressione richiede dataset longitudinali in cui, per ciascun soggetto, siano disponibili sia le registrazioni giornaliere dell'umore sia una valutazione clinica riassuntiva (il punteggio PHQ-9 finale). Dataset di questo tipo sono estremamente rari nella letteratura aperta per tre ragioni principali: (i) le normative sulla privacy (\textit{GDPR}, \textit{HIPAA}) limitano la condivisione di dati sanitari sensibili; (ii) le campagne di raccolta EMA (\textit{Ecological Momentary Assessment}) sono costose e soggette ad alto tasso di abbandono \cite{aanhetrot2012ema}; (iii) i pochi dataset esistenti presentano campioni ridotti e contesti altamente specifici, inadatti a una generalizzazione diretta.
+
+Per queste ragioni, si è adottata una strategia in due fasi: (a) l'analisi di due dataset di riferimento pubblici per estrarne \textit{pattern statistici} utili, e (b) la progettazione di un \textbf{generatore di dati sintetici avanzato}, guidato primariamente dalla letteratura scientifica peer-reviewed, in grado di produrre un corpus di addestramento sufficientemente ampio e clinicamente plausibile.
+
+\subsection{Analisi dei Dataset di Riferimento}
+\label{subsec:analisi_dataset_depression}
+
+Sono stati individuati due dataset pubblici le cui caratteristiche, pur non essendo direttamente compatibili con il task di SINTON-IA, offrono informazioni statistiche preziose per calibrare il generatore sintetico. I dati grezzi sono stati organizzati nella cartella \texttt{data/raw/} del repository.
+
+\subsubsection{StudentLife Dataset}
+
+Il primo dataset è lo \textbf{StudentLife Dataset} \cite{studentlife_dataset}, prodotto dalla Dartmouth University. Lo studio ha raccolto dati multi-modali --- tra cui questionari EMA sull'umore (felicità, stress, fatica) e il questionario PHQ-9 somministrato prima e dopo il periodo di monitoraggio --- per un campione di circa 48 studenti universitari americani.
+
+I file utilizzati comprendono il CSV con i punteggi PHQ-9 pre/post (\texttt{studentlife\_\allowbreak{}phq9\_\allowbreak{}scores.csv}) e le cartelle JSON contenenti le risposte giornaliere sullo stato d'animo (\texttt{studentlife\_\allowbreak{}mood\_\allowbreak{}detailed/}, \texttt{studentlife\_\allowbreak{}mood\_\allowbreak{}current/}).
+
+\textbf{Limiti:} il campione è numericamente ridotto e rappresenta un contesto estremamente specifico (studenti universitari americani sottoposti a stress accademico), il che ne preclude l'impiego diretto come dataset di addestramento. Tuttavia, le correlazioni osservate tra variazioni dell'umore e punteggi PHQ-9 forniscono informazioni utili sulla \textbf{variabilità naturale dell'umore umano} e sulla \textbf{persistenza degli stati emotivi} (inerzia emotiva).
+
+\subsubsection{14-Day Ambulatory Assessment}
+
+Il secondo dataset è il \textbf{14-Day Ambulatory Assessment} \cite{kaggle_14day_depression}, contenuto nel file \texttt{14day\_\allowbreak{}ema\_\allowbreak{}depression\_\allowbreak{}log.csv}. Esso documenta oltre 300 soggetti monitorati quotidianamente per 14 giorni, a ciascuno dei quali è stato somministrato il questionario PHQ-9 in ogni sessione giornaliera, insieme a un punteggio complessivo di felicità (\textit{happiness score}).
+
+\textbf{Limiti:} la struttura è sostanzialmente inversa rispetto al task di SINTON-IA. In questo dataset, il PHQ-9 viene compilato quotidianamente (non una sola volta al termine del periodo), mentre il punteggio di felicità rappresenta l'esito sintetico. Nel nostro caso, invece, l'utente registra giornalmente il suo umore nell'app e il modello deve stimare il PHQ-9 complessivo dal pattern temporale osservato. Per tale ragione, anche da questo dataset si estraggono esclusivamente le \textbf{matrici di transizione emotiva} (quanto è probabile passare da uno stato d'animo negativo a uno neutro o positivo il giorno successivo) e i \textbf{tassi di mancata risposta} per fascia di gravità.
+
+\subsubsection{Mappatura nello Spazio Valence-Arousal}
+
+Poiché le scale emotive dei due dataset non coincidono con la griglia $10 \times 10$ di SINTONIA (10 stati d'animo $\times$ 10 livelli di intensità), è stata effettuata una mappatura unificante tramite il \textbf{Modello Circomplesso dell'Affetto} introdotto da Russell \cite{russell1980circumplex} e successivamente validato da Posner et al. \cite{posner2005circumplex}. In questo spazio bidimensionale, ogni emozione è descritta da due coordinate ortogonali:
+\begin{itemize}
+    \item \textbf{Valence} (valenza emotiva): da $-1$ (molto negativo) a $+1$ (molto positivo);
+    \item \textbf{Arousal} (attivazione fisiologica): da $-1$ (passivo, letargico) a $+1$ (attivo, energetico).
+\end{itemize}
+
+I 10 stati d'animo dell'app SINTONIA sono stati posizionati come coordinate fisse in questo spazio (Figura~\ref{fig:va_map}), consentendo di proiettare qualsiasi risposta dei dataset originali nella medesima rappresentazione normalizzata.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.70\textwidth]{dp_valence_arousal_map.png}
+    \caption{Proiezione dei 10 stati d'animo SINTONIA nello spazio Valence-Arousal del Modello Circomplesso di Russell \cite{russell1980circumplex}.}
+    \label{fig:va_map}
+\end{figure}
+
+L'intera fase di analisi e mappatura è documentata nel notebook \texttt{01\_\allowbreak{}Data\_\allowbreak{}Analysis\_\allowbreak{}and\_\allowbreak{}Mapping.ipynb}.
+
+\subsection{Generazione Sintetica Avanzata}
+\label{subsec:generazione_sintetica_depression}
+
+Il cuore della preparazione dei dati per il modello di Depression Prediction è un \textbf{motore di generazione sintetica} appositamente progettato, documentato nel notebook \texttt{02\_\allowbreak{}Advanced\_\allowbreak{}Synthetic\_\allowbreak{}Generation.ipynb}. Il generatore produce \textbf{100.000 pazienti virtuali}, ciascuno dotato di una serie temporale di 14 giorni di check-in emotivi sulla scala SINTONIA e di un punteggio PHQ-9 associato.
+
+\subsubsection{Filosofia: Nucleo Clinico e Rumore Empirico}
+
+La logica di generazione segue un principio architetturale rigoroso: i \textbf{parametri fondamentali} sono definiti come costanti immutabili derivate dalla letteratura scientifica peer-reviewed, mentre i \textbf{dataset reali} contribuiscono esclusivamente varianza statistica (deviazioni standard) e matrici di transizione di Markov, con il ruolo limitato di conferire naturalezza e variabilità umana alle serie temporali generate.
+
+Questa scelta è motivata dai limiti dei dataset di riferimento precedentemente analizzati: il campione ristretto e specifico dello StudentLife non è rappresentativo della popolazione generale, e la struttura invertita del 14-Day AA non rispecchia il flusso dati di SINTON-IA.
+
+\subsubsection{Architettura a Tre Livelli}
+
+Il generatore opera su tre livelli funzionali, ciascuno governato da parametri clinici rigorosamente referenziati:
+
+\paragraph{Livello 1: Profilo Paziente e Parametri Emotivi.}
+A ciascun paziente viene assegnata una fascia di severità PHQ-9, secondo la distribuzione epidemiologica documentata dall'Organizzazione Mondiale della Sanità \cite{who2023depression} e dagli studi italiani di De Girolamo et al. \cite{degirolamo2020mental}. Il punteggio PHQ-9 specifico all'interno della fascia è campionato da una distribuzione Beta(2,2) troncata, che evita artefatti ai bordi.
+
+I parametri emotivi di ciascun paziente --- la valenza media attesa e la sua variabilità --- sono definiti dalla letteratura sull'\textbf{inerzia emotiva}: Kuppens et al. \cite{kuppens2010inertia} hanno dimostrato che i soggetti con sintomi depressivi presentano emozioni negative più persistenti e un tono affettivo medio significativamente più basso, mentre Houben et al. \cite{houben2015emotion} hanno confermato tramite meta-analisi la correlazione tra dinamiche emotive negative a breve termine e ridotto benessere psicologico. Le deviazioni standard empiriche estratte dai dataset reali (Notebook 01) vengono integrate con un peso del 30\% per modulare la varianza ``umana'' senza alterare i parametri di base.
+
+\paragraph{Livello 2: Catena di Markov Emotiva.}
+Le transizioni giornaliere tra stati emotivi non sono generate casualmente, ma seguono catene di Markov del primo ordine le cui matrici di transizione $P(X_t \mid X_{t-1})$ sono state estratte empiricamente dai dati reali nel Notebook 01. Queste matrici catturano l'\textbf{inerzia emotiva naturale}: la tendenza degli esseri umani a rimanere nello stesso stato d'animo da un giorno all'altro, un fenomeno particolarmente marcato nei soggetti depressi come documentato da Kuppens et al. \cite{kuppens2010inertia} e dal lavoro sul \textit{critical slowing down} di Wichers et al. \cite{wichers2016critical}.
+
+\paragraph{Livello 3: Meccanismi di Rumore Clinico.}
+Due fenomeni clinici documentati in letteratura vengono simulati per irrobustire il dataset:
+
+\begin{itemize}
+    \item \textbf{Dropout MNAR (Missing Not At Random):} Nella pratica del telemonitoraggio, i pazienti più gravi tendono ad abbandonare le sessioni di check-in con maggiore frequenza \cite{karyotaki2015dropout}. Mohr et al. \cite{mohr2017personal} confermano che l'aderenza al \textit{personal sensing} cala nei quadri di anedonia e letargia. Il generatore applica tassi di dropout crescenti con la severità (dal 5\% per la fascia minima al 40\% per la fascia severa), ulteriormente modulati dalla presenza di streak negative consecutive: più giorni consecutivi di umore negativo aumentano la probabilità di saltare il check-in successivo, come documentato da aan het Rot et al. \cite{aanhetrot2012ema}.
+
+    \item \textbf{Smiling Depression:} Helmich et al. \cite{helmich2020smiling} hanno documentato pattern non lineari in cui pazienti con depressione severa mostrano apparenti miglioramenti temporanei. Per il 7--10\% dei pazienti nelle fasce moderate e severe, il generatore inietta un bias positivo nella valenza riportata: il paziente sembra ``stare bene'' nell'app, ma il suo PHQ-9 reale è elevato. Questo meccanismo previene il \textit{data leakage} e costringe il modello a non affidarsi esclusivamente all'umore medio dichiarato.
+\end{itemize}
+
+Un ulteriore fenomeno modellato è l'\textbf{appiattimento affettivo} (\textit{emotion context insensitivity}): Rottenberg et al. \cite{rottenberg2005mood} hanno dimostrato che i soggetti con depressione maggiore sperimentano emozioni meno intense sia in contesti positivi che negativi. Nel generatore, l'intensità emotiva riportata dai pazienti delle fasce più gravi viene attenuata tramite un coefficiente di smorzamento proporzionale alla severità.
+
+\subsection{Validazione del Dataset Generato}
+\label{subsec:validazione_sintetico}
+
+Il dataset sintetico generato è stato sottoposto a una serie di verifiche per confermarne la plausibilità clinica e l'assenza di artefatti:
+
+\begin{itemize}
+    \item \textbf{Distribuzione della severità:} la distribuzione delle fasce PHQ-9 nel dataset generato riproduce fedelmente i target epidemiologici definiti dalla letteratura.
+    \item \textbf{Distribuzione degli stati d'animo per fascia:} come atteso, i pazienti con severità maggiore mostrano una prevalenza di stati negativi (Triste, Ansioso, Stanco), mentre i pazienti sani esprimono prevalentemente stati positivi (Figura~\ref{fig:mood_dist}).
+    \item \textbf{Missing data MNAR:} il tasso di dati mancanti cresce sistematicamente con la severità, confermando il corretto funzionamento del meccanismo MNAR.
+    \item \textbf{Verifica anti-leakage:} la correlazione tra valenza media e punteggio PHQ-9 è stata verificata per assicurare che sia forte ma non perfetta (Figura~\ref{fig:leakage_check}), a conferma del fatto che i casi di smiling depression e il rumore clinico impediscono al modello di prendere scorciatoie predittive banali.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{dp_mood_distribution.png}
+    \caption{Distribuzione percentuale degli stati d'animo SINTONIA per ciascuna fascia di severità PHQ-9 nel dataset sintetico generato.}
+    \label{fig:mood_dist}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{dp_leakage_check.png}
+    \caption{Scatter plot PHQ-9 vs valenza media per paziente. I punti rossi indicano i casi di \textit{smiling depression}: pazienti con PHQ-9 elevato ma valenza media positiva.}
+    \label{fig:leakage_check}
+\end{figure}
 
 % ── 3.3 ──────────────────────────────────────────────────────────────────────
 \clearpage
