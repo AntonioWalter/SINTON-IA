@@ -12,7 +12,7 @@ def upload_and_save(token=None):
     input_path = os.path.join(script_dir, "..", "data", "processed", "red_flag_cleaned.csv")
     
     if not os.path.exists(input_path):
-        print(f"❌ ERRORE CRITICO: File dataset non trovato in locale.")
+        print("❌ ERRORE CRITICO: File dataset non trovato in locale.")
         print(f"   Assicurati che esista il file: {input_path}")
         return
         
@@ -30,7 +30,7 @@ def upload_and_save(token=None):
         # Passiamo il token in Scrittura oppure assumiamo che il client sia loggato
         hf_dataset.push_to_hub(repo_id, private=True, token=token)
         
-        print(f"✅ Upload completato con successo!")
+        print("✅ Upload completato con successo!")
         print(f"📂 URL del dataset: https://huggingface.co/datasets/{repo_id}")
         
     except Exception as e:
