@@ -40,7 +40,7 @@ _(Inserisci il token di accesso Hugging Face autorizzato quando richiesto)._
 
 ### Scaricare il dataset
 
-Per scaricare comodamente il dataset (che verrà salvato in automatico come CSV in `data/`), spostati nella cartella del modello e lancia lo script apposito:
+Per scaricare comodamente il dataset (che verrà estratto in automatico in `data/raw/`), spostati nella cartella del modello e lancia lo script apposito:
 
 ```bash
 cd models/depression_prediction
