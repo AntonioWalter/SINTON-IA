@@ -195,6 +195,13 @@ Il dataset sintetico generato è stato sottoposto a una serie di verifiche per c
     \label{fig:leakage_check}
 \end{figure}
 
+\subsection{Limiti dell'Approccio e Sviluppi Futuri}
+\label{subsec:limiti_sviluppi_futuri}
+
+Sebbene l'architettura di generazione sintetica impieghi rigorose Catene di Markov Nascoste (HMM) e parametri fondati sulla letteratura clinica, essa presenta limitazioni intrinseche alla natura stessa dei dati simulati. Un modello predittivo addestrato esclusivamente su un corpus sintetico apprenderà, in ultima analisi, le regole matematiche e i costrutti logici definiti dal suo creatore, non riuscendo a catturare l'autentica entropia umana e la stocasticità imprevedibile dei veri pazienti clinici. I pattern di \textit{smiling depression} o di \textit{dropout} MNAR, per quanto modellati realisticamente, restano approssimazioni formalizzate di fenomeni comportamentali ben più complessi e sfaccettati.
+
+In uno scenario di produzione aziendale e di evoluzione futura della piattaforma, l'approccio ideale prevederebbe il progressivo abbandono del motore sintetico a favore di dati reali. Una prima direzione di sviluppo tecnico consisterebbe nell'impiego di architetture generative più avanzate, come le \textbf{TimeGAN} (\textit{Time-series Generative Adversarial Networks}), capaci di apprendere la dinamica temporale con maggiore fedeltà. Tuttavia, il traguardo definitivo coincide con la \textbf{raccolta di veri dati clinici campani}, acquisiti direttamente dai pazienti in cura tramite SINTONIA. Per garantire la totale compliance con la normativa GDPR e superare le resistenze alla condivisione di dati sanitari estremamente sensibili, tale raccolta dovrà essere implementata avvalendosi di protocolli di \textbf{Federated Learning}. Questo paradigma consentirebbe di sfruttare dati autentici tutelando in modo assoluto la privacy dei soggetti protetti.
+
 % ── 3.3 ──────────────────────────────────────────────────────────────────────
 \clearpage
 \section{Dati per il Churn Prevention}
