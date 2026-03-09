@@ -73,15 +73,20 @@ def remove_stops_and_lemmatize(text):
     return ' '.join(cleaned_words)
 \end{lstlisting}
 
-\subsection{4. Adeguamento al Limite Architetturale (Max 2000 caratteri)}
-Il dataset originale su Kaggle ospitava post lunghissimi, simili a romanzi. Purtroppo, l'applicativo reale SINTONIA, all'interno del quale il paziente compila il suo diario, possiede un limite di immissione fissato a 2.000 caratteri per evitare l'abuso dello strumento. 
-Per allineare il comportamento durante l'addestramento dell'Intelligenza Artificiale ai veri dati che vedrà in produzione, abbiamo imposto una rigorosa troncatura a 2000 caratteri a tutti i documenti processati. Sono stati volutamente \textbf{preservati i frammenti molto brevi} (es. frasi da 2-3 parole come "I'm done"), poiché i comportamenti perentori e in apparenza sbrigativi costituiscono un comprovato segnale psicologico di allarme imminente.
+\subsection{4. Adeguamento al Limite Architetturale e Filtering}
+Il dataset originale su Kaggle ospitava post lunghissimi, simili a romanzi. Purtroppo, l'applicativo reale SINTONIA possiede un limite di immissione fissato a 2.000 caratteri per evitare comportamenti di spam da parte del paziente. 
 
-\begin{lstlisting}[language=Python, caption={Troncatura in base ai parametri di backend SINTONIA}]
-def truncate_to_sintonia_limit(text):
-    if len(str(text)) > 2000:
-        return str(text)[:2000]
-    return str(text)
+Per allineare il comportamento durante l'addestramento ai veri dati che vedrà in produzione, abbiamo inizialmente valutato di troncare al \textit{character limit} tutti i documenti massivi. Tuttavia, l'applicazione di un taglio netto si è rivelata pericolosa: in psicologia, l'\textbf{Effetto Recency} suggerisce che il quadro sintomatico peggiore (le dimissioni dalla vita, intenti acuti, "addii") si celi spessissimo nell'epilogo dei lunghi manifesti personali. Una troncatura ci avrebbe restituito la parte narrativa escludendo la fatidica ammissione e inducendo a etichettare falsi-negativi per il modello.
+
+Abbiamo perciò deciso di scartare del tutto dal dataset le istanze eccedenti la soglia (oltre ai messaggi vuoti derivanti dallo step precedente). A valle di questo poderoso filtering dimensionale il bilanciamento naturale delle labels è rimasto comunque pressochè perfetto (51.2\% "non-suicide" contro 48.8\% "suicide"), non necessitando pertanto di tecniche artificiali compensative come la \textit{SMOTE}.
+
+\begin{lstlisting}[language=Python, caption={Filtro in base ai parametri di backend SINTONIA}, float=H]
+# Scartiamo le istanze troppo lunghe per non perdere la chiusa (Recency)
+df['char_count'] = df['step3_text'].apply(lambda x: len(str(x)))
+df_final = df[(df['char_count'] > 0) & (df['char_count'] <= 2000)].copy()
+
+# Verifica matematica del bilanciamento del sub-sample
+print(df_final['class'].value_counts(normalize=True))
 \end{lstlisting}
 
 \subsection{5. Gestione del Language Gap (Zero-Shot Cross-Lingual Transfer)}
@@ -132,9 +137,9 @@ Le 8 feature estratte sono state analizzate tramite matrice di correlazione di P
 \label{subsec:scaling_depression}
 
 Le 8 feature presentano ordini di grandezza eterogenei: la deviazione standard della valenza produce valori decimali, mentre il conteggio delle streak negative è un intero che può raggiungere 14. Per garantire che tutti i predittori contribuiscano equamente al processo di apprendimento, le feature vengono standardizzate tramite \texttt{StandardScaler} della libreria \textit{scikit-learn}, applicando la trasformazione $Z$-score:
-\[
+\begin{equation*}
 z_i = \frac{x_i - \mu}{\sigma}
-\]
+\end{equation*}
 che impone a ciascuna colonna una media $\mu = 0$ e una deviazione standard $\sigma = 1$. Questa normalizzazione è particolarmente importante per algoritmi sensibili alla scala dei dati, come le reti neurali e le macchine a vettori di supporto.
 
 La \textbf{variabile target} è il punteggio PHQ-9 continuo (0--27), formulato come problema di \textbf{regressione}. A differenza di un approccio di classificazione binaria (``depresso'' vs ``non depresso''), la regressione consente una granularità clinica superiore: il modello può rilevare peggioramenti graduali (ad esempio, da score 8 a score 15) prima che il paziente attraversi una soglia critica, permettendo interventi preventivi tempestivi.
@@ -196,9 +201,9 @@ Per ciascun paziente attivo, gli indicatori aggregati calcolati sulla finestra d
 Tutte le operazioni di estrazione, aggregazione su finestra temporale e successiva scalatura sono automatizzate dallo script \texttt{aggregate\_features.py}. 
 
 Affinché gli indicatori siano comparabili all'interno della funzione di fitness, è necessario riportarli su una scala omogenea. Si adotta la \textbf{normalizzazione min-max}, che trasforma ciascun indicatore nell'intervallo $[0, 1]$:
-\[
+\begin{equation*}
     x_{\text{norm}} = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
-\]
+\end{equation*}
 
 dove $x_{\min}$ e $x_{\max}$ rappresentano i valori minimo e massimo osservati (o attesi) per ciascun indicatore sull'intero dataset. Qualora $x_{min} = x_{max}$ (varianza nulla sull'intera popolazione), il valore normalizzato mappato di default è $0.0$, coerentemente con il comportamento standard dell'operatore, riflettendo l'assenza di potere discriminante per quella feature.
 
