@@ -56,6 +56,30 @@ Lo script produce 5 file CSV in `data/synthetic/`:
 
 A differenza dei modelli di Red Flag Detection (NLP) e Depression Prediction (regressione), il Churn Prevention **non utilizza dataset esterni etichettati**. Il GA opera esclusivamente su dati interni generati dalla piattaforma SINTONIA, evolendo strategie di intervento senza necessità di apprendimento supervisionato.
 
+## Dataset
+
+I dati per l'addestramento e la validazione del modello **non sono versionati su git** a causa delle loro dimensioni.
+
+Il dataset è ospitato su [Hugging Face](https://huggingface.co/datasets/SINTON-IA/churn_prevention).
+
+### Prerequisiti
+
+Assicurati di avere le librerie necessarie e di aver effettuato il login:
+
+```bash
+pip install datasets huggingface_hub
+huggingface-cli login
+```
+
+### Scaricare il dataset
+
+Per scaricare comodamente il dataset (che verrà salvato in automatico come CSV in `data/processed/`), spostati nella cartella del modello e lancia lo script apposito:
+
+```bash
+cd models/churn_prevention
+python src/download_dataset.py
+```
+
 ## Dipendenze
 
-Vedi `requirements.txt` nella root. Librerie utilizzate: `numpy`, `pandas`.
+Vedi `requirements.txt` nella root. Librerie utilizzate: `numpy`, `pandas`, `datasets`, `huggingface_hub`.
