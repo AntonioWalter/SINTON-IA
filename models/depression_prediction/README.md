@@ -1,4 +1,4 @@
-# Modello 3 – Depression Detection
+# Modello 3 – Depression Prediction
 
 Modello per il rilevamento dello stato depressivo del paziente a partire dal tracciamento giornaliero del suo stato d'animo (mood tracking), prodotto dall'app SINTONIA.
 

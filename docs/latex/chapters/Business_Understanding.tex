@@ -8,7 +8,7 @@
 \section{Obiettivi di Business}
 \label{sec:obiettivi_business}
 
-A fronte dei limiti operativi emersi nella fase di assistenza ai pazienti in attesa e delle nuove funzionalità di tracciamento introdotte nella piattaforma, il valore fondamentale che l'ecosistema SINTON-IA deve generare per l'ASL Campania consiste nel trasformare il periodo di attesa clinica in una risorsa attiva. L'obiettivo primario è capitalizzare l'interazione quotidiana dell'utente con l'applicativo per strutturare un sistema di monitoraggio continuo, capace di supportare concretamente l'azione preventiva e l'efficacia del Triage psicologico.
+A fronte dei limiti operativi emersi nella fase di assistenza ai pazienti in attesa e delle nuove funzionalità di tracciamento introdotte nella piattaforma, il valore fondamentale che l'ecosistema SINTONIA deve generare per l'ASL Campania consiste nel trasformare il periodo di attesa clinica in una risorsa attiva. L'obiettivo primario è capitalizzare l'interazione quotidiana dell'utente con l'applicativo per strutturare un sistema di monitoraggio continuo, capace di supportare concretamente l'azione preventiva e l'efficacia del Triage psicologico.
 
 Declinando questo valore sui singoli moduli previsionali, si definiscono i seguenti obiettivi aziendali:
 
@@ -177,7 +177,7 @@ Alert fatigue & Organizzativo & Definizione di una soglia minima di confidenza p
 \hline
 Resistenza clinica & Organizzativo & Progettazione di interfacce di output semplici e non invasive, orientate al supporto e non alla sostituzione del giudizio clinico. \\
 \hline
-Abbandono dell'app & Organizzativo & Il modello di Churn Prediction costituisce in sé stesso la misura preventiva primaria contro questo rischio. \\
+Abbandono dell'app & Organizzativo & Il modello di Churn Prevention costituisce in sé stesso la misura preventiva primaria contro questo rischio. \\
 \hline
 Sensibilità dei dati & Sicurezza & Separazione architetturale rigida tra i dati identificativi o anagrafici del paziente e le informazioni sensibili processate dai server di addestramento o dai modelli in inferenza. \\
 \hline
@@ -230,7 +230,7 @@ Per ciascun modello, le tipologie di dati necessarie sono riconducibili a:
     \item \textbf{Depression Prediction:} serie temporali di indicatori emotivi (valenza, intensità) associati a punteggi di questionari clinici validati (PHQ-9 o equivalenti).
 \end{itemize}
 
-Per quanto riguarda il modello di \textbf{Churn Prediction}, non è previsto l'utilizzo di dataset esterni: il sistema si baserà esclusivamente sui dati interni generati dall'interazione degli utenti con la piattaforma SINTONIA (log di utilizzo, frequenza di accesso, pattern di compilazione), sfruttando l'approccio genetico-evolutivo per ottimizzare le strategie di intervento senza necessità di dati di addestramento etichettati.
+Per quanto riguarda il modello di \textbf{Churn Prevention}, non è previsto l'utilizzo di dataset esterni: il sistema si baserà esclusivamente sui dati interni generati dall'interazione degli utenti con la piattaforma SINTONIA (log di utilizzo, frequenza di accesso, pattern di compilazione), sfruttando l'approccio genetico-evolutivo per ottimizzare le strategie di intervento senza necessità di dati di addestramento etichettati.
 
 \subsubsection{Risorse Tecnologiche e di Calcolo}
 \label{subsubsec:risorse_calcolo}
@@ -310,7 +310,7 @@ In secondo luogo, le predizioni del modello offrono allo psicologo una \textbf{v
 
 Il terzo livello di benefici riguarda la qualità complessiva del servizio offerto dal sistema sanitario pubblico campano. Uno dei problemi più insidiosi dell'attuale modello di attesa è l'\textbf{abbandono silenzioso}: pazienti che, scoraggiati dall'assenza di interazione e dalla percezione di abbandono istituzionale, smettono di utilizzare la piattaforma o rinunciano del tutto alle cure.
 
-Il modello di \textit{Churn Prediction} affronta direttamente questo problema, identificando i pazienti a rischio di abbandono e attivando strategie di \textit{nudging} personalizzate --- notifiche mirate, promemoria, contenuti di supporto --- che trasformano il periodo di attesa da una fase passiva e frustrante in un percorso di \textbf{presa in carico attiva}.
+Il modello di \textit{Churn Prevention} affronta direttamente questo problema, identificando i pazienti a rischio di abbandono e attivando strategie di \textit{nudging} personalizzate --- notifiche mirate, promemoria, contenuti di supporto --- che trasformano il periodo di attesa da una fase passiva e frustrante in un percorso di \textbf{presa in carico attiva}.
 
 I benefici di questa trasformazione sono molteplici:
 \begin{itemize}

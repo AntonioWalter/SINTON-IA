@@ -10,11 +10,11 @@ SINTON-IA integra tre modelli di machine learning nel software preesistente SINT
 
 ### I tre modelli
 
-| Modello | Obiettivo |
-|---|---|
-| 🔴 **NLP Rischio Suicidario** | Analisi del testo prodotto dal paziente per individuare segnali di rischio suicidario |
-| 🔔 **Churn Prediction** | Previsione di abbandono del percorso terapeutico per l'invio di notifiche mirate |
-| 🌧️ **Depression Detection** | Rilevamento dello stato depressivo a partire dal diario dell'umore giornaliero |
+| Modello                       | Obiettivo                                                                                                   |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 🔴 **NLP Rischio Suicidario** | Analisi del testo prodotto dal paziente per individuare segnali di rischio suicidario                       |
+| 🔔 **Churn Prevention**       | Ottimizzazione delle strategie di intervento (nudging) tramite Algoritmo Genetico per prevenire l'abbandono |
+| 🌧️ **Depression Prediction**   | Rilevamento dello stato depressivo a partire dal diario dell'umore giornaliero                              |
 
 ---
 
@@ -28,7 +28,7 @@ SINTON-IA/
 │   └── latex/             # Documentazione tecnica unificata (LaTeX)
 ├── models/
 │   ├── nlp_suicide_risk/      # Modello NLP rischio suicidario
-│   ├── churn_prediction/      # Modello churn prediction
+│   ├── churn_prevention/      # Modello churn prediction
 │   └── depression_detection/  # Modello rilevamento stato depressivo
 ├── api/                   # Backend FastAPI che espone i modelli
 ├── integration/           # Connettore con il software SINTONIA
