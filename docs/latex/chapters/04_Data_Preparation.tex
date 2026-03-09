@@ -80,7 +80,7 @@ Per allineare il comportamento durante l'addestramento ai veri dati che vedrà i
 
 Abbiamo perciò deciso di scartare del tutto dal dataset le istanze eccedenti la soglia (oltre ai messaggi vuoti derivanti dallo step precedente). A valle di questo poderoso filtering dimensionale il bilanciamento naturale delle labels è rimasto comunque pressochè perfetto (51.2\% "non-suicide" contro 48.8\% "suicide"), non necessitando pertanto di tecniche artificiali compensative come la \textit{SMOTE}.
 
-\begin{lstlisting}[language=Python, caption={Filtro in base ai parametri di backend SINTONIA}, float=H]
+\begin{lstlisting}[language=Python, caption={Filtro in base ai parametri di backend SINTONIA}]
 # Scartiamo le istanze troppo lunghe per non perdere la chiusa (Recency)
 df['char_count'] = df['step3_text'].apply(lambda x: len(str(x)))
 df_final = df[(df['char_count'] > 0) & (df['char_count'] <= 2000)].copy()
