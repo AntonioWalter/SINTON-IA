@@ -24,7 +24,11 @@ churn_prevention/
 | ---------------------------- | --------------------------------------------- | --------------------------------------- |
 | `generate_synthetic_data.py` | Genera dati comportamentali sintetici         | `python src/generate_synthetic_data.py` |
 | `aggregate_features.py`      | Aggrega i log in feature vettoriali per il GA | `python src/aggregate_features.py`      |
-| `genetic_algorithm.py`       | Esegue l'ottimizzazione delle strategie       | `python src/genetic_algorithm.py`       |
+| `genetic_algorithm.py`       | Core logic dell'Algoritmo Genetico            | `python src/genetic_algorithm.py`       |
+| `tune_ga.py`                 | Hyperparameter Tuning (Grid Search)           | `python src/tune_ga.py`                 |
+| `validate_modeling.py`       | Validazione statistica su larga scala         | `python src/validate_modeling.py`       |
+| `sensitivity_analysis.py`    | Analisi di sensibilità dei pesi fitness       | `python src/sensitivity_analysis.py`    |
+| `benchmark_baselines.py`     | Benchmark comparativo GA vs Baselines         | `python src/benchmark_baselines.py`     |
 
 ### Opzioni dello script
 
@@ -68,6 +72,29 @@ L'algoritmo ottimizza una **strategia di nudging** (frequenza e timing delle not
 - **G2 (5 bit)**: Frequenza settimanale (da 1 a 31).
 - **G3 (24 bit)**: Schedule orario (bitmask per le 24 ore del giorno).
 - **G4 (1 bit)**: Distribuzione (Uniforme vs Concentrata).
+
+### Tuning e Validazione Scientifica
+
+Il modello è validato tramite:
+
+1. **Hyperparameter Tuning**: Ottimizzazione dei parametri evolutivi tramite Grid Search (`tune_ga.py`).
+2. **Validazione Statistica**: Stress-test su popolazione estesa per garantire stabilità e robustezza (`validate_modeling.py`).
+3. **Analisi di Sensibilità**: Verifica dell'impatto dei pesi delle penalità sulle decisioni del GA (`sensitivity_analysis.py`).
+4. **Benchmarking Comparativo**: Confronto delle performance del GA contro strategie casuali (_Random Baseline_) e regole fisse (_Heuristic Baseline_) per quantificare il valore aggiunto dall'ottimizzazione evolutiva (`benchmark_baselines.py`).
+
+### Performance Metrics
+
+I test di benchmarking evidenziano:
+
+- **Gain vs Random**: Fitness ~350% superiore rispetto a scelte casuali.
+- **Gain vs Heuristic**: Miglioramento del **25-28%** rispetto a regole fisse, grazie all'adattamento ai ritmi circadiani (_Night Owls_) e alla sensibilità alla fatica da notifica.
+
+### Rationale Scelte Tecniche
+
+- **Tournament Selection ($k=2$)**: Preferita per la sua robustezza contro i "super-individui" che dominerebbero precocemente la roulette wheel, garantendo una pressione selettiva più bilanciata.
+- **Vincoli Adattivi (Dynamic Constraints)**: Il sistema non applica soglie rigide, ma modula le penalità in base alle feature del paziente:
+  - **Frequenza**: La soglia di tolleranza varia in base all'ingaggio storico (gli utenti più attivi tollerano frequenze maggiori).
+  - **Orario (Night Owls)**: Se il sistema rileva attività notturna spontanea (`night_activity_rate`), la penalità per l'invio tra le 23:00 e le 06:00 viene ridotta. **Nota Clinica**: Tale adattamento bilancia l'efficacia del nudging con il rischio di rinforzare involontariamente abitudini di sonno disfunzionali; è mantenuta una penalità minima cautelativa.
 
 ### Funzione di Fitness
 

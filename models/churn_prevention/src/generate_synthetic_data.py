@@ -141,9 +141,15 @@ PROFILE_PARAMS = {
 #  Funzioni di generazione
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _random_time(day: datetime) -> datetime:
-    """Aggiunge un orario casuale (8:00-23:00) a una data."""
-    hour = random.randint(8, 23)
+def _random_time(day: datetime, is_night_owl: bool = False) -> datetime:
+    """Aggiunge un orario casuale alla data. Se night_owl, può essere attivo h24."""
+    if is_night_owl and random.random() < 0.4:
+        # 40% di probabilità di attività notturna (23-07)
+        hour = random.choice([23, 0, 1, 2, 3, 4, 5, 6])
+    else:
+        # Altrimenti orario standard (07-22)
+        hour = random.randint(7, 22)
+    
     minute = random.randint(0, 59)
     second = random.randint(0, 59)
     return day.replace(hour=hour, minute=minute, second=second)
@@ -181,6 +187,9 @@ def generate_patients(n_patients: int, days_range: int, rng: np.random.Generator
         # Ogni paziente ha una data_ingresso randomica entro il range
         days_ago = rng.integers(days_range // 2, days_range)
         data_ingresso = today - timedelta(days=int(days_ago))
+        
+        # 20% dei pazienti sono gufi notturni (night owls)
+        is_night_owl = rng.random() < 0.2
 
         patients.append({
             "id_paziente": str(uuid.uuid4()),
@@ -190,6 +199,7 @@ def generate_patients(n_patients: int, days_range: int, rng: np.random.Generator
             "id_priorita": rng.choice(priorita, p=[0.10, 0.25, 0.35, 0.30]),
             "stato": True,
             "days_in_platform": int(days_ago),
+            "is_night_owl": is_night_owl
         })
 
     return pd.DataFrame(patients)
@@ -234,12 +244,14 @@ def generate_mood_entries(patients_df: pd.DataFrame, rng: np.random.Generator) -
                 day_date = today - timedelta(days=(total_days - day_idx))
                 umore = rng.choice(UMORI, p=weights)
                 intensita = rng.integers(1, 11)  # 1-10
+                
+                is_night_owl = patient.get("is_night_owl", False)
 
                 records.append({
                     "id_stato_animo": str(uuid.uuid4()),
                     "umore": umore,
                     "intensita": int(intensita),
-                    "data_inserimento": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                    "data_inserimento": _random_time(day_date, is_night_owl).strftime("%Y-%m-%d %H:%M:%S"),
                     "id_paziente": patient["id_paziente"],
                 })
 
@@ -363,12 +375,14 @@ def generate_notifications(patients_df: pd.DataFrame, rng: np.random.Generator) 
 
                 day_date = today - timedelta(days=(total_days - day_offset))
                 tipologia = rng.choice(TIPOLOGIE_NOTIFICA)
+                
+                is_night_owl = patient.get("is_night_owl", False)
 
                 records.append({
                     "id_notifica": str(uuid.uuid4()),
                     "titolo": f"Notifica {tipologia}",
                     "tipologia": tipologia,
-                    "data_invio": _random_time(day_date).strftime("%Y-%m-%d %H:%M:%S"),
+                    "data_invio": _random_time(day_date, is_night_owl).strftime("%Y-%m-%d %H:%M:%S"),
                     "letto": bool(rng.random() < read_prob),
                     "id_paziente": patient["id_paziente"],
                 })

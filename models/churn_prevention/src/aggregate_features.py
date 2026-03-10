@@ -136,6 +136,20 @@ def aggregate_features(input_dir: str, output_dir: str):
         b_storico = badges[badges["id_paziente"] == pid]
         badges_tot = len(b_storico)
         
+        # ─────────────────────────────────────────────────────────────
+        # 11. Night Activity Rate (23:00 - 06:59)
+        # ─────────────────────────────────────────────────────────────
+        night_hours = [23, 0, 1, 2, 3, 4, 5, 6]
+        all_patient_activity = pd.concat([
+            m_7d["data_inserimento"],
+            d_7d["data_inserimento"]
+        ])
+        if len(all_patient_activity) > 0:
+            night_acts = all_patient_activity.dt.hour.isin(night_hours).sum()
+            night_rate = night_acts / len(all_patient_activity)
+        else:
+            night_rate = 0.0
+        
         features.append({
             "id_paziente": pid,
             "profilo_assegnato": p["profilo"],
@@ -149,6 +163,7 @@ def aggregate_features(input_dir: str, output_dir: str):
             "notification_read_rate": notif_read,
             "days_in_waitlist": days_wait,
             "badges_total": badges_tot,
+            "night_activity_rate": night_rate
         })
         
     df_features = pd.DataFrame(features)
@@ -169,7 +184,8 @@ def aggregate_features(input_dir: str, output_dir: str):
         "avg_diary_length_7d", 
         "forum_activity_7d",
         "days_in_waitlist",
-        "badges_total"
+        "badges_total",
+        "night_activity_rate"
     ]
     # Inizializziamo lo scaler standard per riportare tutto in range [0, 1]
     scaler = MinMaxScaler()

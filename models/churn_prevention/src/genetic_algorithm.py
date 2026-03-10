@@ -14,13 +14,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class GAParams:
-    """Parametri di configurazione dell'Algoritmo Genetico."""
-    pop_size: int = 100
+    """Parametri di configurazione dell'Algoritmo Genetico ottimizzati via Grid Search."""
+    pop_size: int = 50
     generations: int = 100
-    crossover_rate: float = 0.8
-    mutation_rate: float = 0.05
+    crossover_rate: float = 0.7
+    mutation_rate: float = 0.01
     elitism_rate: float = 0.05
-    tournament_size: int = 3
+    tournament_size: int = 2
     
     # Pesi della fitness (w1 = retention, w2 = penalty_freq, w3 = penalty_time)
     w_retention: float = 1.0
@@ -101,7 +101,7 @@ class FitnessEvaluator:
 
     def evaluate(self, chromosome: Chromosome, patient_features: pd.Series) -> float:
         """
-        Valuta il cromosoma.
+        Valuta il cromosoma adattando i vincoli al comportamento del paziente.
         Fitness = w1*Retention - w2*PenaltyFreq - w3*PenaltyTime
         """
         phenotype = chromosome.decode()
@@ -109,26 +109,32 @@ class FitnessEvaluator:
         # 1. Calcolo Retention (Simulata tramite proxy)
         retention_score = self._simulate_retention(phenotype, patient_features)
         
-        # 2. Penalty Frequenza
-        # Penalità esponenziale se si supera la soglia
+        # 2. Penalty Frequenza (Adattiva)
+        # Se l'utente è molto attivo (mood_freq alto), tollera più notifiche
+        mood_freq = patient_features.get('mood_frequency_7d', 0.5)
+        dynamic_threshold = self.params.max_freq_threshold
+        if mood_freq > 0.8: dynamic_threshold += 4 # Gli engaged tollerano di più
+        if mood_freq < 0.2: dynamic_threshold -= 4 # I ghost/at risk tollerano meno
+        
         freq = phenotype['frequenza_settimanale']
-        if freq > self.params.max_freq_threshold:
-            diff = freq - self.params.max_freq_threshold
-            # Penalità cresce esponenzialmente col superamento della soglia, max cappato a 1.0 per scala
+        if freq > dynamic_threshold:
+            diff = freq - dynamic_threshold
             penalty_freq = min(1.0, (np.exp(0.15 * diff) - 1) / 10) 
         else:
             penalty_freq = 0.0
 
-        # 3. Penalty Tempo (Orari notturni)
-        # Penalizziamo proporzionalmente se sono attive ore tra le 23 e le 06
+        # 3. Penalty Tempo (Adattiva per Night Owls)
+        # Se l'utente ha un alto night_activity_rate, penalizziamo meno l'invio notturno
+        night_rate = patient_features.get('night_activity_rate', 0.0)
         night_hours = [23, 0, 1, 2, 3, 4, 5, 6]
         active_night_hours = sum(1 for h in phenotype['orari_attivi'] if h in night_hours)
         
         if len(phenotype['orari_attivi']) == 0:
-             # Penalità massima se la strategia non ha MAl un orario in cui poter inviare
              penalty_time = 1.0
         else:
-             penalty_time = active_night_hours / len(night_hours)
+             # Se night_rate > 0.3, l'utente è un "Night Owl" e tollera notifiche notturne
+             time_sensitivity = max(0.1, 1.0 - night_rate) 
+             penalty_time = (active_night_hours / len(night_hours)) * time_sensitivity
         
         # Calcolo finale
         fitness = (self.params.w_retention * retention_score) - \
@@ -139,25 +145,25 @@ class FitnessEvaluator:
 
     def _simulate_retention(self, phenotype: Dict, features: pd.Series) -> float:
         """
-        Simula l'effetto della strategia S sul paziente P usando un rudimentale sistema esperto basato
-        sui parametri clinici descritti in letteratura (vedi Data Preparation).
+        Simula l'effetto della strategia S sul paziente P usando un rudimentale sistema esperto.
         L'output è in [0, 1].
         """
         # Le features sono già normalizzate in [0,1]
         mood_freq = features.get('mood_frequency_7d', 0.5)
         avg_valence = features.get('avg_mood_valence_7d', 0.5)
-        diary_length = features.get('avg_diary_length_7d', 0.5)
         read_rate = features.get('notification_read_rate', 0.5)
         
-        # Definiamo tre cluster comportamentali latenti derivati dai profili per semplificare la logica:
-        # Cluster 1: "Attivo ma giù di corda" (Engaged ma a rischio)
-        is_depressed_active = (mood_freq > 0.5) and (avg_valence < 0.4)
+        # 1. Cluster "Ghost" (Interazioni quasi nulle, altissimo rischio abbandono)
+        is_ghost = (mood_freq < 0.1) and (read_rate < 0.2)
         
-        # Cluster 2: "In fuga" (Ghost, interazioni rarissime)
-        is_ghost = (mood_freq < 0.2) and (read_rate < 0.2)
+        # 2. Cluster "A Rischio" (Attività in calo o umore basso, segnali di instabilità)
+        is_at_risk = not is_ghost and ((mood_freq < 0.3) or (avg_valence < 0.45))
         
-        # Cluster 3: "Compliant Standard" (Moderato/Engaged senza forti cali d'umore)
-        is_standard = not is_depressed_active and not is_ghost
+        # 3. Cluster "Depresso Attivo" (Engaged ma con umore molto basso)
+        is_depressed_engaged = (mood_freq >= 0.6) and (avg_valence < 0.4)
+        
+        # 4. Cluster "Standard/Sano" (Moderato/Engaged senza forti criticità)
+        is_standard = not is_ghost and not is_at_risk and not is_depressed_engaged
         
         score = 0.5  # Base
         
@@ -167,25 +173,32 @@ class FitnessEvaluator:
         
         # Regole euristiche per la simulazione
         if is_ghost:
-            # Ai Ghost troppe notifiche danno fastidio, servono messaggi motivazionali concentrati
-            if tipo == 'Motivazionale': score += 0.2
-            if freq > 3: score -= 0.3
-            if freq <= 2: score += 0.2
+            # Utenti quasi persi: messaggi motivazionali rari per non infastidire
+            if tipo == 'Motivazionale': score += 0.3
+            if freq > 3: score -= 0.4
+            if freq <= 2: score += 0.1
             if distr == 'Concentrata': score += 0.1
             
-        elif is_depressed_active:
-            # A chi è giù l'informativo e i questionari possono pesare, meglio motivazionali o diario (promemoria)
-            if tipo in ['Motivazionale', 'Promemoria']: score += 0.2
-            if tipo == 'Questionario': score -= 0.1
-            if 4 <= freq <= 10: score += 0.2 # Tollerano media frequenza per sentirsi supportati
+        elif is_at_risk:
+            # Utenti instabili: serve supporto motivazionale e promemoria
+            if tipo == 'Motivazionale': score += 0.2
+            if tipo == 'Promemoria': score += 0.1
+            if 2 <= freq <= 5: score += 0.2
+            if freq > 7: score -= 0.2
             if distr == 'Uniforme': score += 0.1
             
+        elif is_depressed_engaged:
+            # Utenti attivi ma fragili: supporto costante, no task pesanti
+            if tipo in ['Motivazionale', 'Promemoria']: score += 0.2
+            if tipo == 'Questionario': score -= 0.2
+            if 4 <= freq <= 10: score += 0.2
+            
         elif is_standard:
-            # Gli utenti normali tollerano promemoria e questionari ma non troppa frequenza
+            # Utenti attivi: ricordiamo loro i task e monitoriamo con questionari
             if tipo == 'Promemoria': score += 0.1
-            if tipo == 'Questionario': score += 0.1
+            if tipo == 'Questionario': score += 0.2
             if 3 <= freq <= 7: score += 0.2
-            if freq > 10: score -= 0.2
+            if freq > 12: score -= 0.3
             
         # Adattamento all'orario: non vogliamo strategie senza orari validi
         if len(phenotype['orari_attivi']) == 0:

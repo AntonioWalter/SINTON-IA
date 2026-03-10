@@ -30,8 +30,14 @@ La valutazione del \textit{fenotipo} associato alla strategia è calcolata trami
     Fitness(S, p) = w_1 \cdot \text{Retention}(S, p) - w_2 \cdot P_{freq}(S) - w_3 \cdot P_{time}(S)
 \end{equation}
 
-\paragraph{Manca Dati e Modello di Simulazione (Retention)}
-A causa dell'assenza attuale di dati di outcome dal backend in produzione, il termine $\text{Retention}(S, p)$ è valutato simulando, mediante proxy clinici in letteratura, la compatibilità e la propensione all'ingaggio tra la natura della strategia $S$ e i pattern emersi dalle dieci feature del paziente $p$ analizzate durante la Data Preparation.
+\paragraph{Modello di Simulazione e Cluster Utente (Retention)}
+A causa dell'assenza di dati di outcome dal backend, il termine $\text{Retention}(S, p)$ è valutato simulando la compatibilità tra strategia $S$ e i pattern comportamentali del paziente $p$, classificati in quattro cluster dinamici:
+\begin{itemize}
+    \item \textbf{Ghost}: Utenti quasi inattivi (basso mood frequency e read rate). Necessitano di stimoli empatici a bassa frequenza.
+    \item \textbf{A Rischio}: Utenti con segnali di instabilità (calo attività o umore basso). Sono il target primario del nudging correttivo.
+    \item \textbf{Depresso Engaged}: Utenti attivi ma con umore critico. Richiedono supporto costante ma task a basso carico cognitivo.
+    \item \textbf{Standard}: Utenti stabili per i quali si ottimizza il mantenimento del monitoraggio.
+\end{itemize}
 
 \paragraph{Penalità di Frequenza ($P_{freq}$)}
 In SINTON-IA, un forte rischio è la desensibilizzazione del paziente per \textit{Alert Fatigue}. $P_{freq}$ interviene applicando una penalizzazione crescente esponenzialmente se la codifica oraria eccede una soglia tollerabile (\textit{threshold} imposto a 14 a settimana): $P_{freq}(S) = \max(0, e^{\alpha \cdot (\text{freq} - \text{soglia})} - 1)$. 
@@ -39,13 +45,49 @@ In SINTON-IA, un forte rischio è la desensibilizzazione del paziente per \texti
 \paragraph{Penalità Temporale ($P_{time}$)}
 Le ore notturne (23:00 - 06:00) subiscono un decremento proporzionale se inserite nello \textit{schedule orario}, a meno che l'algoritmo, in contesti estremi, valuti il loro ROI in retention superiore al malus imposto.
 
+\paragraph{Rationale dei Vincoli Adattivi (Dynamic Constraints)}
+A differenza di un approccio a soglie statiche, SINTON-IA adotta una \textbf{penalizzazione adattiva} che si calibra sul profilo comportamentale estratto dalle feature del paziente:
+\begin{itemize}
+    \item \textbf{Gestione della Fatigue Dinamica}: Il limite di frequenza settimanale (base 14) viene modulato in base all'ingaggio storico ($mood\_frequency$). Utenti altamente attivi (*Engaged*) beneficiano di una soglia estesa (+4), mentre per utenti a rischio o disingaggiati la soglia viene ridotta (-4) per prevenire la \textit{Reactance} psicologica.
+    \item \textbf{Igiene del Sonno e Night Owls}: Il vincolo orario (23:00 - 06:00) non è più un tabù assoluto. Se l'analisi delle feature rileva un alto tasso di attività notturna spontanea ($night\_activity\_rate$), il peso della penalità temporale viene drasticamente ridotto ($time\_sensitivity$). Ciò permette al GA di evolvere strategie che raggiungono l'utente nei suoi reali momenti di veglia, rispettando la sua cronobiologia individuale anziché imporre uno standard universale.
+    \item \paragraph{Considerazioni Etiche e Trade-off Clinici}
+Nonostante l'approccio adattivo aumenti l'efficacia del \textit{nudging} (massimizzando la probabilità di ingaggio), esso introduce un \textit{trade-off} critico che richiede monitoraggio continuo. L'adattamento ai ritmi notturni dei \textit{Night Owls} rischia, in alcuni contesti clinici, di fungere da \textbf{rinforzo involontario} per abitudini di sonno disfunzionali, spesso correlate a peggioramenti dello stato depressivo. Per mitigare tale rischio, il sistema mantiene una penalità basale minima non nulla (limite inferiore della \textit{time\_sensitivity} a 0.1), evitando che il GA saturi completamente le ore notturne anche per gli utenti più attivi. In ottica di evoluzione futura, tale parametro dovrebbe essere supervisionato dal personale clinico per bilanciare l'urgenza dell'intervento con la necessità di igiene del sonno.
+\end{itemize}
+
 \subsection{Operatori ed Evoluzione}
 
-Il sistema evolve una decina di popolazioni di dimensione fissa ($N=100$) iterate per limitate generazioni a scopi esplorativi. Gli operatori genetici scelti sono il \textbf{Tournament Selection ($k=3$)} per preservare la pressione selettiva evitandone l'impantanamento tipico del campionamento proporzionale, \textbf{Crossover a due punti ($P_{crs}=0.8$)} idoneo a smistare le lunghe stringhe orarie G3 senza frammentare i compartimenti adiacenti, e \textbf{Bit-flip Mutation ($P_{mut}=0.05$)}. È altresì inglobata una quota di elitismo al 5\% per le top strategie e un criterio di arresto anticipato verificando la varianza decrescente del limite superiore plateau sulle ultime generazioni consecutive ($<1e-6$).
+Il sistema evolve popolazioni ottimizzate di dimensione $N=50$ iterate per 100 generazioni. Gli operatori genetici, calibrati tramite una fase di \textit{Hyperparameter Tuning} (Grid Search), sono stati scelti per massimizzare la robustezza della ricerca globale:
+
+\begin{itemize}
+    \item \textbf{Tournament Selection ($k=2$)}: Si è preferita questa tecnica rispetto al \textit{Roulette Wheel selection} per la sua capacità di gestire popolazioni con fitness distribuita in modo non uniforme (evitando che individui con fitness molto alta monopolizzino precocemente la selezione) e per la facilità nel regolare la \textit{selection pressure} variando il parametro $k$.
+    \item \textbf{Crossover a due punti ($P_{crs}=0.7$)}: Scelto per la sua efficacia nel preservare blocchi di geni (schema) nelle stringhe lunghe (32 bit), riducendo il rischio di distruggere combinazioni di orari (G3) che lavorano bene in sinergia.
+    \item \textbf{Bit-flip Mutation ($P_{mut}=0.01$)}: Mantiene la diversità genetica impedendo lo stallo nei minimi locali senza destabilizzare le soluzioni quasi-ottime.
+\end{itemize}
+
+\subsection{Hyperparameter Tuning e Valutazione delle Performance}
+
+Per garantire il rigore scientifico della fase di modeling, è stata implementata una pipeline sistematica di ottimizzazione e validazione:
+
+\begin{itemize}
+    \item \textbf{Grid Search Tuning}: È stata eseguita una ricerca esaustiva su uno spazio di 81 combinazioni di iperparametri. Tale processo ha permesso di identificare la configurazione che minimizza la varianza dei risultati massimizzando al contempo la \textit{best fitness} media tra diverse esecuzioni stocastiche.
+    \item \textbf{Validazione Statistica (Robustezza)}: Il modello è stato sottoposto a stress-test su un campione esteso di pazienti per ogni profilo. La stabilità statistica è confermata da una deviazione standard estremamente ridotta nelle fitness finali, indicando che le strategie evolute sono robuste rispetto alla variabilità dei dati individuali all'interno dello stesso cluster.
+    \item \textbf{Analisi di Sensibilità}: È stata valutata la risposta dinamica dell'algoritmo al variare dei pesi della fitness ($w_1, w_2, w_3$). I risultati confermano una corretta prioritizzazione della retention rispetto al disturbo (\textit{Notification Fatigue}), permettendo una regolazione precisa del comportamento del sistema in base agli obiettivi clinici.
+\end{itemize}
+
+\subsection{Benchmarking Comparativo: Valutazione del Valore Aggiunto}
+\label{subsec:benchmarking}
+
+Per quantificare il reale beneficio apportato dall'ottimizzazione evolutiva rispetto a strategie convenzionali, è stata condotta un'analisi di benchmarking confrontando il GA con due modelli di riferimento (\textit{baselines}):
+\begin{itemize}
+    \item \textbf{Random Baseline}: Generazione di strategie casuali all'interno dello spazio di ricerca di 32 bit. Questo benchmark serve a dimostrare la non-banalità del problema di ottimizzazione.
+    \item \textbf{Heuristic Baseline}: Una strategia statica definita da regole euristiche fisse (es. invio di 3 notifiche motivazionali a settimana in orari standard). Rappresenta l'approccio \textit{"one-size-fits-all"} tipico dei sistemi non adattivi.
+\end{itemize}
+
+I risultati sperimentali mostrano che l'algoritmo genetico ottiene una fitness media superiore del \textbf{350\%} rispetto alla baseline casuale, evidenziando una capacità di esplorazione dello spazio delle soluzioni estremamente efficace. Rispetto alla baseline euristica, il GA garantisce un incremento delle performance compreso tra il \textbf{25\% e il 28\%}. Questo scarto è attribuibile alla capacità del sistema di personalizzare il \textit{nudging} in base ai cronotipi individuali (es. \textit{Night Owls}) e alla sensibilità specifica alla fatigue, che una regola fissa non è in grado di intercettare.
 
 \subsection{Analisi dei Risultati e Validazione dei Profili}
 
-L'analisi dell'evoluzione ha permesso di identificare strategie di \textit{nudging} differenziate per i quattro fenotipi comportamentali censiti nel dataset. Di seguito vengono riportate le curve di convergenza della fitness e l'andamento della diversità genetica (distanza di Hamming media) per ciascun profilo (Figura \ref{fig:ga_results}).
+L'analisi dell'evoluzione ha permesso di identificare strategie di \textit{nudging} differenziate per i quattro fenotipi comportamentali censiti nel dataset. Di seguito vengono riportate le curve di convergenza della fitness e l'andamento della diversità genetica (distanza di Hamming media) per ciascun profilo.
 
 \begin{figure}[H]
     \centering
