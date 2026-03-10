@@ -6,19 +6,25 @@ Sistema di prevenzione dell'abbandono della piattaforma SINTONIA, basato su un *
 
 ```
 churn_prevention/
-├── notebooks/     # Notebook di analisi e sperimentazione
-├── src/           # Script Python
-│   └── generate_synthetic_data.py   # Generatore dati sintetici
+├── notebooks/
+│   └── 04_GA_Experimentation.ipynb  # Sperimentazione interattiva
+├── src/
+│   ├── generate_synthetic_data.py   # Generatore dati sintetici
+│   ├── aggregate_features.py       # Preprocessing e feature scaling
+│   └── genetic_algorithm.py        # Core logic dell'Algoritmo Genetico
 ├── data/
-│   └── synthetic/ # Dati generati (gitignored)
+│   ├── synthetic/                  # Dati generati (gitignored)
+│   └── processed/                  # Dataset normalizzato per il GA
 └── README.md
 ```
 
 ## Script Disponibili
 
-| Script                       | Descrizione                                                     | Comando                                 |
-| ---------------------------- | --------------------------------------------------------------- | --------------------------------------- |
-| `generate_synthetic_data.py` | Genera dati comportamentali sintetici per 500 pazienti simulati | `python src/generate_synthetic_data.py` |
+| Script                       | Descrizione                                   | Comando                                 |
+| ---------------------------- | --------------------------------------------- | --------------------------------------- |
+| `generate_synthetic_data.py` | Genera dati comportamentali sintetici         | `python src/generate_synthetic_data.py` |
+| `aggregate_features.py`      | Aggrega i log in feature vettoriali per il GA | `python src/aggregate_features.py`      |
+| `genetic_algorithm.py`       | Esegue l'ottimizzazione delle strategie       | `python src/genetic_algorithm.py`       |
 
 ### Opzioni dello script
 
@@ -52,9 +58,27 @@ Lo script produce 5 file CSV in `data/synthetic/`:
 | A Rischio | 25% | Pattern pre-abbandono con calo progressivo |
 | Ghost     | 15% | Attività cessata dopo breve periodo        |
 
-## Differenza rispetto agli altri modelli
-
 A differenza dei modelli di Red Flag Detection (NLP) e Depression Prediction (regressione), il Churn Prevention **non utilizza dataset esterni etichettati**. Il GA opera esclusivamente su dati interni generati dalla piattaforma SINTONIA, evolendo strategie di intervento senza necessità di apprendimento supervisionato.
+
+## Metodologia Algoritmo Genetico
+
+L'algoritmo ottimizza una **strategia di nudging** (frequenza e timing delle notifiche) rappresentata da un cromosoma a 32 bit:
+
+- **G1 (2 bit)**: Tipologia di notifica (Promemoria, Motivazionale, Informativa, Questionario).
+- **G2 (5 bit)**: Frequenza settimanale (da 1 a 31).
+- **G3 (24 bit)**: Schedule orario (bitmask per le 24 ore del giorno).
+- **G4 (1 bit)**: Distribuzione (Uniforme vs Concentrata).
+
+### Funzione di Fitness
+
+La fitness massimizza la **retention stimata** minimizzando le penalità per:
+
+1. **Notification Fatigue**: Eccessiva frequenza di invio.
+2. **Timing**: Invio in orari notturni (23:00 - 06:00).
+
+## Utilizzo del Notebook
+
+Per visualizzare i risultati dell'evoluzione e generare i grafici per il documento LaTeX, utilizzare il notebook `notebooks/04_GA_Experimentation.ipynb`. Il notebook salverà automaticamente i grafici di convergenza in `docs/latex/figures/` con percorsi relativi portatili.
 
 ## Dataset
 

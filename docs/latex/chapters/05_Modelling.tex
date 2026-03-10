@@ -1,0 +1,88 @@
+\chapter{Modeling}
+\label{ch:modeling}
+
+Questo capitolo descrive la fase di \textit{Modeling} per i modelli di Intelligenza Artificiale integrati in SINTON-IA. In particolare, ci concentreremo sul sistema di prevenzione dell'abbandono (Churn Prevention), il quale, a differenza degli approcci classici di classificazione supervisionata, impiega un approccio basato su algoritmi di ottimizzazione euristica.
+
+\section{Churn Prevention: Ottimizzazione tramite Algoritmo Genetico}
+\label{sec:churn_modeling}
+
+L'obiettivo del Churn Prevention non è prevedere \textit{se} un paziente abbandonerà la piattaforma, ma capire \textit{come} intervenire proattivamente per evitarlo. In ottica di \textit{nudging} comportamentale, il fine ultimo è la personalizzazione delle notifiche in base al fenotipo dell'utente. Poiché non disponiamo storicamente dell'effetto causale (outcome) di diverse strategie di notifica su pazienti reali, abbiamo adottato un \textbf{Algoritmo Genetico (GA)} per l'esplorazione e l'ottimizzazione nello spazio delle possibili policy di ingaggio.
+
+Il GA mira a massimizzare la probabilità di \textit{retention} stimata del paziente, minimizzando al contempo il costo in termini di disturbo arrecato da notifiche in eccesso o inviate in fasce orarie inique (Notification Fatigue).
+
+\subsection{Struttura del Problema e Codifica Cromosomiale}
+
+Ogni possibile strategia di invio delle notifiche, che rappresenta un singolo \textit{individuo} (o genotipo) all'interno della popolazione, è stata formalizzata in una codifica cromosomiale binaria. Tale approccio garantisce ampia esploratività e permette l'applicazione di operatori genetici standard senza vincoli euristici imposti.
+
+Il cromosoma ha una lunghezza complessiva di \textbf{32 bit} ed è articolato in quattro blocchi (geni):
+\begin{itemize}
+    \item \textbf{G1 - Tipologia Primaria (2 bit)}: Definisce il tipo di notifica prevalente. Mappa in quattro categorie presenti sulla piattaforma SINTONIA: Promemoria (00), Motivazionale (01), Informativa (10), Questionario (11).
+    \item \textbf{G2 - Frequenza Settimanale (5 bit)}: Rappresenta il volume di notifiche inviate nell'arco dei 7 giorni, permettendo valori da 0 a 31 (equivalente a un tetto di poco maggiore a 4 notifiche giornaliere medie).
+    \item \textbf{G3 - Schedule Orario (24 bit)}: Maschera binaria (\textit{bitmask}) che rappresenta le 24 ore del giorno. Un bit settato a $1$ in posizione $i$ indica l'eleggibilità dell'orario $i$ per l'invio. Tale granularità temporale aggira il bias umano delle macro-fasce (es. \textit{"solo la mattina"}) lasciando all'algoritmo l'onere di scoprire pattern temporali complessi.
+    \item \textbf{G4 - Distribuzione (1 bit)}: Variabile booleana che stabilisce se la frequenza settimanale è distribuita uniformemente sui giorni o in forma concentrata.
+\end{itemize}
+
+\subsection{Funzione di Fitness e Penalità Comportamentali}
+
+La valutazione del \textit{fenotipo} associato alla strategia è calcolata tramite una \textbf{Funzione di Fitness} che agisce su tre componenti fondamentali: l'efficacia stimata e due indici di penalità regolati da pesi iper-parametrici ($w_1=1.0, w_2=0.4, w_3=0.2$).
+
+\begin{equation}
+    Fitness(S, p) = w_1 \cdot \text{Retention}(S, p) - w_2 \cdot P_{freq}(S) - w_3 \cdot P_{time}(S)
+\end{equation}
+
+\paragraph{Manca Dati e Modello di Simulazione (Retention)}
+A causa dell'assenza attuale di dati di outcome dal backend in produzione, il termine $\text{Retention}(S, p)$ è valutato simulando, mediante proxy clinici in letteratura, la compatibilità e la propensione all'ingaggio tra la natura della strategia $S$ e i pattern emersi dalle dieci feature del paziente $p$ analizzate durante la Data Preparation.
+
+\paragraph{Penalità di Frequenza ($P_{freq}$)}
+In SINTON-IA, un forte rischio è la desensibilizzazione del paziente per \textit{Alert Fatigue}. $P_{freq}$ interviene applicando una penalizzazione crescente esponenzialmente se la codifica oraria eccede una soglia tollerabile (\textit{threshold} imposto a 14 a settimana): $P_{freq}(S) = \max(0, e^{\alpha \cdot (\text{freq} - \text{soglia})} - 1)$. 
+
+\paragraph{Penalità Temporale ($P_{time}$)}
+Le ore notturne (23:00 - 06:00) subiscono un decremento proporzionale se inserite nello \textit{schedule orario}, a meno che l'algoritmo, in contesti estremi, valuti il loro ROI in retention superiore al malus imposto.
+
+\subsection{Operatori ed Evoluzione}
+
+Il sistema evolve una decina di popolazioni di dimensione fissa ($N=100$) iterate per limitate generazioni a scopi esplorativi. Gli operatori genetici scelti sono il \textbf{Tournament Selection ($k=3$)} per preservare la pressione selettiva evitandone l'impantanamento tipico del campionamento proporzionale, \textbf{Crossover a due punti ($P_{crs}=0.8$)} idoneo a smistare le lunghe stringhe orarie G3 senza frammentare i compartimenti adiacenti, e \textbf{Bit-flip Mutation ($P_{mut}=0.05$)}. È altresì inglobata una quota di elitismo al 5\% per le top strategie e un criterio di arresto anticipato verificando la varianza decrescente del limite superiore plateau sulle ultime generazioni consecutive ($<1e-6$).
+
+\subsection{Analisi dei Risultati e Validazione dei Profili}
+
+L'analisi dell'evoluzione ha permesso di identificare strategie di \textit{nudging} differenziate per i quattro fenotipi comportamentali censiti nel dataset. Di seguito vengono riportate le curve di convergenza della fitness e l'andamento della diversità genetica (distanza di Hamming media) per ciascun profilo (Figura \ref{fig:ga_results}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{ga_convergence_ghost}
+    \caption{Risultati evoluzione: Profilo Ghost.}
+    \label{fig:ga_ghost}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{ga_convergence_engaged}
+    \caption{Risultati evoluzione: Profilo Engaged.}
+    \label{fig:ga_engaged}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{ga_convergence_arischio}
+    \caption{Risultati evoluzione: Profilo A Rischio.}
+    \label{fig:ga_arischio}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{ga_convergence_moderato}
+    \caption{Risultati evoluzione: Profilo Moderato.}
+    \label{fig:ga_moderato}
+\end{figure}
+
+L'analisi qualitativa delle strategie evolute evidenzia quanto segue:
+\begin{enumerate}
+    \item \textbf{Pazienti "Ghost"}: Il GA converge verso una strategia a bassissima frequenza (\textit{2 notifiche/settimana}). La tipologia scelta è \textit{Motivazionale}, confermando l'ipotesi clinica che utenti disingaggiati necessitino di stimoli empatici piuttosto che di meri promemoria.
+    \item \textbf{Pazienti "Engaged"}: Qui l'algoritmo stabilizza una frequenza elevata (\textit{6-7 notifiche/settimana}) di tipo \textit{Promemoria}. L'utente attivo accetta e trae beneficio da un contatto quotidiano che funge da rinforzo positivo.
+    \item \textbf{Pazienti "A Rischio"}: La strategia evoluta mostra una frequenza moderata ma costante, orientata a richiamare l'attenzione senza saturare il canale di comunicazione.
+    \item \textbf{Pazienti "Moderato"}: Si osserva una preferenza per la tipologia \textit{Questionario} o \textit{Informativa} in orari serali, suggerendo che utenti con attività altalenante rispondano meglio a richieste di feedback esplicito.
+\end{enumerate}
+
+In tutti i profili, la penalità oraria ($P_{time}$) ha impedito efficacemente l'invio di notifiche tra le ore 23:00 e le 06:00, orari in cui il bitmask cromosomiale è stato sistematicamente azzerato dalla pressione selettiva.
+
+Il modello così costituito funge da prototipo estremamente robusto e rapido al deployment da innestarsi sul CRM clinico della piattaforma. La natura euristica del GA permette al sistema di adattarsi dinamicamente: non appena saranno disponibili dati reali di \textit{churn} post-intervento, la funzione di fitness potrà essere alimentata con tassi di retention reali, chiudendo il loop di apprendimento per rinforzo.
