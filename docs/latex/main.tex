@@ -14,7 +14,8 @@
 \onehalfspacing
 
 \usepackage{graphicx}
-\graphicspath{{docs/latex/figures/}{figures/}}
+\graphicspath{{figures/}}
+
 \usepackage{xcolor}
 \definecolor{DeepCyanBlue}{HTML}{0D475D}
 \definecolor{DeepAquaBlue}{HTML}{276B75}
@@ -73,7 +74,8 @@
 }
 \lstset{style=pythonstyle}
 
-\usepackage[hidelinks]{hyperref}
+% hyperref rimosso perché duplicato di riga 27
+
 
 \usepackage{fancyhdr}
 \usepackage{lastpage}
@@ -137,16 +139,20 @@
 \newpage
 
 \clearpage
-\include{chapters/01_introduction}
+\input{chapters/01_introduction}
 
 \clearpage
-\include{chapters/Business_Understanding}
+\input{chapters/02_Business_Understanding}
 
 \clearpage
-\include{chapters/Data_Understanding}
+\input{chapters/03_Data_Understanding}
 
 \clearpage
-\include{chapters/04_Data_Preparation}
+\input{chapters/04_Data_Preparation}
+
+\clearpage
+\input{chapters/05_Modelling}
+
 
 % ─────────────────────────────────────────────────────────────────────────────
 \clearpage
