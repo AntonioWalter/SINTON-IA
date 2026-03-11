@@ -43,15 +43,17 @@ python src/generate_synthetic_data.py --patients 500 --days 90
 
 ### Output generato
 
-Lo script produce 5 file CSV in `data/synthetic/`:
+Lo script produce 7 file CSV in `data/synthetic/`:
 
-| File                | Contenuto                                 |
-| ------------------- | ----------------------------------------- |
-| `patients.csv`      | Anagrafica pazienti con profilo assegnato |
-| `stato_animo.csv`   | Inserimenti di stato d'animo              |
-| `pagina_diario.csv` | Pagine del diario personale               |
-| `questionario.csv`  | Compilazioni di questionari clinici       |
-| `notifica.csv`      | Notifiche inviate con stato di lettura    |
+| File                    | Contenuto                                 |
+| ----------------------- | ----------------------------------------- |
+| `patients.csv`          | Anagrafica pazienti con profilo assegnato |
+| `stato_animo.csv`       | Inserimenti di stato d'animo              |
+| `pagina_diario.csv`     | Pagine del diario personale               |
+| `questionario.csv`      | Compilazioni di questionari clinici       |
+| `notifica.csv`          | Notifiche inviate con stato di lettura    |
+| `domanda_forum.csv`     | Domande postate nel forum comunitario     |
+| `acquisizione_badge.csv`| Badge della gamification acquisiti        |
 
 ### Profili utente simulati
 
@@ -87,7 +89,7 @@ Il modello è validato tramite:
 I test di benchmarking evidenziano:
 
 - **Gain vs Random**: Fitness ~350% superiore rispetto a scelte casuali.
-- **Gain vs Heuristic**: Miglioramento del **25-28%** rispetto a regole fisse, grazie all'adattamento ai ritmi circadiani (_Night Owls_) e alla sensibilità alla fatica da notifica.
+- **Gain vs Heuristic**: Miglioramento del **25-30%** rispetto a regole fisse, grazie all'adattamento ai ritmi circadiani (_Night Owls_) e alla sensibilità alla fatica da notifica.
 
 ### Rationale Scelte Tecniche
 

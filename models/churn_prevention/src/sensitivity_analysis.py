@@ -44,11 +44,14 @@ def run_sensitivity_analysis(patient_data: pd.Series, output_path: str):
             w_penalty_time=w3
         )
         
-        # Esegui 5 volte per stabilità
+        # Esegui 5 volte per stabilità (con seed fissati per riproducibilità)
+        seeds = [42, 123, 999, 7, 2025]
         final_freqs = []
         final_fitnesses = []
         
-        for _ in range(5):
+        for seed in seeds:
+            np.random.seed(seed)
+            import random as _rnd; _rnd.seed(seed)
             ga = GeneticAlgorithm(params, patient_data)
             best_ind = ga.run()
             phenotype = best_ind.decode()

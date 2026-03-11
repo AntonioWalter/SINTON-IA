@@ -79,11 +79,14 @@ def aggregate_features(input_dir: str, output_dir: str):
         mood_freq = len(m_7d)
         unique_days = m_7d["data_inserimento"].dt.date.nunique()
         mood_consist = unique_days / 7.0
+        # N.B. Nel dataset sintetico, mood_frequency_7d e mood_consistency_7d sono spesso
+        # identiche perché la generazione prevede al massimo un mood al giorno.
+        # Con dati reali (dove si possono inserire più mood/giorno) divergeranno.
         
         if mood_freq > 0:
             avg_valence = m_7d["umore"].map(VALENZA_UMORE).mean()
         else:
-            avg_valence = 0.0 # Valore neutro/mancante
+            avg_valence = float('nan')  # Nessun dato: sarà gestito post-normalizzazione
             
         # ─────────────────────────────────────────────────────────────
         # 4. & 5. Dati Diario (7d)
@@ -190,6 +193,10 @@ def aggregate_features(input_dir: str, output_dir: str):
     # Inizializziamo lo scaler standard per riportare tutto in range [0, 1]
     scaler = MinMaxScaler()
     df_features[cols_to_scale] = scaler.fit_transform(df_features[cols_to_scale])
+
+    # Pazienti senza mood entries nella finestra 7d: assegna valore neutro (0.5)
+    # post-normalizzazione, indipendente dalla distribuzione del dataset
+    df_features["avg_mood_valence_7d"] = df_features["avg_mood_valence_7d"].fillna(0.5)
     
     # Salvataggio
     os.makedirs(output_dir, exist_ok=True)

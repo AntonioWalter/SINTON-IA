@@ -155,15 +155,7 @@ def _random_time(day: datetime, is_night_owl: bool = False) -> datetime:
     return day.replace(hour=hour, minute=minute, second=second)
 
 
-def _is_active(day_index: int, total_days: int, params: dict) -> bool:
-    """Determina se il paziente è ancora attivo in un dato giorno."""
-    ghost_range = params.get("ghost_after_day")
-    if ghost_range is None:
-        return True
-    # Il giorno di cutoff è una percentuale del totale
-    cutoff_pct = random.uniform(ghost_range[0], ghost_range[1])
-    cutoff_day = int(total_days * cutoff_pct)
-    return day_index < cutoff_day
+
 
 
 def generate_patients(n_patients: int, days_range: int, rng: np.random.Generator) -> pd.DataFrame:
@@ -191,6 +183,15 @@ def generate_patients(n_patients: int, days_range: int, rng: np.random.Generator
         # 20% dei pazienti sono gufi notturni (night owls)
         is_night_owl = rng.random() < 0.2
 
+        # Cutoff unificato: un singolo giorno di disengagement condiviso
+        # da tutte le tabelle per garantire coerenza narrativa
+        ghost_range = PROFILE_PARAMS[profiles[i]].get("ghost_after_day")
+        if ghost_range is not None:
+            cutoff_pct = rng.uniform(ghost_range[0], ghost_range[1])
+            ghost_cutoff_day = int(int(days_ago) * cutoff_pct)
+        else:
+            ghost_cutoff_day = int(days_ago) + 1  # Mai cutoff
+
         patients.append({
             "id_paziente": str(uuid.uuid4()),
             "profilo": profiles[i],
@@ -199,7 +200,8 @@ def generate_patients(n_patients: int, days_range: int, rng: np.random.Generator
             "id_priorita": rng.choice(priorita, p=[0.10, 0.25, 0.35, 0.30]),
             "stato": True,
             "days_in_platform": int(days_ago),
-            "is_night_owl": is_night_owl
+            "is_night_owl": is_night_owl,
+            "ghost_cutoff_day": ghost_cutoff_day,
         })
 
     return pd.DataFrame(patients)
@@ -218,13 +220,8 @@ def generate_mood_entries(patients_df: pd.DataFrame, rng: np.random.Generator) -
         # Prob. giornaliera di inserire il mood (sampled once per paziente)
         daily_prob = rng.uniform(*params["mood_daily_prob"])
 
-        # Per i profili "A Rischio": la probabilità cala nel tempo
-        ghost_range = params.get("ghost_after_day")
-        if ghost_range is not None:
-            cutoff_pct = rng.uniform(ghost_range[0], ghost_range[1])
-            cutoff_day = int(total_days * cutoff_pct)
-        else:
-            cutoff_day = total_days + 1  # Mai cutoff
+        # Cutoff unificato dal DataFrame pazienti
+        cutoff_day = patient["ghost_cutoff_day"]
 
         weights = MOOD_WEIGHTS[profile]
 
@@ -271,11 +268,8 @@ def generate_diary_entries(patients_df: pd.DataFrame, rng: np.random.Generator) 
         daily_prob = rng.uniform(*params["diary_daily_prob"])
         len_min, len_max = params["diary_length_range"]
 
-        ghost_range = params.get("ghost_after_day")
-        if ghost_range is not None:
-            cutoff_day = int(total_days * rng.uniform(ghost_range[0], ghost_range[1]))
-        else:
-            cutoff_day = total_days + 1
+        # Cutoff unificato dal DataFrame pazienti
+        cutoff_day = patient["ghost_cutoff_day"]
 
         for day_idx in range(total_days):
             if day_idx >= cutoff_day:
@@ -315,11 +309,8 @@ def generate_questionnaires(patients_df: pd.DataFrame, rng: np.random.Generator)
         compliance_prob = rng.uniform(*params["questionnaire_compliance"])
         score_min, score_max = params["questionnaire_score"]
 
-        ghost_range = params.get("ghost_after_day")
-        if ghost_range is not None:
-            cutoff_day = int(total_days * rng.uniform(ghost_range[0], ghost_range[1]))
-        else:
-            cutoff_day = total_days + 1
+        # Cutoff unificato dal DataFrame pazienti
+        cutoff_day = patient["ghost_cutoff_day"]
 
         # I questionari vengono somministrati ogni FREQUENZA_QUESTIONARI giorni
         for day_idx in range(0, total_days, FREQUENZA_QUESTIONARI):

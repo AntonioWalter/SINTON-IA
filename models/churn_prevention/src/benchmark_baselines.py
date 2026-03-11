@@ -25,7 +25,8 @@ def run_benchmark(df: pd.DataFrame, n_samples: int = 20):
     
     # Campionamento bilanciato tra i profili
     print(f"[*] Colonne trovate: {df.columns.tolist()}")
-    sample_df = df.groupby('profilo_assegnato', group_keys=False).apply(lambda x: x.sample(min(len(x), n_samples // 4)))
+    profiles = df['profilo_assegnato'].unique()
+    sample_df = pd.concat([df[df['profilo_assegnato'] == p].sample(min(len(df[df['profilo_assegnato'] == p]), n_samples // 4)) for p in profiles])
     sample_df = sample_df.reset_index(drop=True)
     
     logger.info(f"Avvio Benchmark su {len(sample_df)} pazienti.")

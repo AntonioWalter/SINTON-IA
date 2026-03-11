@@ -77,47 +77,49 @@ Per garantire il rigore scientifico della fase di modeling, è stata implementat
 \subsection{Benchmarking Comparativo: Valutazione del Valore Aggiunto}
 \label{subsec:benchmarking}
 
-Per quantificare il reale beneficio apportato dall'ottimizzazione evolutiva rispetto a strategie convenzionali, è stata condotta un'analisi di benchmarking confrontando il GA con due modelli di riferimento (\textit{baselines}):
-\begin{itemize}
-    \item \textbf{Random Baseline}: Generazione di strategie casuali all'interno dello spazio di ricerca di 32 bit. Questo benchmark serve a dimostrare la non-banalità del problema di ottimizzazione.
-    \item \textbf{Heuristic Baseline}: Una strategia statica definita da regole euristiche fisse (es. invio di 3 notifiche motivazionali a settimana in orari standard). Rappresenta l'approccio \textit{"one-size-fits-all"} tipico dei sistemi non adattivi.
-\end{itemize}
-
-I risultati sperimentali mostrano che l'algoritmo genetico ottiene una fitness media superiore del \textbf{350\%} rispetto alla baseline casuale, evidenziando una capacità di esplorazione dello spazio delle soluzioni estremamente efficace. Rispetto alla baseline euristica, il GA garantisce un incremento delle performance compreso tra il \textbf{25\% e il 28\%}. Questo scarto è attribuibile alla capacità del sistema di personalizzare il \textit{nudging} in base ai cronotipi individuali (es. \textit{Night Owls}) e alla sensibilità specifica alla fatigue, che una regola fissa non è in grado di intercettare.
-
-\subsection{Analisi dei Risultati e Validazione dei Profili}
-
-L'analisi dell'evoluzione ha permesso di identificare strategie di \textit{nudging} differenziate per i quattro fenotipi comportamentali censiti nel dataset. Di seguito vengono riportate le curve di convergenza della fitness e l'andamento della diversità genetica (distanza di Hamming media) per ciascun profilo.
+I risultati sperimentali (Figura \ref{fig:ga_benchmark}) mostrano che l'algoritmo genetico ottiene una fitness media superiore del \textbf{350\%} rispetto alla baseline casuale, evidenziando una capacità di esplorazione dello spazio delle soluzioni estremamente efficace. Rispetto alla baseline euristica, il GA garantisce un incremento delle performance compreso tra il \textbf{25\% e il 30\%}. Questo scarto è attribuibile alla capacità del sistema di personalizzare il \textit{nudging} in base ai cronotipi individuali --- ovvero le naturali inclinazioni orarie di attività del paziente (es. \textit{Night Owls}) --- e alla sensibilità specifica alla fatigue, che una regola fissa non è in grado di intercettare.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{ga_convergence_ghost}
-    \caption{Risultati evoluzione: Profilo Ghost.}
-    \label{fig:ga_ghost}
+    \includegraphics[width=0.85\textwidth]{05_ga_benchmark}
+    \caption{Benchmarking comparativo: GA vs Random vs Heuristic.}
+    \label{fig:ga_benchmark}
 \end{figure}
+
+L'analisi dell'evoluzione ha permesso di identificare strategie di \textit{nudging} differenziate per i quattro fenotipi comportamentali censiti nel dataset. La Figura \ref{fig:ga_convergence} mostra l'andamento della convergenza e della diversità genetica durante un'esecuzione tipica, evidenziando come l'algoritmo stabilizzi la soluzione ottimale in circa 20-30 generazioni.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{ga_convergence_engaged}
-    \caption{Risultati evoluzione: Profilo Engaged.}
-    \label{fig:ga_engaged}
+    \includegraphics[width=0.85\textwidth]{05_ga_convergence_diversity}
+    \caption{Curva di convergenza (fitness best/avg) e diversità genetica.}
+    \label{fig:ga_convergence}
 \end{figure}
+
+L'analisi fenotipica globale (Figura \ref{fig:ga_phenotype}) conferma la specializzazione delle strategie per profilo:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{ga_convergence_arischio}
-    \caption{Risultati evoluzione: Profilo A Rischio.}
-    \label{fig:ga_arischio}
+    \includegraphics[width=0.85\textwidth]{05_ga_phenotype_analysis}
+    \caption{Analisi fenotipica: Distribuzione di frequenza e tipologia per ogni profilo.}
+    \label{fig:ga_phenotype}
 \end{figure}
+
+\subsection{Analisi di Sensibilità e Scalabilità}
+
+Per valutare la robustezza del modello, è stata condotta un'analisi di sensibilità variando il peso della penalità sulla saturazione ($\omega_{freq}$). I risultati indicano che l'algoritmo reagisce linearmente: all'aumentare della penalità, la frequenza settimanale ottimale si stabilizza verso valori più bassi, permettendo al clinico di calibrare l'aggressività del sistema senza alterarne la logica di base.
+
+Inoltre, i test di performance riportano un tempo di calcolo medio di circa \textbf{25-30 ms} per paziente (su singola esecuzione con 30 popolazioni e 30 generazioni). Tale efficienza garantisce la scalabilità del sistema su una base utenti di ampie dimensioni, consentendo ricalcoli periodici delle strategie in tempo reale.
+
+Infine, la Figura \ref{fig:ga_time} illustra la distribuzione oraria delle notifiche evolute. La penalità oraria ($P_{time}$) agisce in modo dinamico: mentre per la maggior parte dei profili il sistema evita la fascia 23:00-06:00, l'algoritmo identifica correttamente i \textit{Night Owls} (gufi notturni). Per questi ultimi, se il tasso di attività notturna storica è elevato, la pressione selettiva si attenua, permettendo l'invio di notifiche anche in tarda serata se ciò massimizza la probabilità di engagement senza saturare il paziente.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{ga_convergence_moderato}
-    \caption{Risultati evoluzione: Profilo Moderato.}
-    \label{fig:ga_moderato}
+    \includegraphics[width=0.85\textwidth]{05_ga_time_distribution}
+    \caption{Distribuzione oraria delle notifiche: efficacia della penalità temporale.}
+    \label{fig:ga_time}
 \end{figure}
 
-L'analisi qualitativa delle strategie evolute evidenzia quanto segue:
+\subsection{Analisi Qualitativa delle Strategie}
 \begin{enumerate}
     \item \textbf{Pazienti "Ghost"}: Il GA converge verso una strategia a bassissima frequenza (\textit{2 notifiche/settimana}). La tipologia scelta è \textit{Motivazionale}, confermando l'ipotesi clinica che utenti disingaggiati necessitino di stimoli empatici piuttosto che di meri promemoria.
     \item \textbf{Pazienti "Engaged"}: Qui l'algoritmo stabilizza una frequenza elevata (\textit{6-7 notifiche/settimana}) di tipo \textit{Promemoria}. L'utente attivo accetta e trae beneficio da un contatto quotidiano che funge da rinforzo positivo.
@@ -125,6 +127,11 @@ L'analisi qualitativa delle strategie evolute evidenzia quanto segue:
     \item \textbf{Pazienti "Moderato"}: Si osserva una preferenza per la tipologia \textit{Questionario} o \textit{Informativa} in orari serali, suggerendo che utenti con attività altalenante rispondano meglio a richieste di feedback esplicito.
 \end{enumerate}
 
-In tutti i profili, la penalità oraria ($P_{time}$) ha impedito efficacemente l'invio di notifiche tra le ore 23:00 e le 06:00, orari in cui il bitmask cromosomiale è stato sistematicamente azzerato dalla pressione selettiva.
 
-Il modello così costituito funge da prototipo estremamente robusto e rapido al deployment da innestarsi sul CRM clinico della piattaforma. La natura euristica del GA permette al sistema di adattarsi dinamicamente: non appena saranno disponibili dati reali di \textit{churn} post-intervento, la funzione di fitness potrà essere alimentata con tassi di retention reali, chiudendo il loop di apprendimento per rinforzo.
+\subsection{Limiti del Prototipo e Direzioni Future}
+
+È necessario evidenziare un limite strutturale dell'attuale implementazione: la funzione $\text{Retention}(S, p)$ è un \textbf{sistema esperto a regole deterministiche}, progettato dagli sviluppatori sulla base della letteratura clinica disponibile. Di conseguenza, l'Algoritmo Genetico sta ottimizzando una funzione nota e priva di incertezza stocastica. Le strategie evolute sono pertanto ottime \textit{rispetto al modello simulativo}, ma non necessariamente ottime nel mondo reale, dove il comportamento del paziente è soggetto a variabilità individuale, contestuale e temporale non catturabile da regole statiche.
+
+Questo trade-off è consapevole e motivato dall'assenza di dati di outcome reali nella fase prototipale. Non appena la piattaforma SINTONIA sarà operativa con una base utenti reale, la funzione di fitness potrà essere alimentata con \textbf{tassi di retention reali} post-intervento, sostituendo le euristiche attuali con dati osservazionali. L'architettura modulare del sistema --- in cui la valutazione della fitness è incapsulata nella classe \texttt{FitnessEvaluator} --- è stata progettata per facilitare questa transizione senza richiedere modifiche agli operatori genetici o alla struttura cromosomiale.
+
+Il sistema proposto si consolida come un prototipo robusto e versatile, pronto per l'integrazione finale all'interno dell'architettura di SINTONIA.

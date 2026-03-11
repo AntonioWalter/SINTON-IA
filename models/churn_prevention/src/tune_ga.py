@@ -15,9 +15,11 @@ from genetic_algorithm import GAParams, GeneticAlgorithm
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-def run_grid_search(patient_data: pd.Series, output_path: str):
+def run_grid_search(patient_data_list: List[pd.Series], output_path: str):
     """
     Esegue una ricerca a griglia sugli iperparametri del GA.
+    La fitness viene mediata su più pazienti rappresentativi (uno per profilo)
+    per garantire la generalizzabilità della configurazione scelta.
     """
     # Definizione dello spazio di ricerca
     grid = {
@@ -34,7 +36,7 @@ def run_grid_search(patient_data: pd.Series, output_path: str):
     results = []
     total = len(combinations)
     
-    logger.info(f"Avvio Grid Search: {total} combinazioni da testare.")
+    logger.info(f"Avvio Grid Search: {total} combinazioni da testare su {len(patient_data_list)} pazienti.")
     
     for i, config in enumerate(combinations):
         logger.info(f"[{i+1}/{total}] Testando config: {config}")
@@ -48,17 +50,18 @@ def run_grid_search(patient_data: pd.Series, output_path: str):
             tournament_size=config['tournament_size']
         )
         
-        # Esegui GA (3 ripetizioni per mediare la componente stocastica)
+        # Esegui GA (3 ripetizioni × N pazienti per mediare la componente stocastica)
         seeds = [42, 123, 999]
         run_fitnesses = []
         run_generations = []
         
         for seed in seeds:
-            np.random.seed(seed)
-            ga = GeneticAlgorithm(params, patient_data)
-            best_ind = ga.run()
-            run_fitnesses.append(best_ind.fitness)
-            run_generations.append(len(ga.history_best))
+            for patient_data in patient_data_list:
+                np.random.seed(seed)
+                ga = GeneticAlgorithm(params, patient_data)
+                best_ind = ga.run()
+                run_fitnesses.append(best_ind.fitness)
+                run_generations.append(len(ga.history_best))
             
         avg_fitness = np.mean(run_fitnesses)
         avg_gens = np.mean(run_generations)
@@ -78,18 +81,24 @@ def run_grid_search(patient_data: pd.Series, output_path: str):
     logger.info(f"Migliore configurazione trovata:\n{best_config}")
 
 if __name__ == "__main__":
-    # Caricamento di un paziente rappresentativo (es. "A Rischio") per il tuning
     data_path = os.path.join(os.path.dirname(__file__), "..", "data", "processed", "churn_features.csv")
     if not os.path.exists(data_path):
         logger.error(f"Dataset non trovato in {data_path}. Eseguire prima aggregate_features.py.")
         sys.exit(1)
         
     df = pd.read_csv(data_path)
-    # Prendiamo il primo paziente "A Rischio" come benchmark per il tuning
-    benchmark_patient = df[df['profilo_assegnato'] == 'A Rischio'].iloc[0]
-    
+
+    # Selezioniamo un paziente rappresentativo per ogni profilo
+    profiles = ['Engaged', 'Moderato', 'A Rischio', 'Ghost']
+    benchmark_patients = []
+    for profile in profiles:
+        subset = df[df['profilo_assegnato'] == profile]
+        if len(subset) > 0:
+            benchmark_patients.append(subset.iloc[0])
+            logger.info(f"Paziente benchmark per '{profile}': {subset.iloc[0]['id_paziente']}")
+
     output_dir = os.path.join(os.path.dirname(__file__), "..", "data", "results")
     os.makedirs(output_dir, exist_ok=True)
     results_path = os.path.join(output_dir, "ga_tuning_results.csv")
     
-    run_grid_search(benchmark_patient, results_path)
+    run_grid_search(benchmark_patients, results_path)
