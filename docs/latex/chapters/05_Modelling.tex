@@ -153,4 +153,36 @@ Pertanto, è stato deciso di \textbf{mantenere questo algoritmo come soluzione i
 Passare all'implementazione delle Reti Neurali (come i \textit{Transformer}) e della \textit{Self-Attention} su questo peculiare set di dati comporterebbe uno spreco ingegneristico ingiustificato. Il modello di Deep Learning rischierebbe esclusivamente di memorizzare, su più livelli, gli stessi identici concetti appresi dall'ITF, appesantendo irreversibilmente l'architettura.
 Tuttavia, il passaggio a modelli Transformer rimane validato per gli \textbf{Sviluppi Futuri} del progetto, specificamente qualora si riuscisse ad acquisire dataset clinici dotati di una certificata mappatura delle sfumature psicologiche. Candidato d'eccellenza per questa iterazione è lo \textit{UMD Reddit Suicidality Dataset} dell'Università del Maryland \cite{umd_reddit_suicidality}, la cui etichettatura crowdsourced basata sulla scala ufficiale \textit{C-SSRS} fornisce esattamente le ambiguità adatte per le quali la potenza di calcolo semantico è imperativa.
 
+\subsection{Calibrazione della Soglia Clinica e Validazione Finale}
+Avendo confermato il TF-IDF come nostro modello di Riferimento in Produzione, abbiamo proceduto ad un ultimo fondamentale step di calibrazione (\textit{Threshold Tuning}) focalizzato ai soli fini dell'impiego clinico-sanitario, per poi validare i risultati definitivi sul **Test Set** (ossia il 10\% di dati originali sempre tenuti oscurati al modello fino ad ora).
+
+La Regressione Logistica, di default, classifica un messaggio come \textit{Suicide Risk} se la probabilità matematica supera la soglia di $\tau = 0.50$ ($50\%$). Tuttavia, nel contesto applicativo di SINTON-IA, commettere un **Falso Negativo** (non segnalare un utente che pianifica concretamente il suicidio) ha un peso etico e medico indicibilmente più grave rispetto a un **Falso Positivo** (una notifica d'allarme cautelativa inviata a uno psicologo per un messaggio che si rivela uno sfogo passeggero).
+
+Per spostare lo sbilanciamento del modello a favore della sicurezza, abbiamo analizzato sul set di Validation come variano Precision e Recall al decrescere della soglia. Abbiamo calcolato lo \textbf{$F_{2}$-Score}, una particolare metrica che attribuisce alla Recall un'importanza doppia rispetto alla Precisione.
+Come visibile nel grafico di calibrazione (Figura~\ref{fig:nlp_threshold_tuning}), il picco ottimale di sicurezza clinica lo si ottiene abbassando drasticamente la soglia di allarme a $\tau \approx \textbf{0.2384}$ ($23.8\%$). L'intero procedimento di calibrazione è tracciato nello script \texttt{06\_RedFlag\_Threshold\_Tuning.py}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{nlp_threshold_tuning.png}
+    \caption{Curva Precision-Recall in relazione alla Soglia Decisional. Lo Score $F_2$ massimizza la Recall al $23.84\%$.}
+    \label{fig:nlp_threshold_tuning}
+\end{figure}
+
+L'adozione di tale ecosistema diagnostico ultra-sensibile ha prodotto risultati sbalorditivi durante l'esame finale sul Test Set Indipendente (circa $22.500$ record). I risultati esatti sono consultabili tramite la Matrice di Confusione definitiva in Figura~\ref{fig:nlp_optimal_cm}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{nlp_optimal_cm.png}
+    \caption{Matrice di Confusione finale calcolata sul Test Set Indipendente applicando la soglia abbassata a $23.84\%$.}
+    \label{fig:nlp_optimal_cm}
+\end{figure}
+
+Applicando la soglia ricalibrata, l'\textbf{Accuracy globale} è scesa fisiologicamente al $91.77\%$ a causa di un incremento precalcolato di Falsi Positivi ($1.506$ rispetto a quasi $11.000$ veri sani). Al tempo stesso il picco di allerta ha scaturito una massimizzazione straordinaria della \textbf{Recall clinica}, schizzata dal preesistente $93.30\%$ al \textbf{\textbf{96.82\%}}.
+In termini puramente medici, per l'applicativo SINTON-IA, questo corrisponde all'identificazione sicura e pro-attiva di $10.627$ intenti autolesionistici nascosti all'interno di un campione casuale, tralasciandone appena $348$ sui totali presentati, rendendolo un validissimo modulo d'ascolto per la prima segnalazione diagnostica istantanea.
+
+È lecito domandarsi se accettare quasi \textbf{1.500 Falsi Positivi} non costituisca un potenziale sovraccarico di lavoro (c.d. \textit{Alert Fatigue}) per gli psicologi assegnati alla piattaforma, costretti a revisionare allarmi che poi si rivelano innocui sfoghi passeggeri.
+Dal punto di vista della \textbf{Clinica Digitale Integrata}, tuttavia, questo costituisce un "falso problema" o un trade-off ampiamente giustificato. In primo luogo, l'ecosistema SINTONIA permette allo specialista di convalidare o screditare rapidamente un falso allarme text-based incrociandolo visivamente con gli altri strumenti oggettivi presenti in dashboard (come la regressione dei questionari PHQ-9 o il trend del Diario Emozionale settimanale).
+In secondo luogo, prevale il principio etico fondamentale del \textit{"safe is better than sorry"}: il dispendio di tempo necessario a uno psicologo per scartare una manciata di allarmi fittizi in piattaforma risulta un costo operativo assolutamente irrisorio se comparato all'inestimabile valore medico di salvare pro-attivamente la vita ai restanti \textbf{diecimila pazienti silenti} il cui Rischio Suicidario nascosto sarebbe altrimenti sfuggito alla supervisione tradizionale.
+
 % ─────────────────────────────────────────────────────────────────────────────
+
