@@ -4,16 +4,16 @@
 Questa fase ha lo scopo di organizzare, pulire e trasformare i dati grezzi estratti precedentemente. L'obiettivo è ottenere un dataset formattato in modo ottimale per le fasi successive di addestramento dei modelli di Intelligenza Artificiale.
 
 % ─────────────────────────────────────────────────────────────────────────────
-\section{Modello Red Flag Detection (NLP)}
+\section{Modello Red Flag Detection}
 \label{sec:prep_red_flag}
 
 A seguito dell'esplorazione del dataset (come illustrato nel Capitolo~\ref{ch:data_understanding}), abbiamo messo a punto uno script Python per ripulire i testi. Le decisioni prese in questa fase sono fondamentali: dobbiamo assicurarci di rimuovere tutto il "rumore" del web senza però cancellare le sfumature cliniche ed emotive che potrebbero rivelare un rischio suicidario.
 
-Di seguito analizziamo i vari passaggi eseguiti, disponibili e riproducibili all'interno del Notebook di analisi \texttt{02\_RedFlag\_DataPreparation.ipynb}.
+Le operazioni di pulizia sono state centralizzate in una pipeline riproducibile all'interno del Notebook \texttt{02\_RedFlag\_DataPreparation.ipynb}.
 
-\subsection{1. Rimozione del Testo Inutile (Noise Removal)}
-I post analizzati provengono da Reddit e sono spesso pieni di link, indirizzi email o formattazioni sfasate (come doverosi a capo multipli). 
-Abbiamo eliminato tutti questi elementi tramite \textit{Espressioni Regolari (RegEx)} perché non aggiungono alcun significato utile al riconoscimento del rischio.
+\subsection{Rimozione del Rumore Testuale (Noise Removal)}
+I post analizzati provengono da Reddit e sono spesso caratterizzati da link, indirizzi email o formattazioni ridondanti (come ritorni a capo multipli). 
+Abbiamo eliminato questi elementi tramite espressioni regolari (RegEx), in quanto non apportano valore semantico al riconoscimento del rischio imminente.
 
 \begin{lstlisting}[language=Python, caption={Cancellazione di URL e Newlines}]
 import re
@@ -26,7 +26,7 @@ def remove_urls_and_newlines(text):
     return text
 \end{lstlisting}
 
-\subsection{2. Lowercasing e Conservazione della Punteggiatura}
+\subsection{Normalizzazione del Case e Punteggiatura}
 Abbiamo trasformato tutte le lettere in minuscolo (\textit{lowercasing}) per insegnare al modello che "Aiuto" e "aiuto" sono la stessa identica parola, semplificando così il vocabolario totale.
 
 Per i modelli di elaborazione del linguaggio naturale utilizzati un tempo, l'istinto era cancellare tutta la punteggiatura. Noi abbiamo scelto invece di \textbf{mantenere i segni chiave come punti fermi, virgole, punti interrogativi ed esclamativi}. In contesti di ansia, panico o depressione, un utente che abusa di esclamazioni (es. "Aiuto!!!") esprime uno stato di forte alterazione che il modello di Intelligenza Artificiale deve essere in grado di leggere e non ignorare.
@@ -43,7 +43,7 @@ def clean_chars_and_lower(text):
     return text
 \end{lstlisting}
 
-\subsection{3. Gestione di Stop-Words e Lemmatizzazione}
+\subsection{Analisi delle Stop-Words e Lemmatizzazione}
 Le parole di collegamento della lingua inglese (come articoli "the", pronomi "it", congiunzioni "and") occupavano oltre il 40\% di tutto il testo, distogliendo l'attenzione del modello. Tramite la libreria \texttt{NLTK} abbiamo eliminato gran parte di queste "Stop-Words".
 
 Tuttavia, abbiamo dovuto fare estrema attenzione alle \textbf{negazioni}. Parole come "not", "don't" o "never" sono state escluse dalla lista di rimozione e conservate forzatamente nel testo. Se le avessimo rimosse, la frase "I am not suicidal" si sarebbe trasformata in "I am suicidal", scatenando un allarme falso e pericoloso per la piattaforma. 
@@ -73,12 +73,12 @@ def remove_stops_and_lemmatize(text):
     return ' '.join(cleaned_words)
 \end{lstlisting}
 
-\subsection{4. Adeguamento al Limite Architetturale e Filtering}
+\subsection{Filtering e Vincoli Architetturali}
 Il dataset originale su Kaggle ospitava post lunghissimi, simili a romanzi. Purtroppo, l'applicativo reale SINTONIA possiede un limite di immissione fissato a 2.000 caratteri per evitare comportamenti di spam da parte del paziente. 
 
 Per allineare il comportamento durante l'addestramento ai veri dati che vedrà in produzione, abbiamo inizialmente valutato di troncare al \textit{character limit} tutti i documenti massivi. Tuttavia, l'applicazione di un taglio netto si è rivelata pericolosa: in psicologia, l'\textbf{Effetto Recency} suggerisce che il quadro sintomatico peggiore (le dimissioni dalla vita, intenti acuti, "addii") si celi spessissimo nell'epilogo dei lunghi manifesti personali. Una troncatura ci avrebbe restituito la parte narrativa escludendo la fatidica ammissione e inducendo a etichettare falsi-negativi per il modello.
 
-Abbiamo perciò deciso di scartare del tutto dal dataset le istanze eccedenti la soglia (oltre ai messaggi vuoti derivanti dallo step precedente). A valle di questo poderoso filtering dimensionale il bilanciamento naturale delle labels è rimasto comunque pressochè perfetto (51.2\% "non-suicide" contro 48.8\% "suicide"), non necessitando pertanto di tecniche artificiali compensative come la \textit{SMOTE}.
+Abbiamo perciò deciso di scartare del tutto dal dataset le istanze eccedenti la soglia (oltre ai messaggi vuoti derivanti dallo step precedente). A valle di questo poderoso filtering dimensionale il bilanciamento naturale delle labels è rimasto comunque pressoché perfetto (51.2\% "non-suicide" contro 48.8\% "suicide"), non necessitando pertanto di tecniche artificiali compensative come la \textit{SMOTE}.
 
 \begin{lstlisting}[language=Python, caption={Filtro in base ai parametri di backend SINTONIA}]
 # Scartiamo le istanze troppo lunghe per non perdere la chiusa (Recency)
@@ -89,7 +89,7 @@ df_final = df[(df['char_count'] > 0) & (df['char_count'] <= 2000)].copy()
 print(df_final['class'].value_counts(normalize=True))
 \end{lstlisting}
 
-\subsection{5. Gestione del Language Gap (Zero-Shot Cross-Lingual Transfer)}
+\subsection{Zero-Shot Cross-Lingual Transfer}
 Un enorme divario tra questa fase e la futura operatività è la lingua: il nostro dataset di partenza è in Inglese, ma gli utenti campani della piattaforma SINTONIA scriveranno i diari in Italiano. 
 Solitamente in questi casi si tenta di tradurre interamente il dataset iniziale (Machine Translation), pratica che degrada la qualità dei dati, annacqua i modi di dire dello "slang" depressivo (ad es. "feeling blue") e risulta temporalmente onerosa in fase di caricamento ed addestramento. 
 
@@ -101,57 +101,52 @@ L'idea consiste nell'utilizzare come "cervello di base" un modello Transformer M
 \section{Modello Depression Prediction}
 \label{sec:prep_depression}
 
-A seguito della generazione sintetica descritta nel Capitolo~\ref{ch:data_understanding}, il dataset grezzo --- composto da 1.400.000 record (100.000 pazienti $\times$ 14 giorni) --- richiede una fase di trasformazione prima di poter essere utilizzato per l'addestramento di un modello di \textit{Machine Learning}. L'obiettivo di questa fase è condensare la serie temporale di ciascun paziente in un vettore compatto di variabili numeriche (\textit{features}) che catturino i pattern clinici associati alla depressione.
+Mentre per il rischio suicidario lavoriamo su testi liberi, per il modulo di Depression Prediction affrontiamo un task di regressione su \textbf{Serie Temporali}. La sfida principale consiste nel trasformare un flusso irregolare di stati d'animo (log quotidiani) in un formato statico che possa alimentare gli algoritmi di addestramento. Questo processo di trasformazione è documentato nel notebook \texttt{03\_Feature\_Engineering\_and\_Prep.ipynb}.
 
-Tutte le operazioni sono documentate e riproducibili nel notebook \texttt{03\_\allowbreak{}Feature\_\allowbreak{}Engineering\_\allowbreak{}and\_\allowbreak{}Prep.ipynb}.
+\subsection{Aggregazione Temporale e Finestra di Osservazione}
+\label{subsec:windowing_depression}
 
-\subsection{Feature Engineering Temporale}
+Per ogni paziente, abbiamo estratto le misurazioni relative a una finestra temporale di \textbf{14 giorni}. Questa scelta non è casuale: il questionario PHQ-9 valuta i sintomi depressivi riferiti proprio alle ultime due settimane. 
+
+Il passaggio dal dato grezzo al dataset finale avviene tramite una logica di \textbf{aggregazione user-based}. Invece di trattare ogni singolo giorno come un'istanza separata, condensiamo l'intero storico di 14 giorni in un unico vettore di caratteristiche (feature vector) che rappresenta lo "stato sintetico" del paziente. Questo garantisce che il modello impari a riconoscere l'andamento del disturbo anziché le singole fluttuazioni momentanee dell'umore.
+
+\subsection{Feature Engineering Clinico: La Firma Digitale}
 \label{subsec:feature_eng_depression}
 
-Per ciascun paziente, i 14 giorni di check-in emotivi vengono sintetizzati in un vettore di \textbf{8 feature indipendenti}. Ogni feature è stata progettata per catturare un aspetto specifico delle dinamiche emotive che la letteratura scientifica associa alla depressione:
+Per catturare la complessità dello stato mentale, abbiamo progettato \textbf{8 variabili chiave} che fungono da "sensori digitali". La loro definizione si basa sulla letteratura psichiatrica relativa alle dinamiche affettive:
 
 \begin{enumerate}
-    \item \textbf{\texttt{valence\_mean}}: Media della valenza emotiva sui 14 giorni. Quantifica il tono affettivo complessivo del periodo di osservazione. Un valore mediamente negativo è il primo indicatore di disagio psicologico \cite{kuppens2010inertia}.
+    \item \textbf{Tono Affettivo (\texttt{valence\_mean}):} È la bussola del benessere. Una media persistentemente bassa è il segnale più ovvio, ma non l'unico, di un disturbo depressivo \cite{kuppens2010inertia}.
 
-    \item \textbf{\texttt{valence\_std}}: Deviazione standard della valenza. Misura la \textit{volatilità emotiva}: un'elevata instabilità è associata a ridotto benessere psicologico, come dimostrato dalla meta-analisi di Houben et al. \cite{houben2015emotion}.
+    \item \textbf{Instabilità Emotiva (\texttt{valence\_std}):} Misura quanto l'umore "balla". Un paziente sano ha oscillazioni naturali; un paziente depresso può mostrare un'immobilità sospetta o, al contrario, una fragilità estrema che lo porta a picchi improvvisi \cite{houben2015emotion}.
 
-    \item \textbf{\texttt{valence\_ema\_3d}}: Media Mobile Esponenziale (\textit{Exponential Moving Average}) calcolata sugli ultimi 3 punti temporali. Attribuisce peso preponderante alle osservazioni più recenti, catturando il \textit{recency bias} tipico dei questionari clinici a self-report.
+    \item \textbf{Peso del Presente (\texttt{valence\_ema\_3d}):} Tramite una media esponenziale, diamo più importanza agli ultimi 3 giorni. Questo riflette il modo in cui i clinici valutano il paziente durante un colloquio: l'oggi pesa più di una settimana fa (\textit{Recency Bias}).
 
-    \item \textbf{\texttt{valence\_trend\_5d}}: Pendenza lineare della valenza negli ultimi 5 giorni, calcolata tramite regressione polinomiale di primo grado. Isola la \textit{direzione del cambiamento emotivo}: un trend discendente può segnalare il \textit{critical slowing down} descritto da Wichers et al. \cite{wichers2016critical} come precursore di transizioni depressive.
+    \item \textbf{Direzione del Cambiamento (\texttt{valence\_trend\_5d}):} È la pendenza dell'umore. Un trend che scende costantemente negli ultimi 5 giorni è un allarme rosso: indica che il paziente sta scivolando verso una crisi \cite{wichers2016critical}.
 
-    \item \textbf{\texttt{max\_neg\_streak}}: Numero massimo di giorni consecutivi in cui la valenza è rimasta negativa ($< 0$). Quantifica la \textit{persistenza} degli stati depressivi, un fenomeno documentato da aan het Rot et al. \cite{aanhetrot2012ema} come caratteristica centrale della depressione nel monitoraggio EMA.
+    \item \textbf{Persistenza del Buio (\texttt{max\_neg\_streak}):} Conta per quanti giorni di fila il paziente è rimasto "nel negativo". È il sensore della fatica mentale: più la striscia si allunga, più è difficile per il paziente uscirne senza aiuto \cite{aanhetrot2012ema}.
 
-    \item \textbf{\texttt{missing\_ratio}}: Proporzione di giorni in cui il paziente non ha effettuato il check-in. Costituisce un predittore informativo (\textit{informative missingness}): come documentato da Mohr et al. \cite{mohr2017personal}, il disengagement dall'app è di per sé un segnale clinico associato all'anedonia e alla fatica.
+    \item \textbf{Il Peso del Silenzio (\texttt{missing\_ratio}):} Se un utente smette di usare l'app, non è un dato mancante "casuale". Spesso, chi sta molto male non ha la forza di aprire il telefono (\textit{anedonia}). Il silenzio diventa quindi una feature predittiva \cite{mohr2017personal}.
+    
+    \item \textbf{Appiattimento Affettivo (\texttt{intensity\_mean}):} Media dell'intensità delle emozioni. I pazienti depressi riferiscono spesso di sentirsi "spenti" o "anestetizzati". Un'intensità molto bassa può rivelare questo distacco emotivo \cite{rottenberg2005mood}.
 
-    \item \textbf{\texttt{intensity\_mean}}: Media dell'intensità emotiva riportata (scala 1-10). Cattura il fenomeno dell'\textit{appiattimento affettivo}: Rottenberg et al. \cite{rottenberg2005mood} hanno dimostrato che i soggetti depressi sperimentano emozioni meno intense sia in contesti positivi che negativi.
-
-    \item \textbf{\texttt{dominant\_mood\_valence}}: Valenza associata allo stato d'animo più frequente (la moda) nel periodo di osservazione, mappata tramite le coordinate del Modello Circomplesso \cite{russell1980circumplex}. Indica il ``quadrante emotivo dominante'' del paziente.
+    \item \textbf{Quadrante Dominante (\texttt{dominant\_mood\_valence}):} Identifica lo stato d'animo più frequente. Ci dice se il paziente "vive" stabilmente in un'area di tristezza o di ansia.
 \end{enumerate}
 
-\subsection{Analisi delle Correlazioni}
-\label{subsec:correlazioni_depression}
-
-Le 8 feature estratte sono state analizzate tramite matrice di correlazione di Pearson (Figura~\ref{fig:feature_corr}) per verificare due proprietà fondamentali: (i) che ciascuna feature presenti una correlazione significativa con il target PHQ-9, confermandone la rilevanza predittiva; (ii) che nessuna feature raggiunga una correlazione così elevata ($> 0.95$) da configurare un rischio di \textit{data leakage}.
-
-\subsection{Standardizzazione e Definizione del Target}
+\subsection{Calibrazione e Standardizzazione (Z-score)}
 \label{subsec:scaling_depression}
 
-Le 8 feature presentano ordini di grandezza eterogenei: la deviazione standard della valenza produce valori decimali, mentre il conteggio delle streak negative è un intero che può raggiungere 14. Per garantire che tutti i predittori contribuiscano equamente al processo di apprendimento, le feature vengono standardizzate tramite \texttt{StandardScaler} della libreria \textit{scikit-learn}, applicando la trasformazione $Z$-score:
-\begin{equation*}
-z_i = \frac{x_i - \mu}{\sigma}
-\end{equation*}
-che impone a ciascuna colonna una media $\mu = 0$ e una deviazione standard $\sigma = 1$. Questa normalizzazione è particolarmente importante per algoritmi sensibili alla scala dei dati, come le reti neurali e le macchine a vettori di supporto.
+Per far sì che il modello non venga tratto in inganno dalle diverse unità di misura dei "sensori" (ad esempio, confrontare un rapporto decimale come il \texttt{missing\_ratio} con una media di intensità), abbiamo applicato lo \textbf{Z-score (Standardizzazione)}. 
 
-La \textbf{variabile target} è il punteggio PHQ-9 continuo (0--27), formulato come problema di \textbf{regressione}. A differenza di un approccio di classificazione binaria (``depresso'' vs ``non depresso''), la regressione consente una granularità clinica superiore: il modello può rilevare peggioramenti graduali (ad esempio, da score 8 a score 15) prima che il paziente attraversi una soglia critica, permettendo interventi preventivi tempestivi.
+A differenza della normalizzazione Min-Max (che schiaccia i dati tra 0 e 1), lo Z-score centra i dati sulla media e li scala in base alla deviazione standard. Questa scelta è ottimale per i dati clinici dell'umore perché è meno sensibile agli outlier e preserva la distribuzione originale, permettendo alla nostra \textit{Ridge Baseline} di pesare correttamente anche le oscillazioni emotive più estreme.
 
-Il dataset finale, contenente le 8 feature standardizzate e il target PHQ-9 in un unico file (\texttt{depression\_\allowbreak{}model\_\allowbreak{}dataset.csv}), è pronto per l'addestramento dei modelli di \textit{Machine Learning} (Capitolo 5).
+\subsection{Trasformazione del Silenzio in Dato (Missingness)}
+Un punto critico della preparazione è stata la gestione dei \textbf{giorni senza log}. In un contesto clinico, se un paziente smette di monitorarsi, raramente è un evento casuale (MCAR). Spesso è un sintomo di \textit{anedonia} o di un peggioramento acuto che toglie le forze per usare l'app. 
+Abbiamo deciso di non procedere con l'imputazione statistica dei valori mancanti, ma di trasformare il "silenzio" in un'informazione esplicita tramite il calcolo del \texttt{missing\_ratio}. In questo modo, il modello può imparare che l'assenza di dati è, in sé stessa, un potente predittore della severità depressiva.
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.80\textwidth]{dp_feature_correlation.png}
-    \caption{Matrice di correlazione di Pearson tra le 8 feature estratte e il punteggio PHQ-9 target.}
-    \label{fig:feature_corr}
-\end{figure}
+La nostra \textbf{mira (\textit{Target})} è il punteggio PHQ-9 (da 0 a 27). Abbiamo scelto di non limitarci a dire "il paziente è depresso sì/no", ma di prevedere il punteggio esatto (\textit{Regressione}). Questo permette a SINTON-IA di vedere le sfumature: se un paziente passa da un punteggio di 5 a uno di 12, possiamo intervenire prima che la situazione diventi critica.
+
+Il dataset finale, salvato come \texttt{depression\_model\_dataset.csv}, è ora pronto per essere dato in pasto agli algoritmi di addestramento.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \clearpage
@@ -226,10 +221,12 @@ La strategia prevede la generazione di \textbf{profili utente sintetici}, ciascu
     \item \textbf{Utente \textit{Engaged}:} simula un paziente costante e motivato, con frequenza di mood tracking e diario elevata ($> 80\%$ dei giorni), compliance ai questionari prossima al $100\%$, tasso di lettura delle notifiche alto ($> 70\%$). Rappresenta il target ideale di retention.
     \item \textbf{Utente Moderato:} simula un utilizzo intermittente ma non preoccupante, con mood tracking irregolare ($40$--$60\%$ dei giorni), scrittura del diario sporadica, e tasso di lettura delle notifiche nella media ($40$--$60\%$).
     \item \textbf{Utente a Rischio:} simula il pattern tipico pre-abbandono: calo progressivo della frequenza di inserimento del mood, assenza prolungata di scrittura nel diario ($> 4$ giorni), notifiche largamente ignorate (tasso lettura $< 30\%$).
-    \item \textbf{Utente \textit{Ghost}:} simula un utente che ha di fatto cessato ogni attività sulla piattaforma pur senza cancellare il proprio account. Nessuna interazione registrata nella finestra di osservazione corrente.
+    \item \textbf{Utente \textit{Ghost}:} simula un utente che ha di fatto cessato ogni attività sulla piattaforma pur senza caricare il proprio account. Nessuna interazione registrata nella finestra di osservazione corrente.
 \end{enumerate}
 
-Per ciascun profilo, lo script Python \texttt{generate\_synthetic\_data.py} (sviluppato e integrato nella repository del progetto) produce record sintetici nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario}, \texttt{notifica}, \texttt{domanda\_forum} e \texttt{acquisizione\_badge}, rispettando le distribuzioni temporali e i range di valori coerenti con il profilo assegnato. L'Algoritmo Genetico verrà quindi testato su questa popolazione simulata (fissata in fase prototipale a 500 pazienti su uno storico di 90 giorni), verificando che le strategie di \textit{nudging} evolute dal GA riescano effettivamente a discriminare i profili a rischio e a produrre interventi differenziati.
+Per ciascun profilo, lo script Python \texttt{generate\_synthetic\_data.py} (sviluppato e integrato nella repository del progetto) produce record sintetici nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario}, \texttt{notifica}, \texttt{domanda\_forum} e \texttt{acquisizione\_badge}, rispettando le distribuzioni temporali e i range di valori coerenti con il profilo assegnato. L'Algoritmo Genetico verrà quindi testato sulla popolazione simulata (fissata in fase prototipale a 500 pazienti su uno storico di 90 giorni), verificando che le strategie di \textit{nudging} evolute dal GA riescano effettivamente a discriminare i profili a rischio e a produrre interventi differenziati.
 
 Questa fase è strettamente prototipale: una volta che la piattaforma SINTONIA sarà operativa con una base utenti reale, i dati sintetici verranno progressivamente sostituiti con dati di utilizzo autentici, e i parametri del GA verranno ri-calibrati di conseguenza.
+
+Conclusa la preparazione dei dati per i tre pilastri di SINTON-IA, il materiale raffinato è pronto per entrare nel cuore del sistema: la fase di \textbf{Modeling}, dove nasceranno le Intelligenze Artificiali che abiteranno la piattaforma.
 
