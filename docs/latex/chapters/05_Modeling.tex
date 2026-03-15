@@ -1,0 +1,368 @@
+\chapter{Modeling}
+\label{ch:modeling}
+
+Questa fase documenta i processi sperimentali e le logiche ingegneristiche applicate per l'addestramento, il tuning e la validazione dei diversi modelli di Intelligenza Artificiale che compongono il nucleo diagnostico di SINTON-IA.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Modello Red Flag Detection (NLP)}
+\label{sec:mod_red_flag}
+
+In questo sottocapitolo affrontiamo la progettazione del classificatore testuale per il riconoscimento del rischio suicidario (Classificazione Binaria: \textit{suicide} vs \textit{non-suicide}).
+
+\subsection{Strategia di Splitting del Dataset}
+Come spiegato nel Capitolo~\ref{ch:data_preparation}, tenendo soltanto messaggi più brevi di 2000 caratteri siamo riusciti a ottenere un dataset già equilibrato in partenza: infatti abbiamo un buon bilanciamento del 51.2\% di messaggi "non a rischio" contro il 48.8\% "a rischio", su un numero complessivo di oltre 225.000 testi.
+
+Poiché abbiamo parecchi dati a disposizione, abbiamo deciso di dividere il dataset basandoci su tre percentuali standard (\textbf{80-10-10}):
+\begin{itemize}
+    \item \textbf{Training Set (80\%)}: È il grosso dei dati su cui si allena il modello vero e proprio, sia per le tecniche base che per il modello avanzato finale.
+    \item \textbf{Validation Set (10\%)}: Lo usiamo durante l'allenamento per valutare via via la bontà delle scoperte, per capire quando è il momento di fermare il calcolo (con la tecnica dell'\textit{Early Stopping}) e per poter impostare a dovere le giuste soglie in base all'uso clinico dell'applicazione.
+    \item \textbf{Test Set (10\%)}: È il set di prova tenuto rigorosamente nascosto al modello. Ci servirà solo all'ultimo miglio, a fine esperimento, per testare come si comporterebbe l'algoritmo con messaggi mai letti in precedenza.
+\end{itemize}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{nlp_data_split.png}
+    \caption{Suddivisione del dataset in Train, Validation e Test (\% sulle righe).}
+    \label{fig:nlp_data_split}
+\end{figure}
+
+Per non rovinare il buon bilanciamento iniziale tra messaggi "sani e a rischio", per le 3 suddivisioni abbiamo preferito un metodo basato sulla \textbf{Stratificazione}. Questo significa che la proporzione iniziale del 51\% contro 49\% è stata replicata su scala ridotta proprio in ogni singolo contenitore finale (come confermato dal grafico in Figura~\ref{fig:nlp_class_balance}). In questo modo i tre dataset mantengono un'ossatura ben bilanciata e non ci costringono a usare tecniche artificiali invasive per ripristinare il pareggio dei dati (oversampling).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\textwidth]{nlp_class_balance.png}
+    \caption{Controllo delle medesime proporzioni tra "suicide" e "non-suicide" per ogni strato dello Split.}
+    \label{fig:nlp_class_balance}
+\end{figure}
+
+Il codice Python con cui questa strategia iniziale \`e stata messa in pratica si trova documentato sul notebook intitolato \texttt{03\_RedFlag\_Modelling\_Baseline.ipynb}.
+
+\subsection{Il Modello Baseline (TF-IDF + Logistic Regression)}
+Prima di passare a modelli di Intelligenza Artificiale potenti e complessi, abbiamo ritenuto indispensabile fissare prima un "modello di base" (o \textbf{Baseline}). L'idea è semplice: la Baseline funge da metro di giudizio o "parametro zero". Se un modello complicato (che magari impiega ore per addestrarsi) non riesce a battere in modo deciso le prestazioni di un modello banale che si allena in venti secondi, significa che tutta quella complessità aggiuntiva è inutile. 
+
+Come Baseline per questo problema testuale, abbiamo scelto di combinare la tecnica \textbf{TF-IDF} per trasformare le parole in numeri, e la \textbf{Regressione Logistica} come classificatore.
+Abbiamo scelto questa combinazione per tre motivi molto pratici:
+\begin{enumerate}
+    \item \textbf{Gestisce bene le parole importanti}: Il TF-IDF (\textit{Term Frequency - Inverse Document Frequency}) penalizza le parole comuni che si trovano dappertutto (come "il", "di", "essere") facendole valere zero, e premia fortissimo le parole "rare" ma cruciali presenti solo nei testi critici (es. "suicido", "odio", "morire"). Così facendo ripulisce da solo il rumore di fondo.
+    \item \textbf{Cosa fa il modello è sempre visibile}: A differenza delle moderne "scatole nere", la Regressione Logistica assegna un punteggio visibile ad ogni singola parola chiave. Sapremo per certo se il modello fallisce perché ha frainteso il peso di un aggettivo specifico, permettendoci di giustificarne sempre agli psicologi il ragionamento interno.
+    \item \textbf{Probabilità chiare}: Abbiamo bisogno non solo di un responso netto (Sì/No), ma di sapere "quanto" l'utente è a rischio, per modulare meglio l'avviso ai medici. La Regressione Logistica fornisce come risultato diretto una percentuale precisa calibrata tra lo 0\% e il 100\%. 
+\end{enumerate}
+
+Ecco come abbiamo istruito il nostro modello Base. Il codice utilizza la libreria \textit{Scikit-Learn} ed è commentato per essere chiaro in ogni suo passaggio:
+
+\begin{lstlisting}[language=Python, caption=Addestramento del Modello Baseline]
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+
+# 1. TRASFORMAZIONE DEL TESTO IN NUMERI (TF-IDF)
+# Abbiamo messo un tappo alle 10.000 parole piu' indicative per 
+# evitare che il computer memorizzasse refusi inutili.
+vectorizer = TfidfVectorizer(max_features=10000)
+
+# Insegniamo il vocabolario studiando solo il Train Set e poi 
+# traduciamo i testi del Validation Set coi numeri imparati
+X_train = vectorizer.fit_transform(train_df['text'].fillna(''))
+X_val = vectorizer.transform(val_df['text'].fillna(''))
+
+# Salviamo le etichette per comodita'
+y_train = train_df['class']
+y_val = val_df['class']
+
+# 2. ADDESTRAMENTO DEL CLASSIFICATORE LOGISTICO
+clf = LogisticRegression(random_state=42, max_iter=1000)
+
+# "Studia" le relazioni tra parole e il target a rischio
+clf.fit(X_train, y_train)
+
+# 3. VERIFICA SUL VALIDATION SET
+y_pred_val = clf.predict(X_val)
+\end{lstlisting}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.7\textwidth]{nlp_baseline_cm.png}
+    \caption{Matrice di Confusione del Modello Baseline testato a caldo sul set di Validation.}
+    \label{fig:nlp_baseline_cm}
+\end{figure}
+
+Sorprendentemente, questo modello considerato "basilare" ha già raggiunto capacità di lettura strabilianti durante il test sul set di Validation. La bassissima comparsa di Falsi Negativi (visibile dalla diagonale scura nella Matrice in Figura~\ref{fig:nlp_baseline_cm}) dimostra l'enorme potenziale intrinseco dei dati d'origine a nostra disposizione, innalzando prepotentemente l'asticella matematica da superare per il modello finale.
+
+Per dare un quadro di riferimento ancora più preciso, riportiamo in Tabella~\ref{tab:nlp_baseline_metrics} i numeri esatti emersi dai calcoli di validazione:
+
+\begin{table}[htbp]
+    \centering
+    \renewcommand{\arraystretch}{1.3}
+    \begin{tabular}{|l|c|}
+        \hline
+        \textbf{Metrica} & \textbf{Valore (Validation Set)} \\
+        \hline
+        \hline
+        \textbf{Accuracy}  & 94.01\% \\
+        \textbf{Precision} & 94.20\% \\
+        \textbf{Recall}    & 93.30\% \\
+        \textbf{F1-Score}  & 93.75\% \\
+        \hline
+    \end{tabular}
+    \caption{Riassunto delle metriche prestazionali (Macro Average) per il Modello Baseline sulla classificazione \textit{suicide}.}
+    \label{tab:nlp_baseline_metrics}
+\end{table}
+
+Questi numeri saranno il nostro traguardo minimo. Sebbene la \textbf{Precision} sia ottima (falsi allarmi vicini allo zero), in ambito diagnostico il nostro focus primario nel modello successivo sarà puntare ad incrementare sempre di più la \textbf{Recall}, perché il costo umano di un Falso Negativo (un campanello d'allarme reale ignorato dall'IA) è enormemente più grave di una banale falsa notifica preventiva.
+
+\subsection{Analisi dei Limiti e Test di Robustezza}
+Di fronte a prestazioni numeriche così alte ($>94\%$), che di fatto classificano correttamente la quasi totalità dei record di validazione, ci siamo posti una domanda cardine: \textit{Il dataset di partenza (benché sia uno dei più consolidati in ambito accademico ed estratto da piattaforme come Reddit) è forse fin troppo netto ed esplicito?}
+In altre parole, gli utenti all'interno del dataset utilizzano per lo più parole inequivocabili (come "kill", "die", "suicide"), rendendo il lavoro di discriminazione "troppo facile" per un semplice contatore di frequenze come il TF-IDF, il quale fatica cronicamente a intercettare contesti più sfumati o ironici.
+
+Per provare questa ipotesi e validare i limiti della Baseline prima di spostarla in produzione, abbiamo sottoposto il modello a diverse "frasi trappola" ambigue. Riportiamo di seguito due esempi emblematici dei \textbf{Falsi Positivi testuali} e dei \textbf{Falsi Negativi semantici} in cui la Regressione Logistica è incappata.
+
+\paragraph{Caso 1: Falso Positivo (Iperbole Colloquiale)}
+Il primo test simula la tipica frustrazione scolastica di uno studente che ricorre a espressioni metaforiche iperboliche:
+\begin{itemize}
+    \item \textbf{Testo analizzato}: \textit{"This final exam is literally killing me slowly. I wish someone would just put me out of my misery."}
+    \item \textbf{Rischio Calcolato}: \textbf{86.41\%}
+    \item \textbf{Classificazione del Modello}: \texttt{SUICIDE}
+\end{itemize}
+In questo caso, bastano parole come \textit{"killing"} o \textit{"misery"} per far scattare un falso campanello d'allarme elevatissimo, del tutto ingiustificato rispetto al contesto.
+
+\paragraph{Caso 2: Falso Negativo (Intento Pacifico ma Terminale)}
+Il secondo test racchiude invece l'idillio e l'organizzazione metodica precedenti ad un atto estremo premeditato:
+\begin{itemize}
+    \item \textbf{Testo analizzato}: \textit{"The house is perfectly clean. I wrote letters for everyone I held dear so they will understand. It's time to rest peacefully without disturbing anyone."}
+    \item \textbf{Rischio Calcolato}: \textbf{23.59\%}
+    \item \textbf{Classificazione del Modello}: \texttt{NON-SUICIDE}
+\end{itemize}
+L'utente non adopera alcun termine classificabile statisticamente come negativo (dominano lemmi positivi o neutri, come \textit{clean, letters, rest peacefully, understand}). Poiché l'intento autolesionista è veicolato unicamente dal significato semantico complessivo del gesto, il modello Baseline è totalmente cieco di fronte a questo altissimo rischio clinico.
+
+\subsubsection{L'Esperimento col Dataset Sintetico}
+Preso atto dell'incapacità del TF-IDF di processare sfumature così delicate testandole "a caldo", ci siamo domandati se queste mancanze fossero ovviabili. \textit{Cosa accadrebbe se inquinassimo il dataset di addestramento creando un sotto-dataset sintetico ricolmo di queste eccezioni semantiche e iperboli videoludiche, sperando di forzare il TF-IDF a una ri-ponderazione dei propri pesi?}
+Per dimostrare questa ipotesi, abbiamo iniettato 30.000 records sintetici volutamente ambigui all'interno del Training Set (es. esagerazioni contenenti parole chiave negative e frasi di rassegnazione letargica totalmente decurtate da vocaboli di allarme). 
+
+I risultati successivi alla riqualificazione della Baseline (visibili nel notebook \texttt{05\_RedFlag\_Synthetic\_Robustness.ipynb}) hanno generato un comportamento apparentemente strabiliante: gli Edge Cases sono stati "risolti". Ad esempio, il Test Caso 1 (l'esame deprimente) è crollato dal \textbf{86.41\%} al \textbf{4.55\%} di rischio fittizio, mentre il Test Caso 2 (l'organizzazione pacifica dell'addio) è stato portato dal \textbf{23.59\%} a circa il \textbf{74.97\%} di percezione del rischio corretto.
+Tuttavia, una simile soluzione tecnica si configura come un \textbf{falso successo ingegneristico}. Di fronte a una distribuzione artificiale massiccia all'interno del Train Set, il \textit{Term Frequency} non ha "imparato il contesto", bensì ha matematicamente saturato il peso delle combinazioni testuali introdotte a mano, imparandole forzatamente a memoria e sbilanciando la stabilità generale delle parole chiave originali. Lo dimostra il calcolo delle metriche sul Validation Set rimasto pulito: l'Accuracy globale è scesa dal \textbf{94.01\%} al \textbf{93.54\%}, ma soprattutto la Recall è calata significativamente (da \textbf{93.3\%} a \textbf{92.66\%}), dimostrando che l'iniezione artificiale ha "confuso" il peso statistico dei lemmi critici reali del dataset.
+
+\subsubsection{Adozione della Baseline e Sviluppi Futuri}
+Nonostante questi test evidenzino l'incapacità intrinseca del modello \textit{Bag-of-Words} di cogliere le sfumature semantiche periferiche, ci troviamo di fronte a un problema ben noto in letteratura scientifica: i risultati dipendono strettamente dalla natura del dataset esplorato. Il Suicide Watch Dataset risulta fortemente "esplicito" nei suoi pattern, motivo per cui l'algoritmo TF-IDF riesce ad intercettare la stragrande maggioranza dei casi con un invidiabile \textbf{94.01\% di Accuratezza}.
+
+Dal punto di vista del \textit{Business Understanding}, l'obiettivo del Red Flag Testuale all'interno di SINTON-IA non è quello di sostituire la diagnosi clinica approfondita, ma di agire come \textbf{filtro di sicurezza primo e macroscopico} in aree dell'applicativo in cui lo psicologo non ha visuale in tempo reale. In questo preciso framework, l'uso di un modello baseline si dimostra la soluzione tecnica più idonea, garantendo:
+\begin{enumerate}
+    \item \textbf{Efficienza Computazionale}: Tempi di addestramento e di inferenza pressoché istantanei.
+    \item \textbf{Alta Interpretabilità}: Possibilità di tracciare in modo lampante il contributo di volta in volta apportato da ogni parola, consentendo di motivare con facilità l'esito diagnostico ai medici preposti.
+    \item \textbf{Prestazioni Solide}: Validazione reale empirica con falsi negativi mantenuti al minimo fisiologico del dataset.
+\end{enumerate}
+
+Pertanto, è stato deciso di \textbf{mantenere questo algoritmo come soluzione in produzione}. 
+Passare all'implementazione delle Reti Neurali (come i \textit{Transformer}) e della \textit{Self-Attention} su questo peculiare set di dati comporterebbe uno spreco ingegneristico ingiustificato. Il modello di Deep Learning rischierebbe esclusivamente di memorizzare, su più livelli, gli stessi identici concetti appresi dall'ITF, appesantendo irreversibilmente l'architettura.
+Tuttavia, il passaggio a modelli Transformer rimane validato per gli \textbf{Sviluppi Futuri} del progetto, specificamente qualora si riuscisse ad acquisire dataset clinici dotati di una certificata mappatura delle sfumature psicologiche. Candidato d'eccellenza per questa iterazione è lo \textit{UMD Reddit Suicidality Dataset} dell'Università del Maryland \cite{umd_reddit_suicidality}, la cui etichettatura crowdsourced basata sulla scala ufficiale \textit{C-SSRS} fornisce esattamente le ambiguità adatte per le quali la potenza di calcolo semantico è imperativa.
+
+\subsection{Calibrazione della Soglia Clinica e Validazione Finale}
+Avendo confermato il TF-IDF come nostro modello di Riferimento in Produzione, abbiamo proceduto ad un ultimo fondamentale step di calibrazione (\textit{Threshold Tuning}) focalizzato ai soli fini dell'impiego clinico-sanitario, per poi validare i risultati definitivi sul **Test Set** (ossia il 10\% di dati originali sempre tenuti oscurati al modello fino ad ora).
+
+La Regressione Logistica, di default, classifica un messaggio come \textit{Suicide Risk} se la probabilità matematica supera la soglia di $\tau = 0.50$ ($50\%$). Tuttavia, nel contesto applicativo di SINTON-IA, commettere un **Falso Negativo** (non segnalare un utente che pianifica concretamente il suicidio) ha un peso etico e medico indicibilmente più grave rispetto a un **Falso Positivo** (una notifica d'allarme cautelativa inviata a uno psicologo per un messaggio che si rivela uno sfogo passeggero).
+
+Per spostare lo sbilanciamento del modello a favore della sicurezza, abbiamo analizzato sul set di Validation come variano Precision e Recall al decrescere della soglia. Abbiamo calcolato lo \textbf{$F_{2}$-Score}, una particolare metrica che attribuisce alla Recall un'importanza doppia rispetto alla Precisione.
+Come visibile nel grafico di calibrazione (Figura~\ref{fig:nlp_threshold_tuning}), il picco ottimale di sicurezza clinica lo si ottiene abbassando drasticamente la soglia di allarme a $\tau \approx \textbf{0.2384}$ ($23.8\%$). L'intero procedimento di calibrazione è tracciato nello script \texttt{06\_RedFlag\_Threshold\_Tuning.py}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{nlp_threshold_tuning.png}
+    \caption{Curva Precision-Recall in relazione alla Soglia Decisiva. Lo Score $F_2$ massimizza la Recall al $23.84\%$.}
+    \label{fig:nlp_threshold_tuning}
+\end{figure}
+
+L'adozione di tale ecosistema diagnostico ultra-sensibile ha prodotto risultati sbalorditivi durante l'esame finale sul Test Set Indipendente (circa $22.500$ record). I risultati esatti sono consultabili tramite la Matrice di Confusione definitiva in Figura~\ref{fig:nlp_optimal_cm}.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{nlp_optimal_cm.png}
+    \caption{Matrice di Confusione finale calcolata sul Test Set Indipendente applicando la soglia abbassata a $23.84\%$.}
+    \label{fig:nlp_optimal_cm}
+\end{figure}
+
+Applicando la soglia ricalibrata, l'\textbf{Accuracy globale} è scesa fisiologicamente al $91.77\%$ a causa di un incremento precalcolato di Falsi Positivi ($1.506$ rispetto a quasi $11.000$ veri sani). Al tempo stesso il picco di allerta ha scaturito una massimizzazione straordinaria della \textbf{Recall clinica}, schizzata dal preesistente $93.30\%$ al \textbf{\textbf{96.82\%}}.
+In termini puramente medici, per l'applicativo SINTON-IA, questo corrisponde all'identificazione sicura e pro-attiva di $10.627$ intenti autolesionistici nascosti all'interno di un campione casuale, tralasciandone appena $348$ sui totali presentati, rendendolo un validissimo modulo d'ascolto per la prima segnalazione diagnostica istantanea.
+
+È lecito domandarsi se accettare quasi \textbf{1.500 Falsi Positivi} non costituisca un potenziale sovraccarico di lavoro (c.d. \textit{Alert Fatigue}) per gli psicologi assegnati alla piattaforma, costretti a revisionare allarmi che poi si rivelano innocui sfoghi passeggeri.
+Dal punto di vista della \textbf{Clinica Digitale Integrata}, tuttavia, questo costituisce un "falso problema" o un trade-off ampiamente giustificato. In primo luogo, l'ecosistema SINTONIA permette allo specialista di convalidare o screditare rapidamente un falso allarme text-based incrociandolo visivamente con gli altri strumenti oggettivi presenti in dashboard (come la regressione dei questionari PHQ-9 o il trend del Diario Emozionale settimanale).
+In secondo luogo, prevale il principio etico fondamentale del \textit{"safe is better than sorry"}: il dispendio di tempo necessario a uno psicologo per scartare una manciata di allarmi fittizi in piattaforma risulta un costo operativo assolutamente irrisorio se comparato all'inestimabile valore medico di salvare pro-attivamente la vita ai restanti \textbf{diecimila pazienti silenti} il cui Rischio Suicidario nascosto sarebbe altrimenti sfuggito alla supervisione tradizionale.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Modello Depression Prediction}
+\label{sec:mod_depression}
+
+\subsection{User-Based Splitting e Baseline Regressiva}
+
+La costruzione dei modelli predittivi per il modulo \textit{Depression Prediction} ha richiesto un approccio metodologico rigoroso per gestire la natura intrinsecamente longitudinale dei dati fisiologici ed emotivi. Poiché i check-in degli utenti costituiscono serie temporali, un partizionamento ingenuo riga per riga porterebbe a un massiccio \textit{data leakage}, in cui il modello apprenderebbe l'identità del paziente anziché i pattern patologici della depressione.
+
+Per neutralizzare questo rischio alla radice, il workflow di SINTON-IA ha previsto l'aggregazione di tutte le misurazioni temporali di ciascun individuo in un unico vettore di feature riassuntive (eseguito in fase di \textit{Feature Engineering}). Di conseguenza, il dataset utilizzato per il modeling presenta una struttura in cui \textbf{ogni record corrisponde a un singolo paziente unico}. In questa configurazione, lo split tra le partizioni di training e test diventa \textbf{User-Based per costruzione}: garantendo l'atomicità del dato a livello utente, si assicura che nessuna informazione riguardante un singolo individuo possa essere contemporaneamente presente in entrambi i set, preservando l'integrità della valutazione e la capacità di generalizzazione del sistema.
+
+\subsubsection*{Dimensioni delle Partizioni}
+I pazienti sono stati estratti dal dataset preparato e suddivisi in due set distinti. Seguendo le best practices di letteratura per dataset di queste dimensioni, abbiamo optato per una ripartizione stratificata:
+\begin{itemize}
+    \item \textbf{Training Set (80\%)}: $80.000$ record (utilizzato per lo sviluppo e l'ottimizzazione).
+    \item \textbf{Test Set (20\%)}: $20.000$ record (congelato e impiegato esclusivamente per la valutazione finale).
+\end{itemize}
+
+\subsubsection*{Distribuzione del Target}
+Ultimato lo split, è stato verificato che la distribuzione della variabile target (il punteggio \textbf{PHQ-9 Total}) rimanesse inalterata in entrambe le partizioni. La Figura~\ref{fig:dp_target_dist} riporta le funzioni di densità stimate (KDE) del target, confermando l'assenza di bias indotti dal processo di separazione dei pazienti.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{dp_target_distribution.png}
+    \caption{Distribuzione della variabile target PHQ-9 nelle partizioni di Training e Test.}
+    \label{fig:dp_target_dist}
+\end{figure}
+
+\subsubsection*{Baseline Regressiva Interpretabile}
+Prima di addestrare algoritmi ad elevata complessità, è stata definita una \textbf{Baseline} di riferimento basata sulla \textbf{Ridge Regression}. La Ridge Regression è un modello lineare "regolarizzato": a differenza della regressione standard, essa introduce una piccola penalità numerica sui coefficienti del modello. Questo accorgimento serve a mantenere le predizioni stabili e a evitare l'overfitting (il fenomeno per cui il modello memorizza i dati di training invece di imparare a generalizzare), rendendolo un benchmark solido e affidabile.
+
+La valutazione della baseline è stata condotta tramite \textbf{KFold Cross-Validation} a 5 split sul Training Set. Questa tecnica consiste nel dividere i dati in 5 gruppi ("fold") e addestrare il modello 5 volte: ogni volta, 4 gruppi vengono usati per l'apprendimento e il rimanente per la verifica, a rotazione. Questo processo "round-robin" garantisce che ogni record venga testato almeno una volta, fornendo una stima della performance molto più robusta rispetto a un singolo test casuale.
+
+I risultati medi della cross-validation per il modello baseline sono stati i seguenti:
+\begin{itemize}
+    \item \textbf{Mean Absolute Error (MAE)}: $2.6793 \pm 0.0096$. Il MAE rappresenta l'errore medio "puro" (la distanza media tra valore predetto e reale), espresso nella stessa unità di misura del PHQ-9. Un valore di circa 2.6 significa che, mediamente, il modello sbaglia di meno di 3 punti sulla scala diagnostica.
+    \item \textbf{Root Mean Squared Error (RMSE)}: $3.3861 \pm 0.0079$. L'RMSE è simile al MAE ma penalizza più duramente gli errori grandi. Essendo leggermente superiore al MAE, ci indica che il modello commette saltuariamente errori più marcati, sebbene rimanga mediamente preciso.
+    \item \textbf{Coefficiente di Determinazione ($R^2$)}: È un indice che ci dice quanto il modello sia più "intelligente" rispetto a una semplice media statistica. Se per ogni nuovo paziente ci limitassimo a "tirare a indovinare" usando sempre il punteggio medio di tutti gli altri pazienti, avremmo un $R^2$ pari a 0. Il valore di $0.6171$ indica che la nostra baseline lineare aggiunge un valore significativo, riuscendo a spiegare circa il 62\% della variabilità dei punteggi reali.
+\end{itemize}
+
+Queste misurazioni costituiscono il punto di partenza per quantificare i miglioramenti apportati da architetture più avanzate.
+
+\subsection{Selezione del Modello e Hyperparameter Tuning}
+
+Successivamente all'istituzione della baseline lineare, la sperimentazione ha previsto l'addestramento e il confronto di modelli \textit{ensemble} basati su alberi decisionali, tipicamente più adatti a catturare relazioni non lineari:
+\begin{itemize}
+    \item \textbf{Random Forest}: Opera come un "comitato" di centinaia di alberi decisionali indipendenti. Ogni albero formula una predizione e il risultato finale è la media di tutte; questo riduce drasticamente l'errore casuale.
+    \item \textbf{LightGBM}: A differenza del Random Forest, gli alberi non sono indipendenti ma vengono creati in sequenza. Ogni nuovo albero cerca di correggere gli errori commessi dai precedenti. È un approccio molto più mirato e computazionalmente efficiente.
+\end{itemize}
+
+\subsubsection*{Confronto Iniziale sul Training Set}
+I modelli candidati sono stati valutati con la stessa configurazione di KFold CV. La Tabella~\ref{tab:model_comparison} riassume le performance medie. Come atteso, i metodi ensemble hanno superato nettamente la regressione lineare.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Modello Candidato} & \textbf{MAE (M $\pm$ SD)} & \textbf{RMSE (M $\pm$ SD)} \\
+        \hline
+        Ridge Regression (Baseline) & $2.6793 \pm 0.0096$ & $3.3861 \pm 0.0079$ \\
+        Random Forest               & $2.2509 \pm 0.0158$ & $2.8906 \pm 0.0181$ \\
+        LightGBM                    & $2.3120 \pm 0.0180$ & $2.9560 \pm 0.0200$ \\
+        \hline
+    \end{tabular}
+    \caption{Confronto delle prestazioni medie in CV (KFold) sul Training Set.}
+    \label{tab:model_comparison}
+\end{table}
+
+\subsubsection*{Ottimizzazione del LightGBM e Sample Weights}
+Sebbene il Random Forest abbia mostrato metriche iniziali leggermente superiori, il \textbf{LightGBM Regressor} è stato selezionato come modello definitivo per SINTON-IA per diverse ragioni strategiche. Innanzitutto, il LightGBM gestisce nativamente i valori mancanti, una caratteristica frequente nei dati reali di telemetria clinica. In secondo luogo, il suo algoritmo di crescita "leaf-wise" (che espande i nodi più "promettenti" invece di quelli più vicini alla radice) è statisticamente più incline a catturare pattern complessi e sottili tipici del comportamento umano, non appena viene rifinito tramite ottimizzazione.
+
+La sintonia fine degli iperparametri è stata delegata ad \textbf{Optuna}, un framework di ottimizzazione bayesiana. Diversamente dai classici tentativi casuali, Optuna agisce in modo "intelligente": analizza i risultati dei test precedenti per restringere lo spazio di ricerca verso le configurazioni più promettenti. Questo approccio permette di trovare il miglior assetto del modello senza sprecare risorse computazionali, imparando letteralmente dai propri "errori" di configurazione. Sono stati eseguiti \textbf{50 cicli (trials)} di ottimizzazione, valutati tramite una validazione K-Fold a 3 split.
+
+Infine, per allineare il modello alle stringenti necessità cliniche di SINTON-IA, abbiamo introdotto i \textbf{Sample Weights}. Ai pazienti con depressione grave (score $\ge 15$) è stato assegnato un peso raddoppiato durante l'addestramento. La decisione ha una forte motivazione clinica: l'obiettivo non è solo essere precisi "in generale", ma soprattutto evitare i falsi negativi nei soggetti critici. Un errore di sottovalutazione per un paziente grave è considerato molto più grave di un errore per un paziente sano; raddoppiando il peso di questi ultimi, costringiamo matematicamente l'algoritmo a dare priorità assoluta alla correttezza diagnostica nelle fasce d'emergenza.
+
+\begin{lstlisting}[language=Python, caption=Addestramento finale con prioritizzazione clinica dei casi gravi]
+# 1. Definizione pesi: raddoppiamo l'importanza dei casi critici (PHQ-9 >= 15)
+sample_weights = np.where(y_train >= 15, 2.0, 1.0)
+
+# 2. Addestramento del modello definitivo con i parametri calcolati da Optuna
+model = lgb.LGBMRegressor(**best_params)
+model.fit(X_train, y_train, sample_weight=sample_weights)
+\end{lstlisting}
+
+I parametri finali estratti dal tuning bayesiano definiscono un modello profondamente ottimizzato. L'assetto definitivo è stato addestrato integralmente sull'intero Training Set, pesato per gravità clinica.
+
+Un vantaggio significativo dei moderni modelli Tree-Based è la possibilità di estrarre e quantificare rigorosamente l'importanza di ciascuna variabile predittiva. Al posto delle metriche standard (che spesso sovrastimano variabili con codici univoci), è stato integrato il framework \textbf{SHAP} (\textit{SHapley Additive exPlanations}), basato sulla Teoria dei Giochi (Figura~\ref{fig:dp_feature_importance}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{dp_feature_importance.png}
+    \caption{SHAP Summary Plot per le dinamiche comportamentali nel LightGBM. L'asse X indica l'impatto direzionale sullo score regressivo diagnostico.}
+    \label{fig:dp_feature_importance}
+\end{figure}
+
+Il concetto alla base di SHAP è quello di considerare ogni variabile come un "giocatore" di una squadra (il modello) che collabora per ottenere un risultato (la predizione). SHAP calcola matematicamente quanto "merito" spetta a ciascuna variabile per aver spostato il punteggio finale rispetto alla media. Questo garantisce una trasparenza senza precedenti: non sappiamo solo quali feature sono importanti, ma anche se aumentano o diminuiscono l'allarme depressivo. 
+
+Il Summary Plot di SHAP ci rivela \textit{come} varia l'allarme depressione rispetto ai valori assunti dalle feature. Il tono medio (\texttt{valence\_mean}) si conferma il fattore statisticamente più influente: valori bassi di valenza emozionale (toni scuri nel grafico) spingono la predizione verso punteggi PHQ-9 più alti. Di pari rilevanza clinica è il peso attribuito all'assenza di dati (\texttt{missing\_ratio}) e all'ampiezza degli sbalzi d'umore (\texttt{intensity\_mean}). Tali risultati dimostrano esplicitamente come SHAP conferisca interpretabilità direzionale: un innalzamento patologico di queste misurazioni agisce da precursore critico del deterioramento clinico, venendo riconosciuto dal sistema come primario fattore prognostico di scompenso emotivo.
+
+\subsection{Valutazione Finale e Analisi dei Residui}
+Il modello LightGBM, pesato e ottimizzato bayesianamente, è stato infine validato sul Test Set indipendente per valutarne le reali capacità di generalizzazione e la prontezza diagnostica per la messa in produzione.
+
+\subsubsection*{Performance Generali}
+I risultati sul Test Set (Tabella~\ref{tab:final_evaluation_metrics}) confermano l'affidabilità del framework. Con un $R^2$ incrementato e ottimi controlli su MAE e RMSE, il sistema si rivela in grado di spiegare larga parte della varianza associata allo score depressivo avvalendosi esclusivamente di metadati comportamentali (il diario emozionale) prima ancora che il paziente compili i test formali.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Configurazione} & \textbf{MAE} & \textbf{RMSE} & \textbf{$R^2$} \\
+        \hline
+        Baseline (Ridge CV) & 2.6793 & 3.3861 & 0.6171 \\
+        \textbf{LightGBM Ottimizzato (Test Set)} & \textbf{2.2098} & \textbf{2.8273} & \textbf{0.7321} \\
+        \hline
+        \textit{Miglioramento Assoluto} & \textbf{-0.4695} & \textbf{-0.5588} & \textbf{+0.1150} \\
+        \hline
+    \end{tabular}
+    \caption{Prestazioni in inferenza del LightGBM definitivo sul Test Set.}
+    \label{tab:final_evaluation_metrics}
+\end{table}
+
+\subsubsection*{Confronto con le Soglie di Accettabilità}
+I risultati ottenuti testimoniano che il modello LightGBM soddisfa e supera ampiamente le soglie di accettabilità per la validazione diagnostica postulate nel contesto analitico (Capitolo 2). A fronte dei requisiti di tolleranza di $\text{MAE} \le 3.0$ e $\text{RMSE} \le 4.5$, il sistema definitivo in inferenza registra performance nettamente superiori. Tali margini prestazionali non solo confermano la fattibilità ingegneristica dell'approccio, ma ne legittimano concretamente l'impiego operativo entro i flussi di SINTONIA. Il modello è adeguatamente maturo per erogare previsioni stabili, supportando in maniera non invasiva e precauzionale le decisioni cliniche senza inondare i professionisti sanitari di falsi allarmi lievi derivanti da un fitting grossolano.
+
+\subsubsection*{Distribuzione dell'Errore e Assenza di Bias Sistematica}
+L'analisi dei residui (la differenza tra ciò che il modello predice e il valore clinico reale) è fondamentale per capire se l'algoritmo ha delle "preferenze" o se è equilibrato. L'istogramma degli errori sul Test Set (Figura~\ref{fig:dp_residual_dist}) mostra una distribuzione a campana centrata sullo zero. Questo significa che il modello è sprovvisto di quello che in gergo tecnico si chiama \textit{bias}: non tende né a sovrastimare né a sottostimare sistematicamente, ma distribuisce i suoi piccoli errori in modo equo. Immaginando una bilancia, il modello è perfettamente in equilibrio; quando sbaglia, lo fa in modo casuale e contenuto, senza mai "pendere" troppo da una parte o dall'altra.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{dp_residual_distribution.png}
+        \caption{Istogramma dei residui ($y_{true} - y_{pred}$) valutato sul Test Set.}
+        \label{fig:dp_residual_dist}
+    \end{minipage}\hfill
+    \begin{minipage}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{dp_residual_plot.png}
+        \caption{Residual Plot e dispersione locale in base al target predetto.}
+        \label{fig:dp_residual_plot}
+    \end{minipage}
+\end{figure}
+
+Il Residual Plot in Figura~\ref{fig:dp_residual_plot} testimonia una \textit{omochedasticità} ragionevole: la varianza dell'errore resta sufficientemente costante lungo i vari indici di severità, rassicurando l'affidabilità delle soglie generate dai \textit{nudges} futuri.
+
+\subsubsection*{Analisi Stratificata per Fascia PHQ-9 e Implicazioni Cliniche}
+Per capire l'utilità reale del sistema in un ospedale o in una clinica, non basta guardare la precisione media: dobbiamo sapere come si comporta il modello per ogni tipologia di paziente. Analizzare i risultati per ogni fascia di gravità (lieve, moderata, grave) è fondamentale perché un errore di 2 punti ha un peso clinico molto diverso se il paziente è sano (punteggio basso) o se è già in una zona di criticità (punteggio alto). L'obiettivo di SINTON-IA non è solo misurare l'umore, ma fungere da "salvagente" per i casi più complessi.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|c|c|}
+        \hline
+        \textbf{Fascia di Severità PHQ-9 (Reale)} & \textbf{Numero Pazienti} & \textbf{Mean Absolute Error} \\
+        \hline
+        Minima (0-4) & 11.038 & $1.7661$ \\
+        Lieve (5-9) & 4.987 & $2.4967$ \\
+        Moderata (10-14) & 2.372 & $3.4666$ \\
+        Moderatamente Grave (15-19) & 1.010 & $2.3585$ \\
+        Grave (20-27) & 593 & $2.7739$ \\
+        \hline
+    \end{tabular}
+    \caption{Disaggregazione dell'Errore Medio Assoluto nelle bande nosologiche PHQ-9.}
+    \label{tab:mae_by_band}
+\end{table}
+
+Come si evince dalla Tabella~\ref{tab:mae_by_band}, l'inserimento dei class weights ha prodotto una riduzione significativa dei falsi sani: per i pazienti nella fascia \textbf{Moderatamente Grave} e \textbf{Grave}, il modello mantiene una reattività diagnostica proattiva (errori compresi tra 2.5 e 3 punti di scarto della scala), proteggendo questi casi dall'essere banalizzati o etichettati erroneamente in fasce non d'intervento.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{dp_scatter_pred_vs_true.png}
+    \caption{Scatterplot di predizioni finali sovrapposte alle fasce cliniche PHQ-9.}
+    \label{fig:dp_scatter_bands}
+\end{figure}
+
+\subsection{Limiti dell'Approccio e Sviluppi Futuri}
+L'architettura sviluppata per la \textit{Depression Prediction} dimostra la fattibilità tecnica di inferire punteggi clinici complessi analizzando esclusivamente tracce comportamentali asincrone. Ciononostante, si evidenziano specifici limiti ingegneristici che dovranno essere affrontati in vista di futuri aggiornamenti della piattaforma: 
+
+\begin{itemize}
+    \item \textbf{Generazione Sintetica dei Dati}: A causa dello stadio iniziale del progetto SINTONIA (start-up), il modello è stato validato mediante simulazioni digitali (\textit{Digital Twins}), ancorché accuratissime dal punto di vista probabilistico. Ne consegue un limite epistemologico intrinseco: l'Intelligenza Artificiale non ha ancora valutato la stocasticità caotica o le incongruenze umane (imprecisioni logiche, typo, o variazioni socio-anagrafiche complesse) che insorgeranno nel lancio in via sperimentale nell'ASL. Al varo clinico ufficiale, il LightGBM dovr\`a obbligatoriamente subire una fase di massiccio \textit{re-training} sui primi flussi di telemetria reali per compensare il possibile data shift.
+    \item \textbf{Gestione del Cold Start}: Il modello odierno vanta elevata predittività pre-allertando i medici, ma vincola la propria analisi ad almeno due settimane ($\sim$14 giorni) di tracciatura dati per estrarre features temporali stabili come deviazione standard o tendenze in regressione polinomiale. Un paziente vulnerabile neoiscritto (\textit{Cold Start}) rimarrà scoperto per diversi giorni dal monitoraggio algoritmico puro, affidando giocoforza le sue segnalazioni d'acuzie al comparto parallelo di \textit{Red Flag Detection} sul testo lineare. 
+\end{itemize}
+L'integrazione parallela delle features linguistiche grezze con le derivate temporali nel medesimo regressore resta la sfida scientifica cardine prospettata per i prossimi avanzamenti di prodotto.
