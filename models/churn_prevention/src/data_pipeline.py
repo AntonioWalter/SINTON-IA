@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
 from sklearn.preprocessing import MinMaxScaler
-from typing import Dict, List, Tuple
+from typing import Dict
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  Costanti e Parametri Profilo (da generate_synthetic_data.py)
@@ -87,7 +87,8 @@ class DataPipeline:
         profiles = []
         for p, pct in PROFILI.items():
             profiles.extend([p] * int(n_patients * pct))
-        while len(profiles) < n_patients: profiles.append(self.rng.choice(list(PROFILI.keys())))
+        while len(profiles) < n_patients:
+            profiles.append(self.rng.choice(list(PROFILI.keys())))
         profiles = profiles[:n_patients]
         self.rng.shuffle(profiles)
 
@@ -117,7 +118,8 @@ class DataPipeline:
             mood_prob = self.rng.uniform(*params["mood_daily_prob"])
             diary_prob = self.rng.uniform(*params["diary_daily_prob"])
             for d_idx in range(total_days):
-                if d_idx >= cutoff: break
+                if d_idx >= cutoff:
+                    break
                 dt = self.today - timedelta(days=int(total_days - d_idx))
                 
                 if self.rng.random() < mood_prob:
@@ -134,7 +136,8 @@ class DataPipeline:
             # Questionnaires (every 14 days)
             q_prob = self.rng.uniform(*params["questionnaire_compliance"])
             for d_idx in range(0, total_days, 14):
-                if d_idx >= cutoff: break
+                if d_idx >= cutoff:
+                    break
                 if self.rng.random() < q_prob:
                     dt = self.today - timedelta(days=int(total_days - d_idx))
                     quest_records.append({

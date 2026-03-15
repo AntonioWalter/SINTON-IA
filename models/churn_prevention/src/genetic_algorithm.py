@@ -3,7 +3,7 @@ import logging
 import json
 import numpy as np
 import pandas as pd
-from typing import List, Tuple, Dict, Optional
+from typing import List, Tuple, Dict
 from dataclasses import dataclass, asdict
 
 # Setup logging
@@ -153,8 +153,10 @@ class FitnessEvaluator:
         
         mood_freq = fetch_features.get('mood_frequency_7d', 0.5)
         dynamic_threshold = self.params.max_freq_threshold
-        if mood_freq > 0.8: dynamic_threshold += 5 
-        if mood_freq < 0.2: dynamic_threshold -= 5 
+        if mood_freq > 0.8:
+            dynamic_threshold += 5 
+        if mood_freq < 0.2:
+            dynamic_threshold -= 5 
         
         freq = phenotype['frequenza_settimanale']
         # --- TASSA CONTINUA FREQUENZA ---
@@ -211,24 +213,37 @@ class FitnessEvaluator:
         
         if is_engaged:
             # Allineamento: L'engaged vuole mantenere l'abitudine (Promemoria)
-            if tipo == 'Promemoria': score += 0.2
-            if 7 <= freq <= 14: score += 0.2
-            if freq > 25: score -= 0.3 # Anche l'engaged si stanca
+            if tipo == 'Promemoria':
+                score += 0.2
+            if 7 <= freq <= 14:
+                score += 0.2
+            if freq > 25:
+                score -= 0.3 # Anche l'engaged si stanca
         elif is_at_risk:
             # Allineamento: Chi è in crisi ha bisogno di motivazione o info
-            if tipo in ['Motivazionale', 'Informativa']: score += 0.3
-            if 3 <= freq <= 7: score += 0.2
-            if freq > 10: score -= 0.2
+            if tipo in ['Motivazionale', 'Informativa']:
+                score += 0.3
+            if 3 <= freq <= 7:
+                score += 0.2
+            if freq > 10:
+                score -= 0.2
         elif is_ghost:
             # Allineamento: Chi è sparito va recuperato con cautela
-            if tipo == 'Motivazionale': score += 0.3
-            if freq <= 2: score += 0.2
-            if freq > 5: score -= 0.4 # Effetto spam garantito
+            if tipo == 'Motivazionale':
+                score += 0.3
+            if freq <= 2:
+                score += 0.2
+            if freq > 5:
+                score -= 0.4 # Effetto spam garantito
         elif is_moderato:
-            if tipo == 'Questionario': score += 0.2
-            if tipo == 'Promemoria': score += 0.1
-            if 4 <= freq <= 10: score += 0.2
-            if freq > 25: score -= 0.3
+            if tipo == 'Questionario':
+                score += 0.2
+            if tipo == 'Promemoria':
+                score += 0.1
+            if 4 <= freq <= 10:
+                score += 0.2
+            if freq > 25:
+                score -= 0.3
             
         if len(phenotype['orari_attivi']) == 0:
             score = 0.0
@@ -270,11 +285,16 @@ class GeneticAlgorithm:
     # --- SELECTION METHODS ---
     def _select(self) -> Chromosome:
         method = self.params.selection_method.lower()
-        if method == "tournament": return self._selection_tournament()
-        elif method == "roulette": return self._selection_roulette()
-        elif method == "ranking": return self._selection_ranking()
-        elif method == "truncation": return self._selection_truncation()
-        else: return self._selection_roulette()
+        if method == "tournament":
+            return self._selection_tournament()
+        elif method == "roulette":
+            return self._selection_roulette()
+        elif method == "ranking":
+            return self._selection_ranking()
+        elif method == "truncation":
+            return self._selection_truncation()
+        else:
+            return self._selection_roulette()
 
     def _selection_tournament(self) -> Chromosome:
         candidates = self.rng.choice(self.population, size=self.params.tournament_size, replace=False)
@@ -324,11 +344,16 @@ class GeneticAlgorithm:
             return c1, c2
             
         method = self.params.crossover_method.lower()
-        if method == "single-point": return self._crossover_1point(p1, p2)
-        elif method == "two-point": return self._crossover_2point(p1, p2)
-        elif method == "uniform": return self._crossover_uniform(p1, p2)
-        elif method == "k-point": return self._crossover_kpoint(p1, p2)
-        else: return self._crossover_1point(p1, p2)
+        if method == "single-point":
+            return self._crossover_1point(p1, p2)
+        elif method == "two-point":
+            return self._crossover_2point(p1, p2)
+        elif method == "uniform":
+            return self._crossover_uniform(p1, p2)
+        elif method == "k-point":
+            return self._crossover_kpoint(p1, p2)
+        else:
+            return self._crossover_1point(p1, p2)
 
     def _crossover_1point(self, p1: Chromosome, p2: Chromosome) -> Tuple[Chromosome, Chromosome]:
         pt = self.rng.integers(1, Chromosome.TOTAL_LENGTH)
@@ -368,10 +393,14 @@ class GeneticAlgorithm:
         method = self.params.mutation_method.lower()
         mutated = False
         
-        if method == "flip-bit": mutated = self._mutation_flip(ind)
-        elif method == "multi-bit": mutated = self._mutation_multi(ind)
-        elif method == "adaptive": mutated = self._mutation_adaptive(ind)
-        else: mutated = self._mutation_flip(ind)
+        if method == "flip-bit":
+            mutated = self._mutation_flip(ind)
+        elif method == "multi-bit":
+            mutated = self._mutation_multi(ind)
+        elif method == "adaptive":
+            mutated = self._mutation_adaptive(ind)
+        else:
+            mutated = self._mutation_flip(ind)
 
         if mutated:
             ind.fitness = None # Invalida la cache
