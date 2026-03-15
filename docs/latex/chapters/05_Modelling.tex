@@ -1,137 +1,148 @@
 \chapter{Modeling}
 \label{ch:modeling}
 
-Questo capitolo descrive la fase di \textit{Modeling} per i modelli di Intelligenza Artificiale integrati in SINTON-IA. In particolare, ci concentreremo sul sistema di prevenzione dell'abbandono (Churn Prevention), il quale, a differenza degli approcci classici di classificazione supervisionata, impiega un approccio basato su algoritmi di ottimizzazione euristica.
+In continuità con quanto analizzato nel Capitolo~\ref{ch:data_preparation}, i modelli di Intelligenza Artificiale di SINTON-IA agiscono come motori decisionali alimentati dai dati strutturati e dalle feature estratte nelle fasi precedenti. Il processo di modeling si articola lungo tre direttrici complementari: dall'identificazione acuta del rischio suicidario tramite tecniche di NLP, alla previsione clinica della depressione, fino alla sintesi di interventi personalizzati per la prevenzione dell'abbandono.
+
+% Placeholder per le sezioni 5.1 e 5.2 a carico del collaboratore
+\section{Modello Red Flag Detection}
+\section{Modello Depression Prediction}
 
 \section{Churn Prevention: Ottimizzazione tramite Algoritmo Genetico}
 \label{sec:churn_modeling}
 
-L'obiettivo del Churn Prevention non è prevedere \textit{se} un paziente abbandonerà la piattaforma, ma capire \textit{come} intervenire proattivamente per evitarlo. In ottica di \textit{nudging} comportamentale, il fine ultimo è la personalizzazione delle notifiche in base al fenotipo dell'utente. Poiché non disponiamo storicamente dell'effetto causale (outcome) di diverse strategie di notifica su pazienti reali, abbiamo adottato un \textbf{Algoritmo Genetico (GA)} per l'esplorazione e l'ottimizzazione nello spazio delle possibili policy di ingaggio.
+Integrando gli indicatori comportamentali estratti nella Sezione~\ref{sec:prep_churn}, il modulo di Churn Prevention utilizza un \textbf{Algoritmo Genetico (GA)} per la \textbf{definizione proattiva} di interventi di \textit{nudging} \cite{thaler2008nudge} personalizzati. Nello specifico, il profilo digitale di ogni paziente funge da contesto critico per il motore di valutazione (\textit{fitness function}). Invece di massimizzare singolarmente ogni indicatore di attività --- rischiando di saturare cognitivamente l'utente --- l'algoritmo evolve una strategia bilanciata che massimizzi la \textit{Retention} simulata, ovvero la probabilità di permanenza nel percorso terapeutico in relazione allo stato comportamentale corrente del paziente.
 
-Il GA mira a massimizzare la probabilità di \textit{retention} stimata del paziente, minimizzando al contempo il costo in termini di disturbo arrecato da notifiche in eccesso o inviate in fasce orarie inique (Notification Fatigue).
+\subsection{Codifica Cromosomiale}
+A valle della \textit{Data Preparation} (Sezione~\ref{sec:prep_churn}), la prima fase del modeling consiste nel definire la rappresentazione dell'individuo, ovvero la struttura cromosomiale su cui il motore evolutivo opererà per ottimizzare la strategia di intervento.
 
-\subsection{Struttura del Problema e Codifica Cromosomiale}
-
-Ogni possibile strategia di invio delle notifiche, che rappresenta un singolo \textit{individuo} (o genotipo) all'interno della popolazione, è stata formalizzata in una codifica cromosomiale binaria. Tale approccio garantisce ampia esploratività e permette l'applicazione di operatori genetici standard senza vincoli euristici imposti.
-
-Il cromosoma ha una lunghezza complessiva di \textbf{32 bit} ed è articolato in quattro blocchi (geni):
+\paragraph{La Codifica Binaria e il Teorema degli Schemi}
+Ciascun individuo della popolazione è codificato in un cromosoma binario a \textbf{31 bit}, strutturato secondo la seguente gerarchia genica:
 \begin{itemize}
-    \item \textbf{G1 - Tipologia Primaria (2 bit)}: Definisce il tipo di notifica prevalente. Mappa in quattro categorie presenti sulla piattaforma SINTONIA: Promemoria (00), Motivazionale (01), Informativa (10), Questionario (11).
-    \item \textbf{G2 - Frequenza Settimanale (5 bit)}: Rappresenta il volume di notifiche inviate nell'arco dei 7 giorni, permettendo valori da 0 a 31 (equivalente a un tetto di poco maggiore a 4 notifiche giornaliere medie).
-    \item \textbf{G3 - Schedule Orario (24 bit)}: Maschera binaria (\textit{bitmask}) che rappresenta le 24 ore del giorno. Un bit settato a $1$ in posizione $i$ indica l'eleggibilità dell'orario $i$ per l'invio. Tale granularità temporale aggira il bias umano delle macro-fasce (es. \textit{"solo la mattina"}) lasciando all'algoritmo l'onere di scoprire pattern temporali complessi.
-    \item \textbf{G4 - Distribuzione (1 bit)}: Variabile booleana che stabilisce se la frequenza settimanale è distribuita uniformemente sui giorni o in forma concentrata.
+    \item \textbf{G1 - Tipologia (2 bit):} definisce la natura del messaggio (es. Motivazionale, Informativa);
+    \item \textbf{G2 - Frequenza (5 bit):} regola il numero di notifiche settimanali (range 0-31);
+    \item \textbf{G3 - Schedule Orario (24 bit):} definisce le fasce orarie dedicate all'invio delle notifiche.
 \end{itemize}
+La scelta della codifica binaria rispetto a una rappresentazione decimale è dettata dalla necessità di modellare lo schedule orario (G3) come una \textbf{\textit{bitmask}} di 24 bit. Mentre in un sistema decimale gli orari e le frequenze agirebbero come entità atomiche, il formato binario permette agli operatori evolutivi di scindere e ricombinare i \textit{Building Blocks} in accordo con il \textbf{Teorema degli Schemi di Holland} \cite{holland1992adaptation}. Per ottimizzare la ricerca ed evitare l'\textbf{eccessiva granularità} delle variazioni giornaliere, si è scelto di non mappare i singoli giorni: un'espansione a 168 bit (24h $\times$ 7 giorni) causerebbe infatti un'esplosione dello spazio di ricerca a $2^{168}$. L'attuale configurazione a 31 bit cattura efficacemente i \textbf{pattern circadiani stabili} (cronotipi), delegando lo \textit{spreading} temporale alla logica di backend sulla base del volume definito in G2.
 
-\subsection{Funzione di Fitness e Penalità Comportamentali}
-
-La valutazione del \textit{fenotipo} associato alla strategia è calcolata tramite una \textbf{Funzione di Fitness} che agisce su tre componenti fondamentali: l'efficacia stimata e due indici di penalità regolati da pesi iper-parametrici ($w_1=1.0, w_2=0.4, w_3=0.2$).
+\subsection{Funzione di Fitness e Gestione dei Vincoli}
+Una volta definita la struttura del cromosoma, è necessario stabilire la "metrica del successo". La funzione di fitness traduce la strategia genetica in valore clinico, fungendo da guida per l'intero processo evolutivo.
 
 \begin{equation}
     Fitness(S, p) = w_1 \cdot \text{Retention}(S, p) - w_2 \cdot P_{freq}(S) - w_3 \cdot P_{time}(S)
 \end{equation}
 
-\paragraph{Modello di Simulazione e Cluster Utente (Retention)}
-A causa dell'assenza di dati di outcome dal backend, il termine $\text{Retention}(S, p)$ è valutato simulando la compatibilità tra strategia $S$ e i pattern comportamentali del paziente $p$, classificati in quattro cluster dinamici:
-\begin{itemize}
-    \item \textbf{Ghost}: Utenti quasi inattivi (basso mood frequency e read rate). Necessitano di stimoli empatici a bassa frequenza.
-    \item \textbf{A Rischio}: Utenti con segnali di instabilità (calo attività o umore basso). Sono il target primario del nudging correttivo.
-    \item \textbf{Depresso Engaged}: Utenti attivi ma con umore critico. Richiedono supporto costante ma task a basso carico cognitivo.
-    \item \textbf{Standard}: Utenti stabili per i quali si ottimizza il mantenimento del monitoraggio.
-\end{itemize}
+\paragraph{Modellazione Clinica della Retention} 
+In assenza di dati storici di outcome, la funzione $Retention(S, p)$ è implementata tramite un'euristica deterministica basata sui protocolli \textbf{JITAI} (\textit{Just-In-Time Adaptive Interventions}). Tale approccio traduce le evidenze della letteratura clinica in driver per la ricerca evolutiva, garantendo la validità scientifica del nudging personalizzato.
 
-\paragraph{Penalità di Frequenza ($P_{freq}$)}
-In SINTON-IA, un forte rischio è la desensibilizzazione del paziente per \textit{Alert Fatigue}. $P_{freq}$ interviene applicando una penalizzazione crescente esponenzialmente se la codifica oraria eccede una soglia tollerabile (\textit{threshold} imposto a 14 a settimana): $P_{freq}(S) = \max(0, e^{\alpha \cdot (\text{freq} - \text{soglia})} - 1)$. 
+Il calcolo della $Retention(S, p)$ si basa sulla classificazione del paziente in uno dei quattro archetipi clinici (\textit{Engaged}, \textit{Moderato}, \textit{A Rischio}, \textit{Ghost}), integrando incentivi e penalità in base alla pertinenza clinica (Tabella~\ref{tab:ga_expert_system}). Il valore risultante viene infine normalizzato nell'intervallo $[0, 1]$ per garantire la stabilità della funzione di fitness rispetto alle componenti di penalità.
 
-\paragraph{Penalità Temporale ($P_{time}$)}
-Le ore notturne (23:00 - 06:00) subiscono un decremento proporzionale se inserite nello \textit{schedule orario}, a meno che l'algoritmo, in contesti estremi, valuti il loro ROI in retention superiore al malus imposto.
+\begin{table}[H]
+\centering
+\caption{Logica di Nudging --- Driver di Ottimizzazione della Fitness.}
+\label{tab:ga_expert_system}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Archetipo} & \textbf{Contenuto} & \textbf{Frequenza} & \textbf{Driver Teorico} \\ \midrule
+\textit{Engaged} & Promemoria ($+0.2$) & Alta ($7-14$: $+0.2$) & \textit{Habit Maintenance} \\
+\textit{Moderato} & Questionario ($+0.2$) & Equilibrata ($4-10$: $+0.2$) & \textit{Habit Formation} \\
+\textit{A Rischio} & Informativo ($+0.3$) & Moderata ($3-7$: $+0.2$) & \textit{Crisis Intervention} \\
+\textit{Ghost} & Motivazionale ($+0.3$) & Minima ($\leq 2$: $+0.2$) & \textit{Psychological Reactance} \\ \bottomrule
+\end{tabular}
+\end{table}
+I coefficienti di ponderazione sono stati calibrati per riflettere una precisa gerarchia di priorità clinico-comportamentali. Il peso $w_1 = 1.0$ (Retention) rappresenta l'obiettivo primario di sopravvivenza del legame terapeutico. Il peso $w_2 = 0.4$ (Frequenza) agisce come modulatore contro il \textit{Cognitive Overload}: un'eccessiva densità di notifiche indurrebbe fenomeni di abituazione o, peggio, di reattanza, invalidando l'efficacia del messaggio. Infine, il peso $w_3 = 0.2$ (Timing) è dedicato alla salvaguardia dell'igiene del sonno: la letteratura clinica dimostra come le interazioni notturne non sollecitate possano frammentare il riposo REM, esacerbando i sintomi ansiosi e depressivi del paziente.
 
-\paragraph{Rationale dei Vincoli Adattivi (Dynamic Constraints)}
-A differenza di un approccio a soglie statiche, SINTON-IA adotta una \textbf{penalizzazione adattiva} che si calibra sul profilo comportamentale estratto dalle feature del paziente:
-\begin{itemize}
-    \item \textbf{Gestione della Fatigue Dinamica}: Il limite di frequenza settimanale (base 14) viene modulato in base all'ingaggio storico ($mood\_frequency$). Utenti altamente attivi (*Engaged*) beneficiano di una soglia estesa (+4), mentre per utenti a rischio o disingaggiati la soglia viene ridotta (-4) per prevenire la \textit{Reactance} psicologica.
-    \item \textbf{Igiene del Sonno e Night Owls}: Il vincolo orario (23:00 - 06:00) non è più un tabù assoluto. Se l'analisi delle feature rileva un alto tasso di attività notturna spontanea ($night\_activity\_rate$), il peso della penalità temporale viene drasticamente ridotto ($time\_sensitivity$). Ciò permette al GA di evolvere strategie che raggiungono l'utente nei suoi reali momenti di veglia, rispettando la sua cronobiologia individuale anziché imporre uno standard universale.
-    \item \paragraph{Considerazioni Etiche e Trade-off Clinici}
-Nonostante l'approccio adattivo aumenti l'efficacia del \textit{nudging} (massimizzando la probabilità di ingaggio), esso introduce un \textit{trade-off} critico che richiede monitoraggio continuo. L'adattamento ai ritmi notturni dei \textit{Night Owls} rischia, in alcuni contesti clinici, di fungere da \textbf{rinforzo involontario} per abitudini di sonno disfunzionali, spesso correlate a peggioramenti dello stato depressivo. Per mitigare tale rischio, il sistema mantiene una penalità basale minima non nulla (limite inferiore della \textit{time\_sensitivity} a 0.1), evitando che il GA saturi completamente le ore notturne anche per gli utenti più attivi. In ottica di evoluzione futura, tale parametro dovrebbe essere supervisionato dal personale clinico per bilanciare l'urgenza dell'intervento con la necessità di igiene del sonno.
-\end{itemize}
-
-\subsection{Operatori ed Evoluzione}
-
-Il sistema evolve popolazioni ottimizzate di dimensione $N=50$ iterate per 100 generazioni. Gli operatori genetici, calibrati tramite una fase di \textit{Hyperparameter Tuning} (Grid Search), sono stati scelti per massimizzare la robustezza della ricerca globale:
-
-\begin{itemize}
-    \item \textbf{Tournament Selection ($k=2$)}: Si è preferita questa tecnica rispetto al \textit{Roulette Wheel selection} per la sua capacità di gestire popolazioni con fitness distribuita in modo non uniforme (evitando che individui con fitness molto alta monopolizzino precocemente la selezione) e per la facilità nel regolare la \textit{selection pressure} variando il parametro $k$.
-    \item \textbf{Crossover a due punti ($P_{crs}=0.7$)}: Scelto per la sua efficacia nel preservare blocchi di geni (schema) nelle stringhe lunghe (32 bit), riducendo il rischio di distruggere combinazioni di orari (G3) che lavorano bene in sinergia.
-    \item \textbf{Bit-flip Mutation ($P_{mut}=0.01$)}: Mantiene la diversità genetica impedendo lo stallo nei minimi locali senza destabilizzare le soluzioni quasi-ottime.
-\end{itemize}
-
-\subsection{Hyperparameter Tuning e Valutazione delle Performance}
-
-Per garantire il rigore scientifico della fase di modeling, è stata implementata una pipeline sistematica di ottimizzazione e validazione:
-
-\begin{itemize}
-    \item \textbf{Grid Search Tuning}: È stata eseguita una ricerca esaustiva su uno spazio di 81 combinazioni di iperparametri. Tale processo ha permesso di identificare la configurazione che minimizza la varianza dei risultati massimizzando al contempo la \textit{best fitness} media tra diverse esecuzioni stocastiche.
-    \item \textbf{Validazione Statistica (Robustezza)}: Il modello è stato sottoposto a stress-test su un campione esteso di pazienti per ogni profilo. La stabilità statistica è confermata da una deviazione standard estremamente ridotta nelle fitness finali, indicando che le strategie evolute sono robuste rispetto alla variabilità dei dati individuali all'interno dello stesso cluster.
-    \item \textbf{Analisi di Sensibilità}: È stata valutata la risposta dinamica dell'algoritmo al variare dei pesi della fitness ($w_1, w_2, w_3$). I risultati confermano una corretta prioritizzazione della retention rispetto al disturbo (\textit{Notification Fatigue}), permettendo una regolazione precisa del comportamento del sistema in base agli obiettivi clinici.
-\end{itemize}
-
-\subsection{Benchmarking Comparativo: Valutazione del Valore Aggiunto}
-\label{subsec:benchmarking}
-
-I risultati sperimentali (Figura \ref{fig:ga_benchmark}) mostrano che l'algoritmo genetico ottiene una fitness media superiore del \textbf{350\%} rispetto alla baseline casuale, evidenziando una capacità di esplorazione dello spazio delle soluzioni estremamente efficace. Rispetto alla baseline euristica, il GA garantisce un incremento delle performance compreso tra il \textbf{25\% e il 30\%}. Questo scarto è attribuibile alla capacità del sistema di personalizzare il \textit{nudging} in base ai cronotipi individuali --- ovvero le naturali inclinazioni orarie di attività del paziente (es. \textit{Night Owls}) --- e alla sensibilità specifica alla fatigue, che una regola fissa non è in grado di intercettare.
+L'efficacia della ponderazione adottata è stata validata tramite un'analisi di sensibilità (Figura \ref{fig:ga_scenarios}), esplorando diversi regimi di priorità.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.85\textwidth]{05_ga_benchmark}
-    \caption{Benchmarking comparativo: GA vs Random vs Heuristic.}
-    \label{fig:ga_benchmark}
+    \includegraphics[width=0.85\textwidth]{07_scenario_analysis}
+    \caption{Scenario Analysis: Risposta media della popolazione alla variazione dei regimi di ponderazione della fitness function.}
+    \label{fig:ga_scenarios}
 \end{figure}
 
-L'analisi dell'evoluzione ha permesso di identificare strategie di \textit{nudging} differenziate per i quattro fenotipi comportamentali censiti nel dataset. La Figura \ref{fig:ga_convergence} mostra l'andamento della convergenza e della diversità genetica durante un'esecuzione tipica, evidenziando come l'algoritmo stabilizzi la soluzione ottimale in circa 20-30 generazioni.
+\paragraph{Spazio di Ricerca e Vincoli}
+La gestione dei vincoli di ottimizzazione avviene tramite \textbf{Soft Constraints} (Penalità). A differenza dei vincoli rigidi (\textit{Hard Constraints}) che frammenterebbero lo spazio di ricerca in regioni ammissibili disconnesse, le penalità graduate mantengono la \textbf{continuità dello spazio di ricerca}. Questo permette alla meta-euristica di utilizzare individui "quasi-validi" come ponti evolutivi verso ottimi globali distanti, preservando il gradiente informativo necessario alla convergenza.
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{05_ga_convergence_diversity}
-    \caption{Curva di convergenza (fitness best/avg) e diversità genetica.}
-    \label{fig:ga_convergence}
-\end{figure}
+L'unico \textbf{Hard Constraint} è applicato esclusivamente in fase di decodifica fenotipica per ragioni etico-cliniche: il sistema impone una frequenza minima di un'interazione settimanale ($f \geq 1$). Tale scelta di riparazione (\textit{repair strategy}) è preferita alla semplice esclusione delle soluzioni invalide (\textit{death penalty}) per massimizzare l'efficienza della ricerca, garantendo che il potenziale informativo di cromosomi con ottimi pattern orari o tipologici non vada disperso a causa di una singola mutazione sfavorevole sulla frequenza. Questo assicura che il principio di continuità terapeutica non venga mai violato, indipendentemente dalla pressione selettiva. Al di fuori di questo vincolo di integrità, il modeling della fitness integra teorie comportamentali per garantire l'appropriatezza clinica e l'efficacia dell'intervento attraverso due componenti principali:
 
-L'analisi fenotipica globale (Figura \ref{fig:ga_phenotype}) conferma la specializzazione delle strategie per profilo:
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{05_ga_phenotype_analysis}
-    \caption{Analisi fenotipica: Distribuzione di frequenza e tipologia per ogni profilo.}
-    \label{fig:ga_phenotype}
-\end{figure}
-
-\subsection{Analisi di Sensibilità e Scalabilità}
-
-Per valutare la robustezza del modello, è stata condotta un'analisi di sensibilità variando il peso della penalità sulla saturazione ($\omega_{freq}$). I risultati indicano che l'algoritmo reagisce linearmente: all'aumentare della penalità, la frequenza settimanale ottimale si stabilizza verso valori più bassi, permettendo al clinico di calibrare l'aggressività del sistema senza alterarne la logica di base.
-
-Inoltre, i test di performance riportano un tempo di calcolo medio di circa \textbf{25-30 ms} per paziente (su singola esecuzione con 30 popolazioni e 30 generazioni). Tale efficienza garantisce la scalabilità del sistema su una base utenti di ampie dimensioni, consentendo ricalcoli periodici delle strategie in tempo reale.
-
-Infine, la Figura \ref{fig:ga_time} illustra la distribuzione oraria delle notifiche evolute. La penalità oraria ($P_{time}$) agisce in modo dinamico: mentre per la maggior parte dei profili il sistema evita la fascia 23:00-06:00, l'algoritmo identifica correttamente i \textit{Night Owls} (gufi notturni). Per questi ultimi, se il tasso di attività notturna storica è elevato, la pressione selettiva si attenua, permettendo l'invio di notifiche anche in tarda serata se ciò massimizza la probabilità di engagement senza saturare il paziente.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.85\textwidth]{05_ga_time_distribution}
-    \caption{Distribuzione oraria delle notifiche: efficacia della penalità temporale.}
-    \label{fig:ga_time}
-\end{figure}
-
-\subsection{Analisi Qualitativa delle Strategie}
 \begin{enumerate}
-    \item \textbf{Pazienti "Ghost"}: Il GA converge verso una strategia a bassissima frequenza (\textit{2 notifiche/settimana}). La tipologia scelta è \textit{Motivazionale}, confermando l'ipotesi clinica che utenti disingaggiati necessitino di stimoli empatici piuttosto che di meri promemoria.
-    \item \textbf{Pazienti "Engaged"}: Qui l'algoritmo stabilizza una frequenza elevata (\textit{6-7 notifiche/settimana}) di tipo \textit{Promemoria}. L'utente attivo accetta e trae beneficio da un contatto quotidiano che funge da rinforzo positivo.
-    \item \textbf{Pazienti "A Rischio"}: La strategia evoluta mostra una frequenza moderata ma costante, orientata a richiamare l'attenzione senza saturare il canale di comunicazione.
-    \item \textbf{Pazienti "Moderato"}: Si osserva una preferenza per la tipologia \textit{Questionario} o \textit{Informativa} in orari serali, suggerendo che utenti con attività altalenante rispondano meglio a richieste di feedback esplicito.
+    \item \textbf{Penalità di Frequenza ($P_{freq}$):} Implementa una \textbf{regolarizzazione progressiva} del carico comunicativo per mitigare fenomeni di \textbf{Reattanza Psicologica} \cite{brehm1966theory}. Essa integra una componente lineare (tassa di efficienza) proporzionale al volume di messaggi e una componente esponenziale che interviene al superamento della soglia adattiva $f_{max}$:
+    \begin{equation}
+        P_{freq} = 
+        \begin{cases} 
+            T_{base} & \text{se } f \leq f_{max} \\
+            \min\left(1.0, T_{base} + \frac{e^{0.2 \cdot (f - f_{max})} - 1}{50}\right) & \text{se } f > f_{max}
+        \end{cases}
+    \end{equation}
+    Dove $T_{base} = \frac{f}{31} \cdot 0.1$ rappresenta il costo incrementale di disturbo cognitivo per ogni singola interazione. La soglia $f_{max}$ è calibrata su un valore base di 16 notifiche settimanali, in linea con i protocolli \textbf{JITAI} (\textit{Just-In-Time Adaptive Interventions}) che identificano nel range di 1--3 interazioni giornaliere il punto di equilibrio tra efficacia terapeutica e prevenzione della \textit{Intervention Fatigue} \cite{nahum2018just}. Tale valore viene modulato dinamicamente ($\pm 5$) in base alla responsività al monitoraggio, garantendo un'adattività clinica che protegga l'utente dalla saturazione cognitiva.
+    
+    \item \textbf{Penalità Temporale ($P_{time}$):} Rispetta i diversi \textbf{Cronotipi} e l'igiene del sonno applicando un costo lineare proporzionale all'ampiezza della finestra di disponibilità oraria, con un incremento critico in corrispondenza delle fasce notturne individuate come sensibili per la stabilità psicologica del paziente.
+    \begin{equation}
+        P_{time} = \min\left(1.0, (\frac{H_{active}}{24} \cdot 0.05) + \frac{H_{night}}{8} \cdot \max(0.2, 1 - \text{night\_activity\_rate})\right)
+    \end{equation}
+    Per i \textbf{Night Owls} (utenti con alta attività notturna storica), la sensibilità al disturbo viene ridotta in base al \textit{night\_activity\_rate}, permettendo l'evoluzione di strategie che rispettino il ritmo circadiano individuale senza penalizzare i pattern di veglia tardivi.
 \end{enumerate}
 
 
-\subsection{Limiti del Prototipo e Direzioni Future}
+\subsection{Architettura della Meta-euristica ed Operatori Evolutivi}
+\label{sec:operators}
+La scelta degli operatori evolutivi mira a bilanciare l'esplorazione di nuove soluzioni e il raffinamento (\textit{exploitation}) delle strategie già identificate come promettenti:
 
-È necessario evidenziare un limite strutturale dell'attuale implementazione: la funzione $\text{Retention}(S, p)$ è un \textbf{sistema esperto a regole deterministiche}, progettato dagli sviluppatori sulla base della letteratura clinica disponibile. Di conseguenza, l'Algoritmo Genetico sta ottimizzando una funzione nota e priva di incertezza stocastica. Le strategie evolute sono pertanto ottime \textit{rispetto al modello simulativo}, ma non necessariamente ottime nel mondo reale, dove il comportamento del paziente è soggetto a variabilità individuale, contestuale e temporale non catturabile da regole statiche.
+\begin{enumerate}
+    \item \textbf{Selezione - Tournament ($k=3$)}: Rispetto alle tecniche proporzionali (\textit{Roulette Wheel Selection}) o basate sul rango (\textit{Rank Selection}), il torneo garantisce una \textbf{pressione selettiva costante} ed indipendente dalla scala dei valori di fitness. La taglia $k=3$ è stata selezionata per bilanciare il rigore della scelta con il mantenimento della diversità genetica, prevenendo il rischio che individui "super-fit" dominino prematuramente la popolazione (convergenza precoce) o che la ricerca diventi stocasticamente inefficiente a causa di differenze di fitness troppo sottili tra gli individui.
+    
+    \item \textbf{Crossover - Two-Point}: Adottato per mitigare il bias posizionale tipico del \textit{Single-Point} senza incorrere nella frammentazione dello \textit{Uniform Crossover}. Il \textit{Two-Point} preserva la contiguità dei segmenti nel gene G3 (Schedule Orario), garantendo l'integrità dei pattern circadiani identificati.
+    
+    \item \textbf{Mutazione - Adaptive Bit-Flip}: L'operatore agisce tramite l'inversione stocastica dei singoli bit (\textit{bit-flip}) con un tasso base dell'1.3\% (calibrato sperimentalmente nella Sezione~\ref{sec:tuning}). La funzione \textbf{adaptive} modula dinamicamente tale valore monitorando la diversità genetica della popolazione: se l'algoritmo rileva una stagnazione (indice di diversità $<0.1$), raddoppia il tasso di mutazione per forzare l'esplorazione; al contrario, in presenza di un'ampia varietà ($>0.4$), riduce il tasso per stabilizzare il raffinamento delle strategie promettenti.
+    
+    \item \textbf{Elitismo} ($\text{rate}=0.05$): preserva gli individui più performanti (pari al 5\% della popolazione) impedendo che le soluzioni ottimali vadano perse a causa di operatori stocastici. Tale soglia bilancia la conservazione dei tratti promettenti con la necessità di preservare la varietà genetica necessaria alla ricerca globale.
+\end{enumerate}
 
-Questo trade-off è consapevole e motivato dall'assenza di dati di outcome reali nella fase prototipale. Non appena la piattaforma SINTONIA sarà operativa con una base utenti reale, la funzione di fitness potrà essere alimentata con \textbf{tassi di retention reali} post-intervento, sostituendo le euristiche attuali con dati osservazionali. L'architettura modulare del sistema --- in cui la valutazione della fitness è incapsulata nella classe \texttt{FitnessEvaluator} --- è stata progettata per facilitare questa transizione senza richiedere modifiche agli operatori genetici o alla struttura cromosomiale.
+Per ottimizzare le risorse computazionali e rilevare il raggiungimento del \textbf{plateau di convergenza}, l'algoritmo integra un meccanismo di \textbf{Early Stopping}. Se la fitness del miglior individuo non subisce incrementi significativi per 20 generazioni consecutive, il loop evolutivo viene interrotto prematuramente, restituendo la miglior configurazione identificata al raggiungimento del plateau.
 
-Il sistema proposto si consolida come un prototipo robusto e versatile, pronto per l'integrazione finale all'interno dell'architettura di SINTONIA.
+\subsection{Sperimentazione e Tuning}
+\label{sec:tuning}
+
+Il passaggio dalla modellazione teorica alla validazione empirica richiede una fase di calibrazione volta a confermare l'efficacia degli operatori selezionati. L'ottimizzazione è stata orientata alla ricerca di una configurazione capace di mantenere performance elevate rispetto alla varietà dei profili clinici. Per garantire la massima riproducibilità, l'intera configurazione è gestita dalla classe \texttt{GAParams} ed esportata nel file \texttt{ga\_tuned\_config.json}.
+
+\paragraph{Ottimizzazione Bayesiana}
+Il tuning degli iperparametri è stato condotto tramite il framework \texttt{Optuna}, adottando un approccio di \textbf{Joint Tuning} per valutare la sinergia tra gli operatori descritti nella Sezione~\ref{sec:operators} e le possibili configurazioni alternative. Il processo ha esplorato lo spazio di ricerca, includendo sia gli iperparametri numerici (es. \textit{Population Size}, \textit{Mutation Rate}) sia le varianti degli operatori evolutivi, su un \textbf{Optimization Set} stratificato di 40 pazienti.
+
+Tale processo ha eletto come configurazione ottimale l'unione tra \textit{Tournament Selection}, \textit{Two-Point Crossover} e \textit{Adaptive Bit-Flip Mutation} (popolazione: 150; mutation rate: 0.013). Il raggiungimento di uno score medio di \textbf{0.973} (Figura~\ref{fig:ga_optuna_parallel}) valida empiricamente la scelta teorica, confermandone la solidità nel gestire l'eterogeneità clinica della popolazione.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{06_optuna_parallel}
+    \caption{Interazione Iperparametri: Analisi in coordinate parallele del processo di Ottimizzazione Bayesiana (Optuna).}
+    \label{fig:ga_optuna_parallel}
+\end{figure}
+
+\subsection{Analisi dei Risultati e Validazione Scientifica}
+\label{sec:validation}
+
+La validazione mira a confermare la superiorità dell'algoritmo genetico rispetto a baseline stocastiche e l'efficacia della strategia di intervento generata.
+
+\paragraph{Benchmark: GA vs Random Search}
+Per misurare il reale guadagno algoritmico, il sistema è stato confrontato con una \textbf{Random Search}. Tale metodologia, utilizzata come benchmark di riferimento, consiste nella generazione stocastica di soluzioni indipendenti priva di meccanismi di apprendimento o ereditarietà. Il test è stato condotto su un \textbf{Hold-out Test Set} (40 pazienti mai analizzati durante il tuning) e, a parità di budget computazionale, l'algoritmo GA ha superato la baseline casuale con un \textbf{guadagno medio del 20.3\%}, con picchi di efficienza nei cluster \textit{A Rischio} e \textit{Ghost} (Figura~\ref{fig:ga_benchmark}). Tale risultato conferma la superiorità della personalizzazione adattiva rispetto a strategie euristiche fisse (es. invio a orari standard), le quali risulterebbero intrinsecamente incapaci di mappare l'eterogeneità dei cronotipi e dei profili di reattanza della popolazione clinica.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{08_scientific_validation_test_set}
+    \caption{Benchmark Comparativo su Hold-out Test Set: GA vs Random Search a parità di budget.}
+    \label{fig:ga_benchmark}
+\end{figure}
+
+\paragraph{Analisi della Convergenza}
+L'analisi della convergenza (Figura~\ref{fig:ga_convergence}) evidenzia il raggiungimento di un plateau stabile entro le prime 40-50 generazioni. Tale andamento conferma come l'interazione tra gli operatori evolutivi permetta un'efficace transizione dalla fase di esplorazione globale a quella di raffinamento locale (\textit{exploitation}), consentendo al meccanismo di \textbf{Early Stopping} di preservare le risorse computazionali senza compromettere la qualità della soluzione individuata.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{09_ga_convergence_gold_standard}
+    \caption{Curva di Convergenza.}
+    \label{fig:ga_convergence}
+\end{figure}
+
+\subsection{Limitazioni e Sviluppi Futuri}
+Il limite principale dell'attuale sistema risiede nell'impiego di un simulatore deterministico per la valutazione della fitness, reso necessario dall'assenza di dati storici di outcome reali. Tale approccio, sebbene ancorato ai protocolli JITAI, rappresenta un'approssimazione fenomenologica del comportamento umano. Tuttavia, l'architettura modulare implementata garantisce una transizione \textit{plug-and-play}: non appena i tassi di retention reali saranno disponibili, sarà sufficiente integrare un modello predittivo empirico come metrica di valutazione all'interno della \texttt{FitnessEvaluator} senza alterare il motore evolutivo.
+
+In un'ottica di sviluppo futuro, il sistema evolutivo qui presentato fungerà da base per l'implementazione di un motore di \textbf{Reinforcement Learning}. Mentre l'approccio genetico identifica la "configurazione di partenza" ottimale basata su batch storici, tecniche di \textit{Online Learning} permetteranno di raffinare le strategie di nudging in tempo reale, reagendo dinamicamente ai micro-cambiamenti comportamentali del singolo utente.

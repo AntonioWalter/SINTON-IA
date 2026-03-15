@@ -10,11 +10,11 @@ SINTON-IA integra tre modelli di machine learning nel software preesistente SINT
 
 ### I tre modelli
 
-| Modello                       | Obiettivo                                                                                                   |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 🔴 **NLP Rischio Suicidario** | Analisi del testo prodotto dal paziente per individuare segnali di rischio suicidario                       |
-| 🔔 **Churn Prevention**       | Ottimizzazione delle strategie di intervento (nudging) tramite Algoritmo Genetico per prevenire l'abbandono |
-| 🌧️ **Depression Prediction**   | Rilevamento dello stato depressivo a partire dal diario dell'umore giornaliero                              |
+| Modello                       | Obiettivo                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------- |
+| 🔴 **NLP Rischio Suicidario** | Analisi del testo prodotto dal paziente per individuare segnali di rischio suicidario |
+| 🔔 **Churn Prevention**       | Ottimizzazione del nudging tramite Algoritmo Genetico                                 |
+| 🌧️ **Depression Prediction**  | Rilevamento dello stato depressivo a partire dal diario dell'umore giornaliero        |
 
 ---
 
