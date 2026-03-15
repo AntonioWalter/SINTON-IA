@@ -4,9 +4,8 @@
 \chapter{Data Understanding}
 \label{ch:data_understanding}
 
-Il presente capitolo è dedicato all'esplorazione, comprensione e preparazione dei dati necessari per l'addestramento dei modelli di Intelligenza Artificiale previsti dal progetto SINTON-IA. Per ciascun modello vengono dettagliate le fonti di acquisizione, le motivazioni della scelta e la struttura tecnica dei dataset identificati.
+Il presente capitolo è dedicato all'esplorazione, comprensione e analisi dei dati necessari per lo sviluppo dei tre moduli principali di SINTON-IA: Red Flag Detection, Depression Prediction e Churn Prevention.
 
-% ── 3.1 ──────────────────────────────────────────────────────────────────────
 \section{Dataset per il Modello di Red Flag Detection}
 \label{sec:data_red_flag}
 
@@ -81,126 +80,112 @@ L'estrapolazione di dati da una piattaforma web non regolamentata come Reddit co
     \item Un'ingente presenza di \textbf{Stop Words} (le parole grammaticali di contorno, es. pronomi, articoli, preposizioni), che saturano mediamente il 45,4\% di ciascun documento senza apportare semantica discriminante ai fini predittivi del rischio e minacciando l'efficienza dei layer di \textit{Attention} dei Transformers impiegati.
 \end{itemize}
 
-Le evidenze raccolte impongono, dunque, una fase di manipolazione preliminare severa. La \textit{Data Preparation} successiva dovrà obbligatoriamente implementare filtri per eliminare il rumore (URL e formattazioni errate), decurtare le stop-words e, soprattutto, imporre una troncatura e ri-scansione delle sequenze testuali superiori alla soglia architetturale di 2.000 caratteri imposta dal frontend dell'applicativo.
-
+Le evidenze raccolte impongono, dunque, una fase di manipolazione preliminare severa. La \textit{Data Preparation} successiva dovrà obbligatoriamente implementare filtri per eliminare il rumore (URL e formattazioni errate), decurtare le stop-words e, soprattutto, imporre una troncatura delle sequenze testuali superiori alla soglia di 2.000 caratteri imposta dal frontend dell'applicativo.
 
 % ── 3.2 ──────────────────────────────────────────────────────────────────────
 \section{Dati per il Modello di Depression Prediction}
 \label{sec:data_depression}
 
-Il modello di \textit{Depression Prediction} di SINTON-IA ha l'obiettivo di stimare il punteggio di gravità depressiva di ciascun utente --- misurato tramite il questionario clinico standardizzato \textbf{PHQ-9} \cite{kroenke2001phq9} --- a partire dalle serie temporali giornaliere dell'umore registrate dall'applicazione nell'arco di 14 giorni. La scala PHQ-9, validata da Manea et al. \cite{manea2012phq9}, produce un punteggio complessivo compreso tra 0 e 27 che consente di classificare la severità depressiva in cinque fasce cliniche: minima (0--4), lieve (5--9), moderata (10--14), moderatamente severa (15--19) e severa (20--27).
+Il cuore tecnologico di SINTON-IA per il monitoraggio della salute mentale risiede nella capacità di analizzare l'andamento affettivo del paziente per prevedere l'insorgenza o l'aggravamento di stati depressivi. Nello specifico, il sistema mira a stimare il punteggio del \textbf{PHQ-9} (\textit{Patient Health Questionnaire-9}) \cite{kroenke2001phq9}, un protocollo clinico standardizzato composto da 9 item che quantifica la severità dei sintomi su una scala da 0 a 27, suddivisa in cinque intervalli di gravità diagnostica.
 
-\subsection{Il Problema: Disponibilità di Dati Clinici Longitudinali}
-\label{subsec:problema_dati_depression}
+Data l'indisponibilità di dataset pubblici che combinino log quotidiani dell'umore e valutazioni cliniche longitudinali, e nel pieno rispetto della riservatezza dei dati sensibili, abbiamo progettato un'architettura di generazione dati avanzata. Tale soluzione si basa sul concetto di \textbf{Augmentation Ibrida}: una metodologia che fonde rigorosi parametri tratti dalla letteratura medica con pattern statistici reali estratti da popolazioni sane e patologiche. Questo processo, descritto nei notebook \texttt{01\_Data\_Analysis\_and\_Mapping.ipynb} e \texttt{02\_Advanced\_Synthetic\_Generation.ipynb}, garantisce la creazione di un dataset massivo (100.000 pazienti virtuali) ma clinicamente rappresentativo.
 
-La costruzione di un modello predittivo per la depressione richiede dataset longitudinali in cui, per ciascun soggetto, siano disponibili sia le registrazioni giornaliere dell'umore sia una valutazione clinica riassuntiva (il punteggio PHQ-9 finale). Dataset di questo tipo sono estremamente rari nella letteratura aperta per tre ragioni principali: (i) le normative sulla privacy (\textit{GDPR}, \textit{HIPAA}) limitano la condivisione di dati sanitari sensibili; (ii) le campagne di raccolta EMA (\textit{Ecological Momentary Assessment}) sono costose e soggette ad alto tasso di abbandono \cite{aanhetrot2012ema}; (iii) i pochi dataset esistenti presentano campioni ridotti e contesti altamente specifici, inadatti a una generalizzazione diretta.
+\subsection{Filosofia del Generatore: Nucleo Clinico e Rumore Empirico}
+\label{subsec:filosofia_generatore}
 
-Per queste ragioni, si è adottata una strategia in due fasi: (a) l'analisi di due dataset di riferimento pubblici per estrarne \textit{pattern statistici} utili, e (b) la progettazione di un \textbf{generatore di dati sintetici avanzato}, guidato primariamente dalla letteratura scientifica peer-reviewed, in grado di produrre un corpus di addestramento sufficientemente ampio e clinicamente plausibile.
+Il framework di generazione di SINTON-IA si fonda sulla distinzione tra due componenti fondamentali che garantiscono la validità scientifica del dataset:
+\begin{enumerate}
+    \item \textbf{Il Nucleo Clinico (Literature-Driven):} Rappresenta l'ossatura medica del sistema. Tutti i parametri che definiscono la struttura di una patologia --- come il tono affettivo medio, la prevalenza epidemiologica nella popolazione e la tendenza dell'emozione a persistere (\textit{emotional inertia}) --- sono estratti direttamente da studi clinici consolidati \cite{kuppens2010inertia, who2023depression, karyotaki2015dropout}. Questo assicura che il modello di Intelligenza Artificiale apprenda segnali che hanno una solida base nella letteratura psichiatrica.
+    \item \textbf{Il Rumore Empirico (Data-Driven):} Rappresenta il materiale grezzo che conferisce realismo al dato sintetico. I dataset reali pubblici vengono analizzati per estrarre la \textbf{varianza statistica} e le \textbf{matrici di transizione}. Questi elementi iniettano nel sistema quel disordine, quella volatilità e quelle irregolarità tipiche del comportamento umano reale, evitando che il generatore produca serie temporali "troppo pulite" o artificialmente perfette.
+\end{enumerate}
 
-\subsection{Analisi dei Dataset di Riferimento}
+\subsection{Analisi e Utilizzo dei Dataset Reali di Riferimento}
 \label{subsec:analisi_dataset_depression}
 
-Sono stati individuati due dataset pubblici le cui caratteristiche, pur non essendo direttamente compatibili con il task di SINTON-IA, offrono informazioni statistiche preziose per calibrare il generatore sintetico. I dati grezzi sono stati organizzati nella cartella \texttt{data/raw/} del repository.
+Per calibrare il generatore abbiamo analizzato due sorgenti principali, selezionate per la loro rilevanza metodologica nonostante i limiti strutturali che ne precludono l'uso come fonte primaria di addestramento:
 
-\subsubsection{StudentLife Dataset}
+\paragraph{StudentLife Dataset \cite{studentlife_dataset}:} 
+Condotto dalla Dartmouth University su 48 studenti per 10 settimane tramite tecniche di EMA (\textit{Ecological Momentary Assessment}). Questo studio è stato fondamentale per modellare la \textbf{volatilità naturale} dell'umore in un contesto di stress. Tuttavia, il campione è demograficamente troppo omogeneo (estrazione accademica) per rappresentare un triage clinico generale.
 
-Il primo dataset è lo \textbf{StudentLife Dataset} \cite{studentlife_dataset}, prodotto dalla Dartmouth University. Lo studio ha raccolto dati multi-modali --- tra cui questionari EMA sull'umore (felicità, stress, fatica) e il questionario PHQ-9 somministrato prima e dopo il periodo di monitoraggio --- per un campione di circa 48 studenti universitari americani.
+\paragraph{14-Day Ambulatory Assessment \cite{kaggle_14day_depression}:} 
+Questo studio documenta il monitoraggio giornaliero di oltre 300 soggetti. Sebbene la sua struttura sia contraria al nostro task (correla la felicità quotidiana a un PHQ-9 quotidiano), è stato essenziale per estrarre le \textbf{Matrici di Transizione di Markov}. Queste matrici sono tabelle di probabilità che descrivono come un individuo passa da uno stato emotivo all'altro (es. da "Ansioso" a "Neutro") nell'arco di 24 ore. Abbiamo scoperto che questi pattern di passaggio sono radicalmente diversi tra soggetti sani e soggetti depressi, e questa conoscenza è stata iniettata nel nostro generatore per creare dinamiche temporali realistiche.
+\subsection{L'Interfaccia 10x10 e il Modello Circomplesso di Russell}
+\label{subsec:russell_mapping}
 
-I file utilizzati comprendono il CSV con i punteggi PHQ-9 pre/post (\texttt{studentlife\_\allowbreak{}phq9\_\allowbreak{}scores.csv}) e le cartelle JSON contenenti le risposte giornaliere sullo stato d'animo (\texttt{studentlife\_\allowbreak{}mood\_\allowbreak{}detailed/}, \texttt{studentlife\_\allowbreak{}mood\_\allowbreak{}current/}).
-
-\textbf{Limiti:} il campione è numericamente ridotto e rappresenta un contesto estremamente specifico (studenti universitari americani sottoposti a stress accademico), il che ne preclude l'impiego diretto come dataset di addestramento. Tuttavia, le correlazioni osservate tra variazioni dell'umore e punteggi PHQ-9 forniscono informazioni utili sulla \textbf{variabilità naturale dell'umore umano} e sulla \textbf{persistenza degli stati emotivi} (inerzia emotiva).
-
-\subsubsection{14-Day Ambulatory Assessment}
-
-Il secondo dataset è il \textbf{14-Day Ambulatory Assessment} \cite{kaggle_14day_depression}, contenuto nel file \texttt{14day\_\allowbreak{}ema\_\allowbreak{}depression\_\allowbreak{}log.csv}. Esso documenta oltre 300 soggetti monitorati quotidianamente per 14 giorni, a ciascuno dei quali è stato somministrato il questionario PHQ-9 in ogni sessione giornaliera, insieme a un punteggio complessivo di felicità (\textit{happiness score}).
-
-\textbf{Limiti:} la struttura è sostanzialmente inversa rispetto al task di SINTON-IA. In questo dataset, il PHQ-9 viene compilato quotidianamente (non una sola volta al termine del periodo), mentre il punteggio di felicità rappresenta l'esito sintetico. Nel nostro caso, invece, l'utente registra giornalmente il suo umore nell'app e il modello deve stimare il PHQ-9 complessivo dal pattern temporale osservato. Per tale ragione, anche da questo dataset si estraggono esclusivamente le \textbf{matrici di transizione emotiva} (quanto è probabile passare da uno stato d'animo negativo a uno neutro o positivo il giorno successivo) e i \textbf{tassi di mancata risposta} per fascia di gravità.
-
-\subsubsection{Mappatura nello Spazio Valence-Arousal}
-
-Poiché le scale emotive dei due dataset non coincidono con la griglia $10 \times 10$ di SINTONIA (10 stati d'animo $\times$ 10 livelli di intensità), è stata effettuata una mappatura unificante tramite il \textbf{Modello Circomplesso dell'Affetto} introdotto da Russell \cite{russell1980circumplex} e successivamente validato da Posner et al. \cite{posner2005circumplex}. In questo spazio bidimensionale, ogni emozione è descritta da due coordinate ortogonali:
+L'utente finale interagisce con SINTONIA tramite un'interfaccia di check-in quotidiano progettata per essere intuitiva ma scientificamente densa. Il sistema si basa su una matrice di scelta \textbf{10x10}:
 \begin{itemize}
-    \item \textbf{Valence} (valenza emotiva): da $-1$ (molto negativo) a $+1$ (molto positivo);
-    \item \textbf{Arousal} (attivazione fisiologica): da $-1$ (passivo, letargico) a $+1$ (attivo, energetico).
+    \item \textbf{10 stati d'animo categorici:} Felice, Sereno, Energico, Neutro, Stanco, Triste, Ansioso, Arrabbiato, Spaventato, Confuso.
+    \item \textbf{10 livelli di intensità:} Una scala Likert per quantificare la forza dello stato d'animo provato.
 \end{itemize}
 
-I 10 stati d'animo dell'app SINTONIA sono stati posizionati come coordinate fisse in questo spazio (Figura~\ref{fig:va_map}), consentendo di proiettare qualsiasi risposta dei dataset originali nella medesima rappresentazione normalizzata.
+Per trasformare queste etichette soggettive in segnali calcolabili, abbiamo adottato il \textbf{Modello Circomplesso dell'Affetto di Russell} \cite{russell1980circumplex}. Questo modello proietta ogni emozione in uno spazio bidimensionale definito da due assi ortogonali fondamentali (Figura~\ref{fig:va_map}):
+\begin{enumerate}
+    \item \textbf{Valenza (Valence):} L'asse orizzontale che rappresenta la "piacevolezza" dell'emozione, variando da un valore di -1 (estremo dispiacere) a +1 (massimo piacere).
+    \item \textbf{Attivazione (Arousal):} L'asse verticale che rappresenta la carica energetica o l'attivazione fisiologica, variando da -1 (calma/letargia) a +1 (massima attivazione/tensione).
+\end{enumerate}
 
-\begin{figure}[htbp]
+Questa mappatura funge da \textbf{ponte matematico}: trasforma la scelta qualitativa dell'utente (es. "Ansioso") in una coppia di coordinate numeriche. Questo passaggio è cruciale per permettere al computer di calcolare statistiche avanzate come le medie mobili esponenziali (\textit{Exponential Moving Average}, EMA) e la variabilità affettiva senza perdere il significato clinico dell'input originario.
+
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.70\textwidth]{dp_valence_arousal_map.png}
-    \caption{Proiezione dei 10 stati d'animo SINTONIA nello spazio Valence-Arousal del Modello Circomplesso di Russell \cite{russell1980circumplex}.}
+    \includegraphics[width=0.75\textwidth]{dp_valence_arousal_map.png}
+    \caption{Mappatura degli stati SINTONIA nello spazio Valence-Arousal di Russell.}
     \label{fig:va_map}
 \end{figure}
 
-L'intera fase di analisi e mappatura è documentata nel notebook \texttt{01\_\allowbreak{}Data\_\allowbreak{}Analysis\_\allowbreak{}and\_\allowbreak{}Mapping.ipynb}.
+\subsection{Architettura del Generatore: Una Simulazione a Tre Livelli}
+\label{subsec:generatore_meccaniche}
 
-\subsection{Generazione Sintetica Avanzata}
-\label{subsec:generazione_sintetica_depression}
+Il generatore di pazienti sintetici non si limita a produrre numeri casuali, ma costruisce una serie temporale di 14 giorni operando su tre livelli di profondità computazionale:
 
-Il cuore della preparazione dei dati per il modello di Depression Prediction è un \textbf{motore di generazione sintetica} appositamente progettato, documentato nel notebook \texttt{02\_\allowbreak{}Advanced\_\allowbreak{}Synthetic\_\allowbreak{}Generation.ipynb}. Il generatore produce \textbf{100.000 pazienti virtuali}, ciascuno dotato di una serie temporale di 14 giorni di check-in emotivi sulla scala SINTONIA e di un punteggio PHQ-9 associato.
+\subsubsection{Livello 1: Definizione del Profilo Clinico Individuale}
+A ogni paziente virtuale viene assegnato un punteggio PHQ-9 target seguendo una distribuzione Beta calibrata sulle statistiche dell'OMS \cite{who2023depression}. In base a questo target, il sistema calcola i \textbf{parametri baricentrici} (valori medi di riferimento): un paziente classificato come "Severo" avrà una valenza media molto più bassa ($-0.6$) rispetto a un paziente "Sano". La letteratura psichiatrica fornisce le medie di riferimento, mentre i dataset reali contribuiscono definendo la varianza naturale per garantire che ogni paziente sintetico sia unico.
 
-\subsubsection{Filosofia: Nucleo Clinico e Rumore Empirico}
+\subsubsection{Livello 2: Dinamica Temporale e Catene di Markov}
+L'umore di un essere umano non salta in modo casuale da un estremo all'altro. Abbiamo implementato una \textbf{Catena di Markov del primo ordine}, dove lo stato del giorno $t$ dipende probabilisticamente dallo stato del giorno precedente $t-1$. Le matrici di transizione estratte dal dataset 14-Day AA ci permettono di simulare il fenomeno del \textbf{Critical Slowing Down} \cite{wichers2016critical}: nei pazienti depressi, la capacità di "rimbalzare" fuori da uno stato negativo è ridotta, portandoli a rimanere bloccati in fasi di tristezza o apatia per periodi prolungati.
 
-La logica di generazione segue un principio architetturale rigoroso: i \textbf{parametri fondamentali} sono definiti come costanti immutabili derivate dalla letteratura scientifica peer-reviewed, mentre i \textbf{dataset reali} contribuiscono esclusivamente varianza statistica (deviazioni standard) e matrici di transizione di Markov, con il ruolo limitato di conferire naturalezza e variabilità umana alle serie temporali generate.
-
-Questa scelta è motivata dai limiti dei dataset di riferimento precedentemente analizzati: il campione ristretto e specifico dello StudentLife non è rappresentativo della popolazione generale, e la struttura invertita del 14-Day AA non rispecchia il flusso dati di SINTON-IA.
-
-\subsubsection{Architettura a Tre Livelli}
-
-Il generatore opera su tre livelli funzionali, ciascuno governato da parametri clinici rigorosamente referenziati:
-
-\paragraph{Livello 1: Profilo Paziente e Parametri Emotivi.}
-A ciascun paziente viene assegnata una fascia di severità PHQ-9, secondo la distribuzione epidemiologica documentata dall'Organizzazione Mondiale della Sanità \cite{who2023depression} e dagli studi italiani di De Girolamo et al. \cite{degirolamo2020mental}. Il punteggio PHQ-9 specifico all'interno della fascia è campionato da una distribuzione Beta(2,2) troncata, che evita artefatti ai bordi.
-
-I parametri emotivi di ciascun paziente --- la valenza media attesa e la sua variabilità --- sono definiti dalla letteratura sull'\textbf{inerzia emotiva}: Kuppens et al. \cite{kuppens2010inertia} hanno dimostrato che i soggetti con sintomi depressivi presentano emozioni negative più persistenti e un tono affettivo medio significativamente più basso, mentre Houben et al. \cite{houben2015emotion} hanno confermato tramite meta-analisi la correlazione tra dinamiche emotive negative a breve termine e ridotto benessere psicologico. Le deviazioni standard empiriche estratte dai dataset reali (Notebook 01) vengono integrate con un peso del 30\% per modulare la varianza ``umana'' senza alterare i parametri di base.
-
-\paragraph{Livello 2: Catena di Markov Emotiva.}
-Le transizioni giornaliere tra stati emotivi non sono generate casualmente, ma seguono catene di Markov del primo ordine le cui matrici di transizione $P(X_t \mid X_{t-1})$ sono state estratte empiricamente dai dati reali nel Notebook 01. Queste matrici catturano l'\textbf{inerzia emotiva naturale}: la tendenza degli esseri umani a rimanere nello stesso stato d'animo da un giorno all'altro, un fenomeno particolarmente marcato nei soggetti depressi come documentato da Kuppens et al. \cite{kuppens2010inertia} e dal lavoro sul \textit{critical slowing down} di Wichers et al. \cite{wichers2016critical}.
-
-\paragraph{Livello 3: Meccanismi di Rumore Clinico.}
-Due fenomeni clinici documentati in letteratura vengono simulati per irrobustire il dataset:
-
+\subsubsection{Livello 3: Iniezione di Bias Clinici e Sfide Diagnostiche}
+Per testare la capacità di discernimento della nostra IA, abbiamo iniettato nel generatore tre comportamenti tipici che complicano la diagnosi nella realtà:
 \begin{itemize}
-    \item \textbf{Dropout MNAR (Missing Not At Random):} Nella pratica del telemonitoraggio, i pazienti più gravi tendono ad abbandonare le sessioni di check-in con maggiore frequenza \cite{karyotaki2015dropout}. Mohr et al. \cite{mohr2017personal} confermano che l'aderenza al \textit{personal sensing} cala nei quadri di anedonia e letargia. Il generatore applica tassi di dropout crescenti con la severità (dal 5\% per la fascia minima al 40\% per la fascia severa), ulteriormente modulati dalla presenza di streak negative consecutive: più giorni consecutivi di umore negativo aumentano la probabilità di saltare il check-in successivo, come documentato da aan het Rot et al. \cite{aanhetrot2012ema}.
-
-    \item \textbf{Smiling Depression:} Helmich et al. \cite{helmich2020smiling} hanno documentato pattern non lineari in cui pazienti con depressione severa mostrano apparenti miglioramenti temporanei. Per il 7--10\% dei pazienti nelle fasce moderate e severe, il generatore inietta un bias positivo nella valenza riportata: il paziente sembra ``stare bene'' nell'app, ma il suo PHQ-9 reale è elevato. Questo meccanismo previene il \textit{data leakage} e costringe il modello a non affidarsi esclusivamente all'umore medio dichiarato.
+    \item \textbf{Smiling Depression (Mascheramento):} Una percentuale di pazienti gravi è istruita a riportare stati di valenza positiva nonostante l'alto PHQ-9 target. Questo costringe il modello a non basarsi solo sulla media dell'umore, ma a cercare pattern di instabilità sottostanti \cite{helmich2020smiling}.
+    \item \textbf{Affective Blunting (Anestesia Emotiva):} Nei casi severi, il generatore applica una tecnica di \textit{damping} (appiattimento), riducendo l'intensità delle emozioni riportate per simulare la mancanza di reazione emotiva descritta dai clinici \cite{rottenberg2005mood}.
+    \item \textbf{Dropout MNAR (Missing Not At Random):} Simuliamo l'abbandono del monitoraggio dovuto alla letargia depressiva. La probabilità che un dato manchi aumenta esponenzialmente dopo una serie di giorni negativi (\textit{negative streaks}), eliminando il dato proprio quando sarebbe più critico.
 \end{itemize}
 
-Un ulteriore fenomeno modellato è l'\textbf{appiattimento affettivo} (\textit{emotion context insensitivity}): Rottenberg et al. \cite{rottenberg2005mood} hanno dimostrato che i soggetti con depressione maggiore sperimentano emozioni meno intense sia in contesti positivi che negativi. Nel generatore, l'intensità emotiva riportata dai pazienti delle fasce più gravi viene attenuata tramite un coefficiente di smorzamento proporzionale alla severità.
-
-\subsection{Validazione del Dataset Generato}
+\subsection{Validazione e Plausibilità del Dataset Sintetico}
 \label{subsec:validazione_sintetico}
 
-Il dataset sintetico generato è stato sottoposto a una serie di verifiche per confermarne la plausibilità clinica e l'assenza di artefatti:
-
+La qualità della generazione è stata validata tramite controlli statistici rigorosi:
 \begin{itemize}
-    \item \textbf{Distribuzione della severità:} la distribuzione delle fasce PHQ-9 nel dataset generato riproduce fedelmente i target epidemiologici definiti dalla letteratura.
-    \item \textbf{Distribuzione degli stati d'animo per fascia:} come atteso, i pazienti con severità maggiore mostrano una prevalenza di stati negativi (Triste, Ansioso, Stanco), mentre i pazienti sani esprimono prevalentemente stati positivi (Figura~\ref{fig:mood_dist}).
-    \item \textbf{Missing data MNAR:} il tasso di dati mancanti cresce sistematicamente con la severità, confermando il corretto funzionamento del meccanismo MNAR.
-    \item \textbf{Verifica anti-leakage:} la correlazione tra valenza media e punteggio PHQ-9 è stata verificata per assicurare che sia forte ma non perfetta (Figura~\ref{fig:leakage_check}), a conferma del fatto che i casi di smiling depression e il rumore clinico impediscono al modello di prendere scorciatoie predittive banali.
+    \item \textbf{Analisi delle Distribuzioni (Figura~\ref{fig:mood_dist}):} Conferma che la prevalenza di stati a bassa valenza aumenta coerentemente con la severità del PHQ-9.
+    \item \textbf{Test di Leakage (Figura~\ref{fig:leakage_check}):} Verifica che il target clinico non sia "ovvio" o trivialmente deducibile da una singola misura, ma richieda l'analisi dell'intera serie temporale.
 \end{itemize}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=\textwidth]{dp_mood_distribution.png}
-    \caption{Distribuzione percentuale degli stati d'animo SINTONIA per ciascuna fascia di severità PHQ-9 nel dataset sintetico generato.}
+    \includegraphics[width=0.85\textwidth]{dp_mood_distribution.png}
+    \caption{Distribuzione statistica degli stati d'animo per fascia di severità PHQ-9. Il grafico dimostra come il generatore rispetti il "Nucleo Clinico" aumentando la frequenza di stati negativi all'aumentare della gravità diagnostica.}
     \label{fig:mood_dist}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
     \centering
-    \includegraphics[width=0.75\textwidth]{dp_leakage_check.png}
-    \caption{Scatter plot PHQ-9 vs valenza media per paziente. I punti rossi indicano i casi di \textit{smiling depression}: pazienti con PHQ-9 elevato ma valenza media positiva.}
+    \includegraphics[width=0.85\textwidth]{dp_leakage_check.png}
+    \caption{Test di leakage per la verifica dell'indipendenza statistica. Si osserva come il sistema non introduca correlazioni triviali tra input e target.}
     \label{fig:leakage_check}
 \end{figure}
 
-\subsection{Limiti dell'Approccio e Sviluppi Futuri}
-\label{subsec:limiti_sviluppi_futuri}
+\subsection{Limiti della Soluzione Attuale e Sviluppi Futuri}
+\label{subsec:limiti_sviluppi}
 
-Sebbene l'architettura di generazione sintetica impieghi rigorose Catene di Markov Nascoste (HMM) e parametri fondati sulla letteratura clinica, essa presenta limitazioni intrinseche alla natura stessa dei dati simulati. Un modello predittivo addestrato esclusivamente su un corpus sintetico apprenderà, in ultima analisi, le regole matematiche e i costrutti logici definiti dal suo creatore, non riuscendo a catturare l'autentica entropia umana e la stocasticità imprevedibile dei veri pazienti clinici. I pattern di \textit{smiling depression} o di \textit{dropout} MNAR, per quanto modellati realisticamente, restano approssimazioni formalizzate di fenomeni comportamentali ben più complessi e sfaccettati.
+È fondamentale sottolineare che il ricorso a dati sintetici, per quanto raffinati e validati clinicamente, rappresenta una soluzione di compromesso dettata dai vincoli di privacy e dalla scarsità di dataset longitudinali pubblici. Il limite principale di questo approccio risiede nell'impossibilità di catturare l'intera gamma delle sfumature psicologiche e dei contesti di vita reali che influenzano il benessere di un individuo.
 
-In uno scenario di produzione aziendale e di evoluzione futura della piattaforma, l'approccio ideale prevederebbe il progressivo abbandono del motore sintetico a favore di dati reali. Una prima direzione di sviluppo tecnico consisterebbe nell'impiego di architetture generative più avanzate, come le \textbf{TimeGAN} (\textit{Time-series Generative Adversarial Networks}), capaci di apprendere la dinamica temporale con maggiore fedeltà. Tuttavia, il traguardo definitivo coincide con la \textbf{raccolta di veri dati clinici campani}, acquisiti direttamente dai pazienti in cura tramite SINTONIA. Per garantire la totale compliance con la normativa GDPR e superare le resistenze alla condivisione di dati sanitari estremamente sensibili, tale raccolta dovrà essere implementata avvalendosi di protocolli di \textbf{Federated Learning}. Questo paradigma consentirebbe di sfruttare dati autentici tutelando in modo assoluto la privacy dei soggetti protetti.
+Per superare queste limitazioni e potenziare l'efficacia predittiva di SINTON-IA, le direzioni future prevedono:
+\begin{itemize}
+    \item \textbf{Utilizzo dei Dati Reali di SINTONIA:} Il limite del dato sintetico verrà superato non appena l'applicazione SINTONIA entrerà a pieno regime. I log dell'umore e i risultati dei test PHQ-9 raccolti direttamente dagli utenti reali dell'app costituiranno la fonte primaria per una fase di \textit{fine-tuning} dei modelli. SINTON-IA, in quanto nucleo di intelligenza artificiale dell'intero ecosistema, potrà così evolversi basandosi su casistiche cliniche concrete e specifiche del territorio.
+    \item \textbf{Adozione del Federated Learning:} Per gestire questi dati reali garantendo la \textit{privacy-by-design}, l'evoluzione del sistema prevede l'implementazione dell'apprendimento federato. Questo paradigma consentirà di addestrare i modelli direttamente sui dispositivi degli utenti di SINTONIA, aggregando solo i gradienti matematici ed evitando che i dati emotivi sensibili lascino mai lo smartphone del paziente.
+    \item \textbf{Monitoraggio Passivo:} L'espansione del dataset acquisibile tramite l'app includerà parametri biometrici raccolti passivamente (es. sonno, attività fisica), integrando il diario soggettivo con indicatori oggettivi di salute.
+\end{itemize}
 
 % ── 3.3 ──────────────────────────────────────────────────────────────────────
 \clearpage
@@ -210,7 +195,7 @@ In uno scenario di produzione aziendale e di evoluzione futura della piattaforma
 \subsection{Natura del Problema e Approccio ai Dati}
 \label{subsec:natura_churn}
 
-Il Churn Prevention si distingue radicalmente dai due componenti precedenti per la natura stessa del task affrontato. Mentre il Red Flag Detection e il Depression Prediction sono rispettivamente problemi di classificazione e regressione --- paradigmi di \textit{apprendimento supervisionato} che necessitano di dataset esterni etichettati per l'addestramento --- il sistema di prevenzione dell'abbandono è formulato come un \textbf{problema di ottimizzazione} risolto mediante un Algoritmo Genetico (GA).
+Il Churn Prevention si distingue radicalmente dai due componenti precedenti per la natura stessa del task affrontato. Mentre il Red Flag Detection e il Depression Prediction sono paradigmi di \textit{apprendimento supervisionato}, il sistema di prevenzione dell'abbandono è formulato come un \textbf{problema di ottimizzazione} risolto mediante un Algoritmo Genetico (GA).
 
 Questa differenza fondamentale comporta tre conseguenze dirette sull'approccio ai dati:
 \begin{enumerate}
@@ -276,16 +261,7 @@ La tabella anagrafica \texttt{paziente} contiene il campo \texttt{data\_ingresso
 
 \subsubsection{Badge (\texttt{acquisizione\_badge})}
 
-La tabella \texttt{acquisizione\_badge} traccia i traguardi di gamification raggiunti dal paziente, con \texttt{nome\_badge} e \texttt{data\_acquisizione}. Il numero totale di badge ottenuti e la loro distribuzione temporale forniscono un indicatore dell'\textbf{engagement con il sistema di gamification} integrato nella piattaforma.
+La tabella \texttt{acquisizione\_badge} traccia i traguardi di gamification raggiunti dal paziente, con \texttt{nome\_badge} e \texttt{data\_acquisizione}. Il numero totale di badge ottenuti e la loro distribuzione temporale forniscono un indicatore dell' \textbf{engagement con il sistema di gamification} integrato nella piattaforma.
 
-\subsection{Dati Non Attualmente Tracciati}
-\label{subsec:dati_mancanti_churn}
-
-L'analisi dello schema ha evidenziato l'assenza di due categorie di dati potenzialmente utili:
-
-\begin{itemize}
-    \item \textbf{Sessioni di accesso:} il backend gestisce l'autenticazione tramite JWT e integrazione SPID, ma non persiste in una tabella dedicata i timestamp di login/logout degli utenti. Ne consegue l'impossibilità di calcolare direttamente la frequenza di apertura dell'applicazione e la durata media delle sessioni.
-    \item \textbf{Durata delle sessioni:} non essendo tracciato il momento di inizio e fine di ciascuna sessione, non è possibile distinguere accessi brevi (apertura accidentale o consultazione rapida) da sessioni di utilizzo prolungato e significativo.
-\end{itemize}
-
-Questa lacuna, tuttavia, \textbf{non risulta bloccante} per il funzionamento dell'Algoritmo Genetico. Il pattern di utilizzo dell'utente è ricostruibile indirettamente con buona approssimazione analizzando i timestamp (\texttt{data\_inserimento}) presenti nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario} e \texttt{domanda\_forum}: ogni azione registrata implica necessariamente un accesso alla piattaforma in quel momento. Pertanto, la distribuzione temporale delle azioni funge da \textit{proxy} affidabile della frequenza e del pattern orario di utilizzo.
+% ── Conclusione Capitolo 3 ───────────────────────────────────────────────────
+In sintesi, il Capitolo 3 ha delineato un ecosistema di dati ricco e diversificato: dai grandi dataset web per il rischio suicidario, al framework di generazione statistica per la depressione, fino alla mappatura dinamica dei comportamenti per la retention. Questi dati rappresentano il materiale grezzo che, nel prossimo capitolo, verrà raffinato per alimentare l'Intelligenza Artificiale.
