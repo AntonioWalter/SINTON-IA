@@ -8,13 +8,13 @@ Questo documento definisce il flusso di lavoro del team, le convenzioni per i co
 
 Il team lavora seguendo la metodologia **Scrum**. I principi fondamentali che ci guidano sono:
 
-| Concetto | Applicazione in questo progetto |
-|---|---|
-| **Sprint** | Cicli di lavoro con obiettivi chiari |
-| **Backlog** | Le task sono gestite come **GitHub Issues** |
-| **Sprint Planning** | Si apre ogni sprint assegnando le issue ai membri |
-| **Daily / Check-in** | Aggiornamento rapido sullo stato dei task aperti |
-| **Sprint Review** | A fine sprint si fa la review delle PR completate |
+| Concetto             | Applicazione in questo progetto                   |
+| -------------------- | ------------------------------------------------- |
+| **Sprint**           | Cicli di lavoro con obiettivi chiari              |
+| **Backlog**          | Le task sono gestite come **GitHub Issues**       |
+| **Sprint Planning**  | Si apre ogni sprint assegnando le issue ai membri |
+| **Daily / Check-in** | Aggiornamento rapido sullo stato dei task aperti  |
+| **Sprint Review**    | A fine sprint si fa la review delle PR completate |
 
 > Ogni issue deve corrispondere a un branch e poi a una Pull Request.
 
@@ -28,12 +28,12 @@ Il team lavora seguendo la metodologia **Scrum**. I principi fondamentali che ci
 
 ### Tipi di branch
 
-| Tipo | Quando usarlo | Esempio |
-|---|---|---|
-| `feature/` | Nuova funzionalità o modello | `feature/nlp-training-pipeline` |
-| `fix/` | Correzione di un bug | `fix/churn-preprocessing-error` |
-| `notebook/` | Aggiunta/modifica notebook | `notebook/depression-eda` |
-| `docs/` | Documentazione LaTeX o README | `docs/chapter-nlp-suicide-risk` |
+| Tipo        | Quando usarlo                      | Esempio                           |
+| ----------- | ---------------------------------- | --------------------------------- |
+| `feature/`  | Nuova funzionalità o modello       | `feature/nlp-training-pipeline`   |
+| `fix/`      | Correzione di un bug               | `fix/churn-preprocessing-error`   |
+| `notebook/` | Aggiunta/modifica notebook         | `notebook/depression-eda`         |
+| `docs/`     | Documentazione LaTeX o README      | `docs/chapter-nlp-suicide-risk`   |
 | `refactor/` | Pulizia codice senza nuove feature | `refactor/api-services-structure` |
 
 > ⚠️ **Non lavorare mai direttamente su `main` o `dev`.** Ogni modifica passa obbligatoriamente da un branch e una Pull Request.
@@ -52,14 +52,14 @@ Utilizziamo lo standard **[Conventional Commits](https://www.conventionalcommits
 
 ### Tipi e scope
 
-| Tipo | Significato |
-|---|---|
-| `feat` | Nuova funzionalità |
-| `fix` | Bugfix |
-| `docs` | Solo documentazione |
-| `notebook` | Aggiunta o modifica di un notebook |
+| Tipo       | Significato                              |
+| ---------- | ---------------------------------------- |
+| `feat`     | Nuova funzionalità                       |
+| `fix`      | Bugfix                                   |
+| `docs`     | Solo documentazione                      |
+| `notebook` | Aggiunta o modifica di un notebook       |
 | `refactor` | Refactoring senza cambiamenti funzionali |
-| `chore` | Configurazioni, dipendenze, setup |
+| `chore`    | Configurazioni, dipendenze, setup        |
 
 ### Scope consigliati
 
@@ -132,7 +132,7 @@ Quando apri una Pull Request, GitHub ti pre-compilerà il form con questo templa
 **## Modulo coinvolto**
 
 - [ ] `nlp_suicide_risk`
-- [ ] `churn_prediction`
+- [ ] `churn_prevention`
 - [ ] `depression_detection`
 - [ ] `api`
 - [ ] `integration`

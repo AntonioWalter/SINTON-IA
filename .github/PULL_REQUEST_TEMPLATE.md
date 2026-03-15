@@ -13,7 +13,7 @@
 ## Modulo coinvolto
 
 - [ ] `nlp_suicide_risk`
-- [ ] `churn_prediction`
+- [ ] `churn_prevention`
 - [ ] `depression_detection`
 - [ ] `api`
 - [ ] `integration`

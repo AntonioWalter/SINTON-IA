@@ -14,8 +14,7 @@
 \onehalfspacing
 
 \usepackage{graphicx}
-\graphicspath{{figures/}}
-
+\graphicspath{{docs/latex/figures/}{figures/}}
 \usepackage{xcolor}
 \definecolor{DeepCyanBlue}{HTML}{0D475D}
 \definecolor{DeepAquaBlue}{HTML}{276B75}
@@ -25,7 +24,7 @@
 
 \usepackage{amsmath, amssymb}
 \usepackage{url}
-\usepackage[hidelinks, breaklinks=true]{hyperref}
+\usepackage{booktabs}
 \sloppy
 
 \usepackage{sectsty}
@@ -72,10 +71,7 @@
     belowskip=15pt,
     rulecolor=\color{lightgray}
 }
-\lstset{style=pythonstyle}
-
-% hyperref rimosso perché duplicato di riga 27
-
+\usepackage[hidelinks, breaklinks=true]{hyperref}
 
 \usepackage{fancyhdr}
 \usepackage{lastpage}
@@ -139,20 +135,21 @@
 \newpage
 
 \clearpage
-\input{chapters/01_introduction}
+\include{chapters/01_introduction}
 
 \clearpage
-\input{chapters/02_Business_Understanding}
+\include{chapters/02_Business_Understanding}
 
 \clearpage
-\input{chapters/03_Data_Understanding}
+\include{chapters/03_Data_Understanding}
 
 \clearpage
-\input{chapters/04_Data_Preparation}
+\include{chapters/04_Data_Preparation}
 
 \clearpage
-\input{chapters/05_Modeling}
+\include{chapters/05_Modelling}
 
+% ─────────────────────────────────────────────────────────────────────────────
 \clearpage
 \addcontentsline{toc}{chapter}{Bibliografia}
 \bibliography{references}
