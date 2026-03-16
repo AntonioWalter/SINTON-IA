@@ -28,7 +28,7 @@ SINTON-IA/
 │   └── latex/             # Documentazione tecnica unificata (LaTeX)
 ├── models/
 │   ├── nlp_suicide_risk/      # Modello NLP rischio suicidario
-│   ├── churn_prevention/      # Modello churn prediction
+│   ├── churn_prevention/      # GA churn prevention
 │   └── depression_detection/  # Modello rilevamento stato depressivo
 ├── api/                   # Backend FastAPI che espone i modelli
 ├── integration/           # Connettore con il software SINTONIA

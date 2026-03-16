@@ -366,3 +366,144 @@ L'architettura sviluppata per la \textit{Depression Prediction} dimostra la fatt
     \item \textbf{Gestione del Cold Start}: Il modello odierno vanta elevata predittività pre-allertando i medici, ma vincola la propria analisi ad almeno due settimane ($\sim$14 giorni) di tracciatura dati per estrarre features temporali stabili come deviazione standard o tendenze in regressione polinomiale. Un paziente vulnerabile neoiscritto (\textit{Cold Start}) rimarrà scoperto per diversi giorni dal monitoraggio algoritmico puro, affidando giocoforza le sue segnalazioni d'acuzie al comparto parallelo di \textit{Red Flag Detection} sul testo lineare. 
 \end{itemize}
 L'integrazione parallela delle features linguistiche grezze con le derivate temporali nel medesimo regressore resta la sfida scientifica cardine prospettata per i prossimi avanzamenti di prodotto.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Churn Prevention: Ottimizzazione tramite Algoritmo Genetico}
+\label{sec:churn_modeling}
+
+Integrando gli indicatori comportamentali estratti nella Sezione~\ref{sec:prep_churn}, il modulo di Churn Prevention utilizza un \textbf{Algoritmo Genetico (GA)} per la \textbf{definizione proattiva} di interventi di \textit{nudging} \cite{thaler2008nudge} personalizzati. Nello specifico, il profilo digitale di ogni paziente funge da contesto critico per il motore di valutazione (\textit{fitness function}). Invece di massimizzare singolarmente ogni indicatore di attività --- rischiando di saturare cognitivamente l'utente --- l'algoritmo evolve una strategia bilanciata che massimizzi la \textit{Retention} simulata, ovvero la probabilità di permanenza nel percorso terapeutico in relazione allo stato comportamentale corrente del paziente.
+
+\subsection{Codifica Cromosomiale}
+A valle della \textit{Data Preparation} (Sezione~\ref{sec:prep_churn}), la prima fase del modeling consiste nel definire la rappresentazione dell'individuo, ovvero la struttura cromosomiale su cui il motore evolutivo opererà per ottimizzare la strategia di intervento.
+
+\paragraph{La Codifica Binaria e il Teorema degli Schemi}
+Ciascun individuo della popolazione è codificato in un cromosoma binario a \textbf{31 bit}, strutturato secondo la seguente gerarchia genica:
+\begin{itemize}
+    \item \textbf{G1 - Tipologia (2 bit):} definisce la natura del messaggio (es. Motivazionale, Informativa);
+    \item \textbf{G2 - Frequenza (5 bit):} regola il numero di notifiche settimanali (range 0-31);
+    \item \textbf{G3 - Schedule Orario (24 bit):} definisce le fasce orarie dedicate all'invio delle notifiche.
+\end{itemize}
+La scelta della codifica binaria rispetto a una rappresentazione decimale è dettata dalla necessità di modellare lo schedule orario (G3) come una \textbf{\textit{bitmask}} di 24 bit. Mentre in un sistema decimale gli orari e le frequenze agirebbero come entità atomiche, il formato binario permette agli operatori evolutivi di scindere e ricombinare i \textit{Building Blocks} in accordo con il \textbf{Teorema degli Schemi di Holland} \cite{holland1992adaptation}. Per ottimizzare la ricerca ed evitare l'\textbf{eccessiva granularità} delle variazioni giornaliere, si è scelto di non mappare i singoli giorni: un'espansione a 168 bit (24h $\times$ 7 giorni) causerebbe infatti un'esplosione dello spazio di ricerca a $2^{168}$. L'attuale configurazione a 31 bit cattura efficacemente i \textbf{pattern circadiani stabili} (cronotipi), delegando lo \textit{spreading} temporale alla logica di backend sulla base del volume definito in G2.
+
+\subsection{Funzione di Fitness e Gestione dei Vincoli}
+Una volta definita la struttura del cromosoma, è necessario stabilire la "metrica del successo". La funzione di fitness traduce la strategia genetica in valore clinico, fungendo da guida per l'intero processo evolutivo.
+
+\begin{equation}
+    Fitness(S, p) = w_1 \cdot \text{Retention}(S, p) - w_2 \cdot P_{freq}(S) - w_3 \cdot P_{time}(S)
+\end{equation}
+
+\paragraph{Modellazione Clinica della Retention} 
+In assenza di dati storici di outcome, la funzione $Retention(S, p)$ è implementata tramite un'euristica deterministica basata sui protocolli \textbf{JITAI} (\textit{Just-In-Time Adaptive Interventions}). Tale approccio traduce le evidenze della letteratura clinica in driver per la ricerca evolutiva, garantendo la validità scientifica del nudging personalizzato.
+
+Il calcolo della $Retention(S, p)$ si basa sulla classificazione del paziente in uno dei quattro archetipi clinici (\textit{Engaged}, \textit{Moderato}, \textit{A Rischio}, \textit{Ghost}), integrando incentivi e penalità in base alla pertinenza clinica (Tabella~\ref{tab:ga_expert_system}). Il valore risultante viene infine normalizzato nell'intervallo $[0, 1]$ per garantire la stabilità della funzione di fitness rispetto alle componenti di penalità.
+
+\begin{table}[H]
+\centering
+\caption{Logica di Nudging --- Driver di Ottimizzazione della Fitness.}
+\label{tab:ga_expert_system}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Archetipo} & \textbf{Contenuto} & \textbf{Frequenza} & \textbf{Driver Teorico} \\ \midrule
+\textit{Engaged} & Promemoria ($+0.2$) & Alta ($7-14$: $+0.2$) & \textit{Habit Maintenance} \\
+\textit{Moderato} & Questionario ($+0.2$) & Equilibrata ($4-10$: $+0.2$) & \textit{Habit Formation} \\
+\textit{A Rischio} & Informativo ($+0.3$) & Moderata ($3-7$: $+0.2$) & \textit{Crisis Intervention} \\
+\textit{Ghost} & Motivazionale ($+0.3$) & Minima ($\leq 2$: $+0.2$) & \textit{Psychological Reactance} \\ \bottomrule
+\end{tabular}
+\end{table}
+I coefficienti di ponderazione sono stati calibrati per riflettere una precisa gerarchia di priorità clinico-comportamentali. Il peso $w_1 = 1.0$ (Retention) rappresenta l'obiettivo primario di sopravvivenza del legame terapeutico. Il peso $w_2 = 0.4$ (Frequenza) agisce come modulatore contro il \textit{Cognitive Overload}: un'eccessiva densità di notifiche indurrebbe fenomeni di abituazione o, peggio, di reattanza, invalidando l'efficacia del messaggio. Infine, il peso $w_3 = 0.2$ (Timing) è dedicato alla salvaguardia dell'igiene del sonno: la letteratura clinica dimostra come le interazioni notturne non sollecitate possano frammentare il riposo REM, esacerbando i sintomi ansiosi e depressivi del paziente.
+
+L'efficacia della ponderazione adottata è stata validata tramite un'analisi di sensibilità (Figura \ref{fig:ga_scenarios}), esplorando diversi regimi di priorità.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{07_scenario_analysis}
+    \caption{Scenario Analysis: Risposta media della popolazione alla variazione dei regimi di ponderazione della fitness function.}
+    \label{fig:ga_scenarios}
+\end{figure}
+
+\paragraph{Spazio di Ricerca e Vincoli}
+La gestione dei vincoli di ottimizzazione avviene tramite \textbf{Soft Constraints} (Penalità). A differenza dei vincoli rigidi (\textit{Hard Constraints}) che frammenterebbero lo spazio di ricerca in regioni ammissibili disconnesse, le penalità graduate mantengono la \textbf{continuità dello spazio di ricerca}. Questo permette alla meta-euristica di utilizzare individui "quasi-validi" come ponti evolutivi verso ottimi globali distanti, preservando il gradiente informativo necessario alla convergenza.
+
+L'unico \textbf{Hard Constraint} è applicato esclusivamente in fase di decodifica fenotipica per ragioni etico-cliniche: il sistema impone una frequenza minima di un'interazione settimanale ($f \geq 1$). Tale scelta di riparazione (\textit{repair strategy}) è preferita alla semplice esclusione delle soluzioni invalide (\textit{death penalty}) per massimizzare l'efficienza della ricerca, garantendo che il potenziale informativo di cromosomi con ottimi pattern orari o tipologici non vada disperso a causa di una singola mutazione sfavorevole sulla frequenza. Questo assicura che il principio di continuità terapeutica non venga mai violato, indipendentemente dalla pressione selettiva. Al di fuori di questo vincolo di integrità, il modeling della fitness integra teorie comportamentali per garantire l'appropriatezza clinica e l'efficacia dell'intervento attraverso due componenti principali:
+
+\begin{enumerate}
+    \item \textbf{Penalità di Frequenza ($P_{freq}$):} Implementa una \textbf{regolarizzazione progressiva} del carico comunicativo per mitigare fenomeni di \textbf{Reattanza Psicologica} \cite{brehm1966theory}. Essa integra una componente lineare (tassa di efficienza) proporzionale al volume di messaggi e una componente esponenziale che interviene al superamento della soglia adattiva $f_{max}$:
+    \begin{equation}
+        P_{freq} = 
+        \begin{cases} 
+            T_{base} & \text{se } f \leq f_{max} \\
+            \min\left(1.0, T_{base} + \frac{e^{0.2 \cdot (f - f_{max})} - 1}{50}\right) & \text{se } f > f_{max}
+        \end{cases}
+    \end{equation}
+    Dove $T_{base} = \frac{f}{31} \cdot 0.1$ rappresenta il costo incrementale di disturbo cognitivo per ogni singola interazione. La soglia $f_{max}$ è calibrata su un valore base di 16 notifiche settimanali, in linea con i protocolli \textbf{JITAI} (\textit{Just-In-Time Adaptive Interventions}) che identificano nel range di 1--3 interazioni giornaliere il punto di equilibrio tra efficacia terapeutica e prevenzione della \textit{Intervention Fatigue} \cite{nahum2018just}. Tale valore viene modulato dinamicamente ($\pm 5$) in base alla responsività al monitoraggio, garantendo un'adattività clinica che protegga l'utente dalla saturazione cognitiva.
+    
+    \item \textbf{Penalità Temporale ($P_{time}$):} Rispetta i diversi \textbf{Cronotipi} e l'igiene del sonno applicando un costo lineare proporzionale all'ampiezza della finestra di disponibilità oraria, con un incremento critico in corrispondenza delle fasce notturne individuate come sensibili per la stabilità psicologica del paziente.
+    \begin{equation}
+        P_{time} = \min\left(1.0, (\frac{H_{active}}{24} \cdot 0.05) + \frac{H_{night}}{8} \cdot \max(0.2, 1 - \text{night\_activity\_rate})\right)
+    \end{equation}
+    Per i \textbf{Night Owls} (utenti con alta attività notturna storica), la sensibilità al disturbo viene ridotta in base al \textit{night\_activity\_rate}, permettendo l'evoluzione di strategie che rispettino il ritmo circadiano individuale senza penalizzare i pattern di veglia tardivi.
+\end{enumerate}
+
+
+\subsection{Architettura della Meta-euristica ed Operatori Evolutivi}
+\label{sec:operators}
+La scelta degli operatori evolutivi mira a bilanciare l'esplorazione di nuove soluzioni e il raffinamento (\textit{exploitation}) delle strategie già identificate come promettenti:
+
+\begin{enumerate}
+    \item \textbf{Selezione - Tournament ($k=3$)}: Rispetto alle tecniche proporzionali (\textit{Roulette Wheel Selection}) o basate sul rango (\textit{Rank Selection}), il torneo garantisce una \textbf{pressione selettiva costante} ed indipendente dalla scala dei valori di fitness. La taglia $k=3$ è stata selezionata per bilanciare il rigore della scelta con il mantenimento della diversità genetica, prevenendo il rischio che individui "super-fit" dominino prematuramente la popolazione (convergenza precoce) o che la ricerca diventi stocasticamente inefficiente a causa di differenze di fitness troppo sottili tra gli individui.
+    
+    \item \textbf{Crossover - Two-Point}: Adottato per mitigare il bias posizionale tipico del \textit{Single-Point} senza incorrere nella frammentazione dello \textit{Uniform Crossover}. Il \textit{Two-Point} preserva la contiguità dei segmenti nel gene G3 (Schedule Orario), garantendo l'integrità dei pattern circadiani identificati.
+    
+    \item \textbf{Mutazione - Adaptive Bit-Flip}: L'operatore agisce tramite l'inversione stocastica dei singoli bit (\textit{bit-flip}) con un tasso base dell'1.3\% (calibrato sperimentalmente nella Sezione~\ref{sec:tuning}). La funzione \textbf{adaptive} modula dinamicamente tale valore monitorando la diversità genetica della popolazione: se l'algoritmo rileva una stagnazione (indice di diversità $<0.1$), raddoppia il tasso di mutazione per forzare l'esplorazione; al contrario, in presenza di un'ampia varietà ($>0.4$), riduce il tasso per stabilizzare il raffinamento delle strategie promettenti.
+    
+    \item \textbf{Elitismo} ($\text{rate}=0.05$): preserva gli individui più performanti (pari al 5\% della popolazione) impedendo che le soluzioni ottimali vadano perse a causa di operatori stocastici. Tale soglia bilancia la conservazione dei tratti promettenti con la necessità di preservare la varietà genetica necessaria alla ricerca globale.
+\end{enumerate}
+
+Per ottimizzare le risorse computazionali e rilevare il raggiungimento del \textbf{plateau di convergenza}, l'algoritmo integra un meccanismo di \textbf{Early Stopping}. Se la fitness del miglior individuo non subisce incrementi significativi per 20 generazioni consecutive, il loop evolutivo viene interrotto prematuramente, restituendo la miglior configurazione identificata al raggiungimento del plateau.
+
+\subsection{Sperimentazione e Tuning}
+\label{sec:tuning}
+
+Il passaggio dalla modellazione teorica alla validazione empirica richiede una fase di calibrazione volta a confermare l'efficacia degli operatori selezionati. L'ottimizzazione è stata orientata alla ricerca di una configurazione capace di mantenere performance elevate rispetto alla varietà dei profili clinici. Per garantire la massima riproducibilità, l'intera configurazione è gestita dalla classe \texttt{GAParams} ed esportata nel file \texttt{ga\_tuned\_config.json}.
+
+\paragraph{Ottimizzazione Bayesiana}
+Il tuning degli iperparametri è stato condotto tramite il framework \texttt{Optuna}, adottando un approccio di \textbf{Joint Tuning} per valutare la sinergia tra gli operatori descritti nella Sezione~\ref{sec:operators} e le possibili configurazioni alternative. Il processo ha esplorato lo spazio di ricerca, includendo sia gli iperparametri numerici (es. \textit{Population Size}, \textit{Mutation Rate}) sia le varianti degli operatori evolutivi, su un \textbf{Optimization Set} stratificato di 40 pazienti.
+
+Tale processo ha eletto come configurazione ottimale l'unione tra \textit{Tournament Selection}, \textit{Two-Point Crossover} e \textit{Adaptive Bit-Flip Mutation} (popolazione: 150; mutation rate: 0.013). Il raggiungimento di uno score medio di \textbf{0.973} (Figura~\ref{fig:ga_optuna_parallel}) valida empiricamente la scelta teorica, confermandone la solidità nel gestire l'eterogeneità clinica della popolazione.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{06_optuna_parallel}
+    \caption{Interazione Iperparametri: Analisi in coordinate parallele del processo di Ottimizzazione Bayesiana (Optuna).}
+    \label{fig:ga_optuna_parallel}
+\end{figure}
+
+\subsection{Analisi dei Risultati e Validazione Scientifica}
+\label{sec:validation}
+
+La validazione mira a confermare la superiorità dell'algoritmo genetico rispetto a baseline stocastiche e l'efficacia della strategia di intervento generata.
+
+\paragraph{Benchmark: GA vs Random Search}
+Per misurare il reale guadagno algoritmico, il sistema è stato confrontato con una \textbf{Random Search}. Tale metodologia, utilizzata come benchmark di riferimento, consiste nella generazione stocastica di soluzioni indipendenti priva di meccanismi di apprendimento o ereditarietà. Il test è stato condotto su un \textbf{Hold-out Test Set} (40 pazienti mai analizzati durante il tuning) e, a parità di budget computazionale, l'algoritmo GA ha superato la baseline casuale con un \textbf{guadagno medio del 20.3\%}, con picchi di efficienza nei cluster \textit{A Rischio} e \textit{Ghost} (Figura~\ref{fig:ga_benchmark}). Tale risultato conferma la superiorità della personalizzazione adattiva rispetto a strategie euristiche fisse (es. invio a orari standard), le quali risulterebbero intrinsecamente incapaci di mappare l'eterogeneità dei cronotipi e dei profili di reattanza della popolazione clinica.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{08_scientific_validation_test_set}
+    \caption{Benchmark Comparativo su Hold-out Test Set: GA vs Random Search a parità di budget.}
+    \label{fig:ga_benchmark}
+\end{figure}
+
+\paragraph{Analisi della Convergenza}
+L'analisi della convergenza (Figura~\ref{fig:ga_convergence}) evidenzia il raggiungimento di un plateau stabile entro le prime 40-50 generazioni. Tale andamento conferma come l'interazione tra gli operatori evolutivi permetta un'efficace transizione dalla fase di esplorazione globale a quella di raffinamento locale (\textit{exploitation}), consentendo al meccanismo di \textbf{Early Stopping} di preservare le risorse computazionali senza compromettere la qualità della soluzione individuata.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{09_ga_convergence_gold_standard}
+    \caption{Curva di Convergenza.}
+    \label{fig:ga_convergence}
+\end{figure}
+
+\subsection{Limitazioni e Sviluppi Futuri}
+Il limite principale dell'attuale sistema risiede nell'impiego di un simulatore deterministico per la valutazione della fitness, reso necessario dall'assenza di dati storici di outcome reali. Tale approccio, sebbene ancorato ai protocolli JITAI, rappresenta un'approssimazione fenomenologica del comportamento umano. Tuttavia, l'architettura modulare implementata garantisce una transizione \textit{plug-and-play}: non appena i tassi di retention reali saranno disponibili, sarà sufficiente integrare un modello predittivo empirico come metrica di valutazione all'interno della \texttt{FitnessEvaluator} senza alterare il motore evolutivo.
+
+In un'ottica di sviluppo futuro, il sistema evolutivo qui presentato fungerà da base per l'implementazione di un motore di \textbf{Reinforcement Learning}. Mentre l'approccio genetico identifica la "configurazione di partenza" ottimale basata su batch storici, tecniche di \textit{Online Learning} permetteranno di raffinare le strategie di nudging in tempo reale, reagendo dinamicamente ai micro-cambiamenti comportamentali del singolo utente.
