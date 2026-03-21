@@ -1,0 +1,47 @@
+\chapter{Deployment e Integrazione}
+
+\section{Introduzione al Deployment}
+La fase finale del progetto SINTON-IA prevede il deployment dei modelli sviluppati e la loro integrazione con la piattaforma preesistente SINTONIA. L'hosting del modulo di Intelligenza Artificiale è stato realizzato sfruttando gli \textit{Space} della piattaforma Hugging Face, permettendo così al sistema principale di interfacciarsi in modo diretto con i modelli predittivi.
+
+\section{Deployment del Modello AI}
+Il deployment su Hugging Face è stato strutturato creando un repository dedicato (\texttt{SINTON-IA/sinton-ia-api}) funzionante come un microservizio.
+
+\subsection{Architettura del Microservizio}
+L'applicazione è basata su \textbf{FastAPI}, un web framework moderno per la realizzazione di API ad alte prestazioni in Python. Il file principale, \texttt{main.py}, gestisce l'inizializzazione del server e l'esposizione degli endpoint. L'infrastruttura è costruita attorno a un container Docker (definito nel \texttt{Dockerfile}), che permette la riproducibilità dell'ambiente e l'installazione delle dipendenze necessarie dichiarate nel file \texttt{requirements.txt}.
+
+\subsection{Gestione dei Modelli}
+Al momento dell'avvio del container, l'applicazione pre-carica in memoria tutti i modelli pre-addestrati e i relativi trasformatori. Questo riduce significativamente la latenza durante le inferenze:
+\begin{itemize}
+    \item \texttt{final\_model\_depression.pkl}: contiene il modello LightGBM addestrato per la predizione della depressione.
+    \item \texttt{logreg\_model.pkl} e \texttt{tfidf\_vectorizer.pkl}: contengono il modello NLP basato su regressione logistica e il vettorizzatore TF-IDF per l'analisi del rischio suicidario (Red Flag).
+    \item \texttt{ga\_tuned\_config.json} e \texttt{genetic\_algorithm.py}: includono i parametri ottimali pre-calcolati (Gold Standard generato da Optuna) e la logica sorgente dell'algoritmo genetico adoperato per l'analisi e la gestione della Churn Prevention.
+\end{itemize}
+
+\subsection{Endpoint Esposti}
+Il modulo AI offre tre principali interfacce RESTful (Endpoint):
+\begin{itemize}
+    \item \texttt{POST /api/red-flag}: Riceve il testo libero inserito dal paziente e restituisce la probabilità di rischio suicidario, applicando pipeline di pulizia del testo e inferenza con il modello di regressione logistica.
+    \item \texttt{POST /api/predict-depression}: Riceve i log giornalieri strutturati del paziente, esegue l'estrazione delle feature necessarie (es. \textit{valence\_trend\_5d} o \textit{max\_neg\_streak}), e restituisce il livello del rischio calcolato col modello LightGBM.
+    \item \texttt{POST /api/genetic-algorithm}: Utilizzato per le analisi di Churn Prevention, recepisce i dati sull'aderenza del paziente alla piattaforma e valuta la miglior strategia interattiva facendo uso dell'algoritmo genetico pre-ottimizzato.
+\end{itemize}
+
+\section{Integrazione con il Backend SINTONIA}
+Il sistema centrale SINTONIA, sviluppato utilizzando il framework \textbf{NestJS}, funge da client logico per il modulo di Intelligenza Artificiale. Il flusso comunicativo avviene attraverso richieste HTTP strutturate e assicurate.
+
+\subsection{Sicurezza e Configurazione}
+L'inoltro delle richieste dal backend NestJS all'API di Hugging Face è protetto e configurato mediante variabili d'ambiente:
+\begin{itemize}
+    \item \texttt{AI\_API\_URL}: Indica l'URL pubblico dello Space di Hugging Face.
+    \item \texttt{HF\_TOKEN}: Un token autorizzativo (\textit{Bearer Token}) passato negli header delle richieste per validarne la provenienza, prevenendo utilizzi non autorizzati ai modelli.
+\end{itemize}
+
+\subsection{Il Servizio di Integrazione \texttt{AiService}}
+Il core dell'integrazione è demandato alla classe \texttt{AiService} posta all'interno del backend NestJS. Questo servizio si occupa di interfacciare fluidamente il core di SINTONIA con le risorse remote:
+
+\begin{itemize}
+    \item Inizializza i log verificando la correttezza delle configurazioni ambientali per \texttt{AI\_API\_URL} e \texttt{HF\_TOKEN}.
+    \item Espone il metodo principale \texttt{predict(endpoint, payload)}, che compone la chiamata REST inserendo l'autorizzazione di sicurezza e gestisce efficacemente le risposte o gli errori causati da anomalie di rete (come richieste rifiutate o codice ritornato nei \textit{4xx/5xx}).
+    \item Intercetta chiamate specifiche ad altri modelli, come \texttt{predictGeneticAlgorithm()}, in modo da garantire la giusta elaborazione contestuale delle entità inviate per prevenire il drop-out dell'utente.
+\end{itemize}
+
+Per mitigare la latenza causata dal \textit{Cold Start} dei servizi serverless su Hugging Face (lo spegnimento automatico dei container inattivi), \texttt{AiService} invia procedure di asincrone di \textit{pre-warming} con la funzione \texttt{wakeUpModels()} per notificare allo \textit{Space} di avviarsi o rimanere in \textit{stand-by} attivo per immediate elaborazioni.
