@@ -23,6 +23,8 @@ pip-delete-this-directory.txt
 # ─── Data & Datasets (troppo grandi per git) ──────────────────────────────────
 models/*/data/*
 !models/*/data/.gitkeep
+!models/*/data/README.md
+!models/*/data/*.py
 *.csv
 *.tsv
 *.json

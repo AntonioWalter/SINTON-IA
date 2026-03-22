@@ -1,26 +1,10 @@
-# API – Backend FastAPI
+---
+title: Sinton Ia Api
+emoji: 🏃
+colorFrom: red
+colorTo: purple
+sdk: docker
+pinned: false
+---
 
-Servizio che espone i tre modelli AI di SINTON-IA come endpoint REST, consumabili dal software SINTONIA preesistente.
-
-## Struttura
-
-```
-api/
-├── routes/      # Definizione degli endpoint (uno per modello)
-├── services/    # Logica di inference per ciascun modello
-└── README.md
-```
-
-## Endpoint previsti
-
-| Metodo | Path | Modello |
-|---|---|---|
-| `POST` | `/predict/suicide-risk` | NLP Rischio Suicidario |
-| `POST` | `/predict/churn` | Churn Prediction |
-| `POST` | `/predict/depression` | Depression Prediction |
-
-## Avvio locale
-
-```bash
-uvicorn api.main:app --reload
-```
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference

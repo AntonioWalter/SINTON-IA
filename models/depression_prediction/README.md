@@ -25,18 +25,15 @@ depression_detection/
 
 I dati **non sono versionati su git** a causa della loro natura sensibile e dimensioni.
 
-Il dataset è ospitato privatamente su [Hugging Face](https://huggingface.co/datasets/SINTON-IA/depression_prediction).
+Il dataset è ospitato pubblicamente su [Hugging Face](https://huggingface.co/datasets/SINTON-IA/depression_prediction).
 
 ### Prerequisiti
 
-Assicurati di avere le librerie necessarie e di aver effettuato il login:
+Assicurati di avere le librerie necessarie:
 
 ```bash
 pip install datasets huggingface_hub
-huggingface-cli login
 ```
-
-_(Inserisci il token di accesso Hugging Face autorizzato quando richiesto)._
 
 ### Scaricare il dataset
 
@@ -44,7 +41,7 @@ Per scaricare comodamente il dataset (che verrà estratto in automatico in `data
 
 ```bash
 cd models/depression_prediction
-python src/download_dataset.py
+python data/download_dataset.py
 ```
 
 ## Dipendenze specifiche
