@@ -4,6 +4,20 @@
 \chapter{Introduzione}
 \label{ch:introduzione}
 
+\section{Conformità ai Vincoli di Progetto e Riproducibilità}
+\label{sec:vincoli_progetto}
+Il presente sistema, denominato SINTON-IA, è stato architettato e strutturato in rigorosa rispondenza ai vincoli accademici previsti:
+\begin{enumerate}
+    \item \textbf{Problema Reale}: SINTON-IA affronta le criticità operative insite nelle applicazioni di \textit{e-mental health}: l'incapacità umana di filtrare manualmente e proattivamente enormi flussi testuali quotidiani alla ricerca di intenti suicidari latenti, l'incongruenza delle risposte nei questionari di self-report psicologico e l'altissimo tasso di abbandono terapeutico preventivo (\textit{churn rate}) tipico di queste piattaforme prima della reale presa in carico.
+    \item \textbf{Sperimentazione Multi-Pipeline}: La ricerca comprende il training valutato di almeno due algoritmi paralleli per ogni funzionalità esplorata (es. TF-IDF + Logistic Regression vs Reti Neurali per NLP; LightGBM vs Random Forest per regressione; Algoritmo Genetico vs Random Search per l'ottimizzazione del Churn).
+    \item \textbf{Simulazioni ed Estensione Dati ad-hoc}: È stato interamente sviluppato in Python un simulatore probabilistico ad-hoc che genera iterazioni comportamentali per l'addestramento dell'Algoritmo Genetico, mentre i dataset linguistici da fonti esterne hanno subito profondi rimaneggiamenti strutturati di pre-processing e test sintetico di robustezza contestuale. 
+    \item \textbf{Metodologia e Trade-Off Computazionali}: L'intera fase di Model Training (Capitolo \ref{ch:modeling}) è corredata da metriche ad hoc (F1-score pesati $F_2$, MAE bilanciati, curve di convergenza ad Early Stopping) con discussioni formali ed esplicite sui Trade-off scelti dal team (Performance predictive bilanciate contro Tempi di Esecuzione sub-secondo e complessità dei calcoli hardware).
+    \item \textbf{Output Fruibile}: La validazione operativa del sistema viene garantita dall'integrazione dei moduli di intelligenza artificiale sviluppati direttamente all'interno dell'infrastruttura software preesistente di SINTONIA, dimostrandone l'immediata applicabilità clinica.
+\end{enumerate}
+
+Per garantire il libero accesso alla documentazione tecnica, ai notebook esplorativi, ai file Python (\texttt{.py}) e alla gestione dell'ambiente, l'intero ciclo di vita applicativo è integralmente tracciato tramite controlli di versione. Il codice sorgente prodotto risulta costantemente accessibile e consultabile presso il \textbf{Repository GitHub Ufficiale}: \\ \url{https://github.com/AntonioWalter/SINTON-IA}
+
+\clearpage
 \section{Il Problema dell'Accesso alle Cure Psicologiche in Campania}
 \label{sec:contesto_campania}
 Nel contesto attuale della sanità pubblica campana, l'accesso ai servizi di supporto psicologico risulta spesso complesso, caratterizzato da lunghe liste d'attesa che possono protrarsi per diversi mesi prima dell'effettiva presa in carico da parte di uno psicologo dell'ASL. Durante l'attesa, i cittadini non dispongono di strumenti o servizi digitali che possano sostenerli. Questa mancanza unita al forte distacco istituzionale provoca spesso un crescente senso di abbandono e una percezione di scarsa attenzione da parte del servizio sanitario pubblico.
