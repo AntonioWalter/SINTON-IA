@@ -10,12 +10,27 @@ Il presente sistema, denominato SINTON-IA, è stato architettato e strutturato i
 \begin{enumerate}
     \item \textbf{Problema Reale}: SINTON-IA affronta le criticità operative insite nelle applicazioni di \textit{e-mental health}: l'incapacità umana di filtrare manualmente e proattivamente enormi flussi testuali quotidiani alla ricerca di intenti suicidari latenti, l'incongruenza delle risposte nei questionari di self-report psicologico e l'altissimo tasso di abbandono terapeutico preventivo (\textit{churn rate}) tipico di queste piattaforme prima della reale presa in carico.
     \item \textbf{Sperimentazione Multi-Pipeline}: La ricerca comprende il training valutato di almeno due algoritmi paralleli per ogni funzionalità esplorata (es. TF-IDF + Logistic Regression vs Reti Neurali per NLP; LightGBM vs Random Forest per regressione; Algoritmo Genetico vs Random Search per l'ottimizzazione del Churn).
-    \item \textbf{Simulazioni ed Estensione Dati ad-hoc}: È stato interamente sviluppato in Python un simulatore probabilistico ad-hoc che genera iterazioni comportamentali per l'addestramento dell'Algoritmo Genetico, mentre i dataset linguistici da fonti esterne hanno subito profondi rimaneggiamenti strutturati di pre-processing e test sintetico di robustezza contestuale. 
+    \item \textbf{Simulazioni ed Estensione Dati ad-hoc}: È stato interamente sviluppato in Python un simulatore probabilistico ad-hoc che genera iterazioni comportamentali per l'addestramento dell'Algoritmo Genetico, mentre i dataset linguistici da fonti esterne hanno subito profondi rimaneggiamenti strutturati di pre-processing e test sintetico di robustezza contestuale.
     \item \textbf{Metodologia e Trade-Off Computazionali}: L'intera fase di Model Training (Capitolo \ref{ch:modeling}) è corredata da metriche ad hoc (F1-score pesati $F_2$, MAE bilanciati, curve di convergenza ad Early Stopping) con discussioni formali ed esplicite sui Trade-off scelti dal team (Performance predictive bilanciate contro Tempi di Esecuzione sub-secondo e complessità dei calcoli hardware).
     \item \textbf{Output Fruibile}: La validazione operativa del sistema viene garantita dall'integrazione dei moduli di intelligenza artificiale sviluppati direttamente all'interno dell'infrastruttura software preesistente di SINTONIA, dimostrandone l'immediata applicabilità clinica.
 \end{enumerate}
 
 Per garantire il libero accesso alla documentazione tecnica, ai notebook esplorativi, ai file Python (\texttt{.py}) e alla gestione dell'ambiente, l'intero ciclo di vita applicativo è integralmente tracciato tramite controlli di versione. Il codice sorgente prodotto risulta costantemente accessibile e consultabile presso il \textbf{Repository GitHub Ufficiale}: \\ \url{https://github.com/AntonioWalter/SINTON-IA}
+
+\clearpage
+\section{Metodologia di Lavoro: Team Data Science Process (TDSP)}
+\label{sec:metodologia_tdsp}
+
+Lo sviluppo di SINTON-IA è stato condotto seguendo il \textbf{Team Data Science Process (TDSP)}, una metodologia iterativa che combina gli aspetti analitici del framework \textit{CRISP-DM} con le pratiche gestionali di \textbf{Agile SCRUM}.
+
+L'esecuzione del progetto è stata strutturata in \textbf{Sprint}, ciascuno finalizzato al rilascio incrementale di porzioni funzionali del sistema. La gestione del team ha previsto l'adozione dei seguenti pilastri di monitoraggio e coordinamento:
+\begin{itemize}
+    \item \textbf{Sprint Planning}: Fase di analisi iniziale in cui vengono stabilite le priorità di sviluppo dello sprint, organizzando i task in modo da massimizzare la qualità e la continuità del progetto.
+    \item \textbf{Daily Scrum Meeting}: Incontri quotidiani di monitoraggio per riportare i progressi effettuati, identificare eventuali colli di bottiglia (\textit{impediments}) e sincronizzare lo sviluppo tra i vari moduli.
+    \item \textbf{Milestones}: Organizzazione del workflow attraverso \textit{Milestone} dedicate a ogni macro-fase del ciclo di vita TDSP (Business Understanding, Data Acquisition \& Understanding, Modeling, Deployment), fungendo da raccordo e verifica per gli Sprint di sviluppo condotti.
+\end{itemize}
+
+L'adozione del TDSP ha permesso di incorporare gli aspetti socio-tecnici essenziali per lo sviluppo di un ecosistema di Intelligenza Artificiale affidabile in ambito sanitario, garantendo una struttura di sviluppo trasparente che minimizza i rischi di errore logico e facilita l'integrazione di nuove funzionalità nel sistema SINTONIA.
 
 \clearpage
 \section{Il Problema dell'Accesso alle Cure Psicologiche in Campania}
