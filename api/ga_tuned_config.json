@@ -1,0 +1,14 @@
+{
+    "best_selection": "tournament",
+    "best_crossover": "two-point",
+    "best_mutation": "adaptive",
+    "opt_pop_size": 150,
+    "opt_mutation_rate": 0.013088885992441601,
+    "weights": [
+        1.0,
+        0.4,
+        0.2
+    ],
+    "model_generalization_score": 0.9726962365591397,
+    "analysis_date": "2026-03-15 12:46:16"
+}
