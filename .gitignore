@@ -62,8 +62,7 @@ docs/latex/chapters/*.aux
 
 # ─── Editors & OS ─────────────────────────────────────────────────────────
 .idea/
-.vscode/*
-!.vscode/settings.json
+.vscode/
 *.swp
 *.swo
 .DS_Store
