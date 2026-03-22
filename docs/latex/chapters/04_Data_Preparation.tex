@@ -193,7 +193,7 @@ Per ciascun paziente attivo, gli indicatori aggregati calcolati sulla finestra d
 \subsection{Normalizzazione e Scalatura}
 \label{subsec:normalizzazione_churn}
 
-Tutte le operazioni di estrazione, aggregazione su finestra temporale e successiva scalatura sono automatizzate dallo script \texttt{aggregate\_features.py}. 
+Tutte le operazioni di estrazione, aggregazione su finestra temporale e successiva scalatura sono automatizzate dallo script \texttt{data\_pipeline.py}. 
 
 Affinché gli indicatori siano comparabili all'interno della funzione di fitness, è necessario riportarli su una scala omogenea. Si adotta la \textbf{normalizzazione min-max}, che trasforma ciascun indicatore nell'intervallo $[0, 1]$:
 \begin{equation*}
@@ -224,9 +224,9 @@ La strategia prevede la generazione di \textbf{profili utente sintetici}, ciascu
     \item \textbf{Utente \textit{Ghost}:} simula un utente che ha di fatto cessato ogni attività sulla piattaforma pur senza caricare il proprio account. Nessuna interazione registrata nella finestra di osservazione corrente.
 \end{enumerate}
 
-Per ciascun profilo, lo script Python \texttt{generate\_synthetic\_data.py} (sviluppato e integrato nella repository del progetto) produce record sintetici nelle tabelle \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario}, \texttt{notifica}, \texttt{domanda\_forum} e \texttt{acquisizione\_badge}, rispettando le distribuzioni temporali e i range di valori coerenti con il profilo assegnato. L'Algoritmo Genetico verrà quindi testato sulla popolazione simulata (fissata in fase prototipale a 500 pazienti su uno storico di 90 giorni), verificando che le strategie di \textit{nudging} evolute dal GA riescano effettivamente a discriminare i profili a rischio e a produrre interventi differenziati.
+Per ciascun profilo, lo script Python \texttt{data\_pipeline.py} (che unifica la generazione dei log sintetici e la successiva aggregazione delle feature) produce record simulati coerenti con le tabelle di backend \texttt{stato\_animo}, \texttt{pagina\_diario}, \texttt{questionario}, \texttt{notifica}, \texttt{domanda\_forum} e \texttt{acquisizione\_badge}. 
+L'Algoritmo Genetico verrà quindi testato sulla popolazione simulata (fissata in fase prototipale a 500 pazienti su uno storico di 90 giorni), verificando che le strategie di \textit{nudging} evolute dal GA riescano effettivamente a discriminare i profili a rischio e a produrre interventi differenziati.
 
 Questa fase è strettamente prototipale: una volta che la piattaforma SINTONIA sarà operativa con una base utenti reale, i dati sintetici verranno progressivamente sostituiti con dati di utilizzo autentici, e i parametri del GA verranno ri-calibrati di conseguenza.
 
 Conclusa la preparazione dei dati per i tre pilastri di SINTON-IA, il materiale raffinato è pronto per entrare nel cuore del sistema: la fase di \textbf{Modeling}, dove nasceranno le Intelligenze Artificiali che abiteranno la piattaforma.
-
