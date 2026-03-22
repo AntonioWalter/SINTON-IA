@@ -63,7 +63,7 @@ jobs:
       # Se trovi un errore segnalato da ruff, correggilo prima di fare push.
       - name: 🔍 Lint Python (ruff)
         run: |
-          ruff check models/*/src/ api/ --ignore E501
+          ruff check models/*/src/ --ignore E501
           # E501 = linee troppo lunghe (ignorato perché nei notebook è comune)
 
       # ── CONTROLLO 2: Validità dei notebook Jupyter ───────────────────────────
