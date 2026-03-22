@@ -122,6 +122,49 @@ Affinché il GA possa essere impiegato come componente operativo nel \textit{bac
 \end{itemize}
 
 % ── 1.3 ──────────────────────────────────────────────────────────────────────
+\clearpage
+\section{Specifiche PEAS degli Agenti Intelligenti}
+\label{sec:peas_specifications}
+
+L'architettura dei tre moduli di SINTON-IA è stata formalizzata attraverso il framework di progettazione degli Agenti Intelligenti \textbf{PEAS} (\textit{Performance Measure, Environment, Actuators, Sensors}). Questa schematizzazione definisce in maniera inequivocabile il perimetro d'azione e i confini di responsabilità tecnico-clinica di ogni singolo agente all'interno della piattaforma.
+
+\begin{itemize}
+    \item \textbf{Agente Diagnostico NLP (Red Flag Detection)}
+    \begin{itemize}
+        \item \textbf{Performance Measure}: Massimizzazione della Recall clinica (minimizzazione assoluta dei Falsi Negativi fatali) affiancata da una Precisione di salvaguardia ($\ge 0.70$) per contenere l'Alert Fatigue.
+        \item \textbf{Environment}: Motore logico di back-end isolato e asincrono, operante sui diari testuali redatti dai pazienti durante la lista d'attesa.
+        \item \textbf{Actuators}: Sistema di routing per l'invio e la successiva visualizzazione di "Alert Clinici Sequenziali" sulla dashboard cruscotto assegnata allo psicologo di competenza.
+        \item \textbf{Sensors}: Moduli di estrazione testo (strutturazione del linguaggio naturale grezzo prelevato dall'input della piattaforma).
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \item \textbf{Agente Regressore (Depression Prediction)}
+    \begin{itemize}
+        \item \textbf{Performance Measure}: Mantenimento dell'Errore Medio Assoluto (MAE) al di sotto della soglia clinica di accettabilità ($\le 3$ punti) rispetto alla reale scala PHQ-9.
+        \item \textbf{Environment}: Flusso dati SINTONIA relativo al monitoraggio dell'umore (serie temporali continue di valenza e intensità emozionale) generato dall'interfaccia mobile.
+        \item \textbf{Actuators}: Driver di rendering per visualizzare i trend grafici longitudinali dell'umore e generazione di "Flag di Incongruenza" in dashboard in caso di discrepanze estreme con i test ufficiali.
+        \item \textbf{Sensors}: Endpoint API interni capaci di captare ogni nuovo salvataggio nel registro giornaliero delle emozioni del paziente.
+    \end{itemize}
+    
+    \vspace{0.3cm}
+    \item \textbf{Agente Evolutivo (Churn Prevention)}
+    \begin{itemize}
+        \item \textbf{Performance Measure}: Massimizzazione della \textit{Retention probabilistica} dell'utente target, calcolata minimizzando le penalità derivate da \textit{Notification Fatigue} o disturbo della cronobiologia del sonno.
+        \item \textbf{Environment}: Infrastruttura applicativa mobile del paziente, soggetta a ritmi comportamentali fluidi e reattanza agli stimoli digitali.
+        \item \textbf{Actuators}: Motore di schedulazione interno per il rilascio autonomo di interventi terapeutici digitali (\textit{Nudging strategico}) sotto forma di notifiche in-app categorizzate.
+        \item \textbf{Sensors}: Rilevatori dei log di attività per valutare la propensione al drop-out.
+    \end{itemize}
+\end{itemize}
+
+\vspace{0.5cm}
+
+\begin{figure}[H]
+    \centerline{\includegraphics[width=1.3\textwidth]{architettura-sintonia}}
+    \caption{Architettura Globale SINTON-IA: mappatura del flusso dati bidirezionale tra i moduli di Intelligenza Artificiale PEAS e il core applicativo React/NestJS del sistema padre.}
+    \label{fig:architettura_globale}
+\end{figure}
+
+% ── 1.4 ──────────────────────────────────────────────────────────────────────
 \section{Valutazione dei Rischi}
 \label{sec:valutazione_rischi}
 
