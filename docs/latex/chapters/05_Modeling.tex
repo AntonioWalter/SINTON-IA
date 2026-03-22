@@ -38,14 +38,14 @@ Per non rovinare il buon bilanciamento iniziale tra messaggi "sani e a rischio",
 Il codice Python con cui questa strategia iniziale \`e stata messa in pratica si trova documentato sul notebook intitolato \texttt{03\_RedFlag\_Modelling\_Baseline.ipynb}.
 
 \subsection{Il Modello Baseline (TF-IDF + Logistic Regression)}
-Prima di passare a modelli di Intelligenza Artificiale potenti e complessi, abbiamo ritenuto indispensabile fissare prima un "modello di base" (o \textbf{Baseline}). L'idea è semplice: la Baseline funge da metro di giudizio o "parametro zero". Se un modello complicato (che magari impiega ore per addestrarsi) non riesce a battere in modo deciso le prestazioni di un modello banale che si allena in venti secondi, significa che tutta quella complessità aggiuntiva è inutile. 
+Prima di passare a modelli di Intelligenza Artificiale potenti e complessi, abbiamo ritenuto indispensabile fissare prima un "modello di base" (o \textbf{Baseline}). L'idea è semplice: la Baseline funge da metro di giudizio o "parametro zero". Se un modello complicato (che magari impiega ore per addestrarsi) non riesce a battere in modo deciso le prestazioni di un modello banale che si allena in venti secondi, significa che tutta quella complessità aggiuntiva è inutile.
 
 Come Baseline per questo problema testuale, abbiamo scelto di combinare la tecnica \textbf{TF-IDF} per trasformare le parole in numeri, e la \textbf{Regressione Logistica} come classificatore.
 Abbiamo scelto questa combinazione per tre motivi molto pratici:
 \begin{enumerate}
     \item \textbf{Gestisce bene le parole importanti}: Il TF-IDF (\textit{Term Frequency - Inverse Document Frequency}) penalizza le parole comuni che si trovano dappertutto (come "il", "di", "essere") facendole valere zero, e premia fortissimo le parole "rare" ma cruciali presenti solo nei testi critici (es. "suicido", "odio", "morire"). Così facendo ripulisce da solo il rumore di fondo.
     \item \textbf{Cosa fa il modello è sempre visibile}: A differenza delle moderne "scatole nere", la Regressione Logistica assegna un punteggio visibile ad ogni singola parola chiave. Sapremo per certo se il modello fallisce perché ha frainteso il peso di un aggettivo specifico, permettendoci di giustificarne sempre agli psicologi il ragionamento interno.
-    \item \textbf{Probabilità chiare}: Abbiamo bisogno non solo di un responso netto (Sì/No), ma di sapere "quanto" l'utente è a rischio, per modulare meglio l'avviso ai medici. La Regressione Logistica fornisce come risultato diretto una percentuale precisa calibrata tra lo 0\% e il 100\%. 
+    \item \textbf{Probabilità chiare}: Abbiamo bisogno non solo di un responso netto (Sì/No), ma di sapere "quanto" l'utente è a rischio, per modulare meglio l'avviso ai medici. La Regressione Logistica fornisce come risultato diretto una percentuale precisa calibrata tra lo 0\% e il 100\%.
 \end{enumerate}
 
 Ecco come abbiamo istruito il nostro modello Base. Il codice utilizza la libreria \textit{Scikit-Learn} ed è commentato per essere chiaro in ogni suo passaggio:
@@ -94,13 +94,13 @@ Per dare un quadro di riferimento ancora più preciso, riportiamo in Tabella~\re
     \renewcommand{\arraystretch}{1.3}
     \begin{tabular}{|l|c|}
         \hline
-        \textbf{Metrica} & \textbf{Valore (Validation Set)} \\
+        \textbf{Metrica}   & \textbf{Valore (Validation Set)} \\
         \hline
         \hline
-        \textbf{Accuracy}  & 94.01\% \\
-        \textbf{Precision} & 94.20\% \\
-        \textbf{Recall}    & 93.30\% \\
-        \textbf{F1-Score}  & 93.75\% \\
+        \textbf{Accuracy}  & 94.01\%                          \\
+        \textbf{Precision} & 94.20\%                          \\
+        \textbf{Recall}    & 93.30\%                          \\
+        \textbf{F1-Score}  & 93.75\%                          \\
         \hline
     \end{tabular}
     \caption{Riassunto delle metriche prestazionali (Macro Average) per il Modello Baseline sulla classificazione \textit{suicide}.}
@@ -135,7 +135,7 @@ L'utente non adopera alcun termine classificabile statisticamente come negativo 
 
 \subsubsection{L'Esperimento col Dataset Sintetico}
 Preso atto dell'incapacità del TF-IDF di processare sfumature così delicate testandole "a caldo", ci siamo domandati se queste mancanze fossero ovviabili. \textit{Cosa accadrebbe se inquinassimo il dataset di addestramento creando un sotto-dataset sintetico ricolmo di queste eccezioni semantiche e iperboli videoludiche, sperando di forzare il TF-IDF a una ri-ponderazione dei propri pesi?}
-Per dimostrare questa ipotesi, abbiamo iniettato 30.000 records sintetici volutamente ambigui all'interno del Training Set (es. esagerazioni contenenti parole chiave negative e frasi di rassegnazione letargica totalmente decurtate da vocaboli di allarme). 
+Per dimostrare questa ipotesi, abbiamo iniettato 30.000 records sintetici volutamente ambigui all'interno del Training Set (es. esagerazioni contenenti parole chiave negative e frasi di rassegnazione letargica totalmente decurtate da vocaboli di allarme).
 
 I risultati successivi alla riqualificazione della Baseline (visibili nel notebook \texttt{05\_RedFlag\_Synthetic\_Robustness.ipynb}) hanno generato un comportamento apparentemente strabiliante: gli Edge Cases sono stati "risolti". Ad esempio, il Test Caso 1 (l'esame deprimente) è crollato dal \textbf{86.41\%} al \textbf{4.55\%} di rischio fittizio, mentre il Test Caso 2 (l'organizzazione pacifica dell'addio) è stato portato dal \textbf{23.59\%} a circa il \textbf{74.97\%} di percezione del rischio corretto.
 Tuttavia, una simile soluzione tecnica si configura come un \textbf{falso successo ingegneristico}. Di fronte a una distribuzione artificiale massiccia all'interno del Train Set, il \textit{Term Frequency} non ha "imparato il contesto", bensì ha matematicamente saturato il peso delle combinazioni testuali introdotte a mano, imparandole forzatamente a memoria e sbilanciando la stabilità generale delle parole chiave originali. Lo dimostra il calcolo delle metriche sul Validation Set rimasto pulito: l'Accuracy globale è scesa dal \textbf{94.01\%} al \textbf{93.54\%}, ma soprattutto la Recall è calata significativamente (da \textbf{93.3\%} a \textbf{92.66\%}), dimostrando che l'iniezione artificiale ha "confuso" il peso statistico dei lemmi critici reali del dataset.
@@ -150,7 +150,7 @@ Dal punto di vista del \textit{Business Understanding}, l'obiettivo del Red Flag
     \item \textbf{Prestazioni Solide}: Validazione reale empirica con falsi negativi mantenuti al minimo fisiologico del dataset.
 \end{enumerate}
 
-Pertanto, è stato deciso di \textbf{mantenere questo algoritmo come soluzione in produzione}. 
+Pertanto, è stato deciso di \textbf{mantenere questo algoritmo come soluzione in produzione}.
 Passare all'implementazione delle Reti Neurali (come i \textit{Transformer}) e della \textit{Self-Attention} su questo peculiare set di dati comporterebbe uno spreco ingegneristico ingiustificato. Il modello di Deep Learning rischierebbe esclusivamente di memorizzare, su più livelli, gli stessi identici concetti appresi dall'ITF, appesantendo irreversibilmente l'architettura.
 Tuttavia, il passaggio a modelli Transformer rimane validato per gli \textbf{Sviluppi Futuri} del progetto, specificamente qualora si riuscisse ad acquisire dataset clinici dotati di una certificata mappatura delle sfumature psicologiche. Candidato d'eccellenza per questa iterazione è lo \textit{UMD Reddit Suicidality Dataset} dell'Università del Maryland \cite{umd_reddit_suicidality}, la cui etichettatura crowdsourced basata sulla scala ufficiale \textit{C-SSRS} fornisce esattamente le ambiguità adatte per le quali la potenza di calcolo semantico è imperativa.
 
@@ -241,11 +241,11 @@ I modelli candidati sono stati valutati con la stessa configurazione di KFold CV
     \centering
     \begin{tabular}{|l|c|c|}
         \hline
-        \textbf{Modello Candidato} & \textbf{MAE (M $\pm$ SD)} & \textbf{RMSE (M $\pm$ SD)} \\
+        \textbf{Modello Candidato}  & \textbf{MAE (M $\pm$ SD)} & \textbf{RMSE (M $\pm$ SD)} \\
         \hline
-        Ridge Regression (Baseline) & $2.6793 \pm 0.0096$ & $3.3861 \pm 0.0079$ \\
-        Random Forest               & $2.2509 \pm 0.0158$ & $2.8906 \pm 0.0181$ \\
-        LightGBM                    & $2.3120 \pm 0.0180$ & $2.9560 \pm 0.0200$ \\
+        Ridge Regression (Baseline) & $2.6793 \pm 0.0096$       & $3.3861 \pm 0.0079$        \\
+        Random Forest               & $2.2509 \pm 0.0158$       & $2.8906 \pm 0.0181$        \\
+        LightGBM                    & $2.3120 \pm 0.0180$       & $2.9560 \pm 0.0200$        \\
         \hline
     \end{tabular}
     \caption{Confronto delle prestazioni medie in CV (KFold) sul Training Set.}
@@ -279,7 +279,7 @@ Un vantaggio significativo dei moderni modelli Tree-Based è la possibilità di 
     \label{fig:dp_feature_importance}
 \end{figure}
 
-Il concetto alla base di SHAP è quello di considerare ogni variabile come un "giocatore" di una squadra (il modello) che collabora per ottenere un risultato (la predizione). SHAP calcola matematicamente quanto "merito" spetta a ciascuna variabile per aver spostato il punteggio finale rispetto alla media. Questo garantisce una trasparenza senza precedenti: non sappiamo solo quali feature sono importanti, ma anche se aumentano o diminuiscono l'allarme depressivo. 
+Il concetto alla base di SHAP è quello di considerare ogni variabile come un "giocatore" di una squadra (il modello) che collabora per ottenere un risultato (la predizione). SHAP calcola matematicamente quanto "merito" spetta a ciascuna variabile per aver spostato il punteggio finale rispetto alla media. Questo garantisce una trasparenza senza precedenti: non sappiamo solo quali feature sono importanti, ma anche se aumentano o diminuiscono l'allarme depressivo.
 
 Il Summary Plot di SHAP ci rivela \textit{come} varia l'allarme depressione rispetto ai valori assunti dalle feature. Il tono medio (\texttt{valence\_mean}) si conferma il fattore statisticamente più influente: valori bassi di valenza emozionale (toni scuri nel grafico) spingono la predizione verso punteggi PHQ-9 più alti. Di pari rilevanza clinica è il peso attribuito all'assenza di dati (\texttt{missing\_ratio}) e all'ampiezza degli sbalzi d'umore (\texttt{intensity\_mean}). Tali risultati dimostrano esplicitamente come SHAP conferisca interpretabilità direzionale: un innalzamento patologico di queste misurazioni agisce da precursore critico del deterioramento clinico, venendo riconosciuto dal sistema come primario fattore prognostico di scompenso emotivo.
 
@@ -293,12 +293,12 @@ I risultati sul Test Set (Tabella~\ref{tab:final_evaluation_metrics}) confermano
     \centering
     \begin{tabular}{|l|c|c|c|}
         \hline
-        \textbf{Configurazione} & \textbf{MAE} & \textbf{RMSE} & \textbf{$R^2$} \\
+        \textbf{Configurazione}                  & \textbf{MAE}     & \textbf{RMSE}    & \textbf{$R^2$}   \\
         \hline
-        Baseline (Ridge CV) & 2.6793 & 3.3861 & 0.6171 \\
-        \textbf{LightGBM Ottimizzato (Test Set)} & \textbf{2.2098} & \textbf{2.8273} & \textbf{0.7321} \\
+        Baseline (Ridge CV)                      & 2.6793           & 3.3861           & 0.6171           \\
+        \textbf{LightGBM Ottimizzato (Test Set)} & \textbf{2.2098}  & \textbf{2.8273}  & \textbf{0.7321}  \\
         \hline
-        \textit{Miglioramento Assoluto} & \textbf{-0.4695} & \textbf{-0.5588} & \textbf{+0.1150} \\
+        \textit{Miglioramento Assoluto}          & \textbf{-0.4695} & \textbf{-0.5588} & \textbf{+0.1150} \\
         \hline
     \end{tabular}
     \caption{Prestazioni in inferenza del LightGBM definitivo sul Test Set.}
@@ -338,11 +338,11 @@ Per capire l'utilità reale del sistema in un ospedale o in una clinica, non bas
         \hline
         \textbf{Fascia di Severità PHQ-9 (Reale)} & \textbf{Numero Pazienti} & \textbf{Mean Absolute Error} \\
         \hline
-        Minima (0-4) & 11.038 & $1.7661$ \\
-        Lieve (5-9) & 4.987 & $2.4967$ \\
-        Moderata (10-14) & 2.372 & $3.4666$ \\
-        Moderatamente Grave (15-19) & 1.010 & $2.3585$ \\
-        Grave (20-27) & 593 & $2.7739$ \\
+        Minima (0-4)                              & 11.038                   & $1.7661$                     \\
+        Lieve (5-9)                               & 4.987                    & $2.4967$                     \\
+        Moderata (10-14)                          & 2.372                    & $3.4666$                     \\
+        Moderatamente Grave (15-19)               & 1.010                    & $2.3585$                     \\
+        Grave (20-27)                             & 593                      & $2.7739$                     \\
         \hline
     \end{tabular}
     \caption{Disaggregazione dell'Errore Medio Assoluto nelle bande nosologiche PHQ-9.}
@@ -359,11 +359,11 @@ Come si evince dalla Tabella~\ref{tab:mae_by_band}, l'inserimento dei class weig
 \end{figure}
 
 \subsection{Limiti dell'Approccio e Sviluppi Futuri}
-L'architettura sviluppata per la \textit{Depression Prediction} dimostra la fattibilità tecnica di inferire punteggi clinici complessi analizzando esclusivamente tracce comportamentali asincrone. Ciononostante, si evidenziano specifici limiti ingegneristici che dovranno essere affrontati in vista di futuri aggiornamenti della piattaforma: 
+L'architettura sviluppata per la \textit{Depression Prediction} dimostra la fattibilità tecnica di inferire punteggi clinici complessi analizzando esclusivamente tracce comportamentali asincrone. Ciononostante, si evidenziano specifici limiti ingegneristici che dovranno essere affrontati in vista di futuri aggiornamenti della piattaforma:
 
 \begin{itemize}
     \item \textbf{Generazione Sintetica dei Dati}: A causa dello stadio iniziale del progetto SINTONIA (start-up), il modello è stato validato mediante simulazioni digitali, ancorché accuratissime dal punto di vista probabilistico. Ne consegue un limite epistemologico intrinseco: l'Intelligenza Artificiale non ha ancora valutato la stocasticità caotica o le incongruenze umane (imprecisioni logiche, typo, o variazioni socio-anagrafiche complesse) che insorgeranno nel lancio in via sperimentale nell'ASL. Al varo clinico ufficiale, il LightGBM dovr\`a obbligatoriamente subire una fase di massiccio \textit{re-training} sui primi flussi di telemetria reali per compensare il possibile data shift.
-    \item \textbf{Gestione del Cold Start}: Il modello odierno vanta elevata predittività pre-allertando i medici, ma vincola la propria analisi ad almeno due settimane ($\sim$14 giorni) di tracciatura dati per estrarre features temporali stabili come deviazione standard o tendenze in regressione polinomiale. Un paziente vulnerabile neoiscritto (\textit{Cold Start}) rimarrà scoperto per diversi giorni dal monitoraggio algoritmico puro, affidando giocoforza le sue segnalazioni d'acuzie al comparto parallelo di \textit{Red Flag Detection} sul testo lineare. 
+    \item \textbf{Gestione del Cold Start}: Il modello odierno vanta elevata predittività pre-allertando i medici, ma vincola la propria analisi ad almeno due settimane ($\sim$14 giorni) di tracciatura dati per estrarre features temporali stabili come deviazione standard o tendenze in regressione polinomiale. Un paziente vulnerabile neoiscritto (\textit{Cold Start}) rimarrà scoperto per diversi giorni dal monitoraggio algoritmico puro, affidando giocoforza le sue segnalazioni d'acuzie al comparto parallelo di \textit{Red Flag Detection} sul testo lineare.
 \end{itemize}
 L'integrazione parallela delle features linguistiche grezze con le derivate temporali nel medesimo regressore resta la sfida scientifica cardine prospettata per i prossimi avanzamenti di prodotto.
 
@@ -392,23 +392,23 @@ Una volta definita la struttura del cromosoma, è necessario stabilire la "metri
     Fitness(S, p) = w_1 \cdot \text{Retention}(S, p) - w_2 \cdot P_{freq}(S) - w_3 \cdot P_{time}(S)
 \end{equation}
 
-\paragraph{Modellazione Clinica della Retention} 
+\paragraph{Modellazione Clinica della Retention}
 In assenza di dati storici di outcome, la funzione $Retention(S, p)$ è implementata tramite un'euristica deterministica basata sui protocolli \textbf{JITAI} (\textit{Just-In-Time Adaptive Interventions}). Tale approccio traduce le evidenze della letteratura clinica in driver per la ricerca evolutiva, garantendo la validità scientifica del nudging personalizzato.
 
 Il calcolo della $Retention(S, p)$ si basa sulla classificazione del paziente in uno dei quattro archetipi clinici (\textit{Engaged}, \textit{Moderato}, \textit{A Rischio}, \textit{Ghost}), integrando incentivi e penalità in base alla pertinenza clinica (Tabella~\ref{tab:ga_expert_system}). Il valore risultante viene infine normalizzato nell'intervallo $[0, 1]$ per garantire la stabilità della funzione di fitness rispetto alle componenti di penalità.
 
 \begin{table}[H]
-\centering
-\caption{Logica di Nudging --- Driver di Ottimizzazione della Fitness.}
-\label{tab:ga_expert_system}
-\begin{tabular}{@{}llll@{}}
-\toprule
-\textbf{Archetipo} & \textbf{Contenuto} & \textbf{Frequenza} & \textbf{Driver Teorico} \\ \midrule
-\textit{Engaged} & Promemoria ($+0.2$) & Alta ($7-14$: $+0.2$) & \textit{Habit Maintenance} \\
-\textit{Moderato} & Questionario ($+0.2$) & Equilibrata ($4-10$: $+0.2$) & \textit{Habit Formation} \\
-\textit{A Rischio} & Informativo ($+0.3$) & Moderata ($3-7$: $+0.2$) & \textit{Crisis Intervention} \\
-\textit{Ghost} & Motivazionale ($+0.3$) & Minima ($\leq 2$: $+0.2$) & \textit{Psychological Reactance} \\ \bottomrule
-\end{tabular}
+    \centering
+    \caption{Logica di Nudging --- Driver di Ottimizzazione della Fitness.}
+    \label{tab:ga_expert_system}
+    \begin{tabular}{@{}llll@{}}
+        \toprule
+        \textbf{Archetipo} & \textbf{Contenuto}     & \textbf{Frequenza}           & \textbf{Driver Teorico}          \\ \midrule
+        \textit{Engaged}   & Promemoria ($+0.2$)    & Alta ($7-14$: $+0.2$)        & \textit{Habit Maintenance}       \\
+        \textit{Moderato}  & Questionario ($+0.2$)  & Equilibrata ($4-10$: $+0.2$) & \textit{Habit Formation}         \\
+        \textit{A Rischio} & Informativo ($+0.3$)   & Moderata ($3-7$: $+0.2$)     & \textit{Crisis Intervention}     \\
+        \textit{Ghost}     & Motivazionale ($+0.3$) & Minima ($\leq 2$: $+0.2$)    & \textit{Psychological Reactance} \\ \bottomrule
+    \end{tabular}
 \end{table}
 I coefficienti di ponderazione sono stati calibrati per riflettere una precisa gerarchia di priorità clinico-comportamentali. Il peso $w_1 = 1.0$ (Retention) rappresenta l'obiettivo primario di sopravvivenza del legame terapeutico. Il peso $w_2 = 0.4$ (Frequenza) agisce come modulatore contro il \textit{Cognitive Overload}: un'eccessiva densità di notifiche indurrebbe fenomeni di abituazione o, peggio, di reattanza, invalidando l'efficacia del messaggio. Infine, il peso $w_3 = 0.2$ (Timing) è dedicato alla salvaguardia dell'igiene del sonno: la letteratura clinica dimostra come le interazioni notturne non sollecitate possano frammentare il riposo REM, esacerbando i sintomi ansiosi e depressivi del paziente.
 
@@ -428,20 +428,20 @@ L'unico \textbf{Hard Constraint} è applicato esclusivamente in fase di decodifi
 
 \begin{enumerate}
     \item \textbf{Penalità di Frequenza ($P_{freq}$):} Implementa una \textbf{regolarizzazione progressiva} del carico comunicativo per mitigare fenomeni di \textbf{Reattanza Psicologica} \cite{brehm1966theory}. Essa integra una componente lineare (tassa di efficienza) proporzionale al volume di messaggi e una componente esponenziale che interviene al superamento della soglia adattiva $f_{max}$:
-    \begin{equation}
-        P_{freq} = 
-        \begin{cases} 
-            T_{base} & \text{se } f \leq f_{max} \\
-            \min\left(1.0, T_{base} + \frac{e^{0.2 \cdot (f - f_{max})} - 1}{50}\right) & \text{se } f > f_{max}
-        \end{cases}
-    \end{equation}
-    Dove $T_{base} = \frac{f}{31} \cdot 0.1$ rappresenta il costo incrementale di disturbo cognitivo per ogni singola interazione. La soglia $f_{max}$ è calibrata su un valore base di 16 notifiche settimanali, in linea con i protocolli \textbf{JITAI} (\textit{Just-In-Time Adaptive Interventions}) che identificano nel range di 1--3 interazioni giornaliere il punto di equilibrio tra efficacia terapeutica e prevenzione della \textit{Intervention Fatigue} \cite{nahum2018just}. Tale valore viene modulato dinamicamente ($\pm 5$) in base alla responsività al monitoraggio, garantendo un'adattività clinica che protegga l'utente dalla saturazione cognitiva.
-    
+          \begin{equation}
+              P_{freq} =
+              \begin{cases}
+                  T_{base}                                                                    & \text{se } f \leq f_{max} \\
+                  \min\left(1.0, T_{base} + \frac{e^{0.2 \cdot (f - f_{max})} - 1}{50}\right) & \text{se } f > f_{max}
+              \end{cases}
+          \end{equation}
+          Dove $T_{base} = \frac{f}{31} \cdot 0.1$ rappresenta il costo incrementale di disturbo cognitivo per ogni singola interazione. La soglia $f_{max}$ è calibrata su un valore base di 16 notifiche settimanali, in linea con i protocolli \textbf{JITAI} (\textit{Just-In-Time Adaptive Interventions}) che identificano nel range di 1--3 interazioni giornaliere il punto di equilibrio tra efficacia terapeutica e prevenzione della \textit{Intervention Fatigue} \cite{nahum2018just}. Tale valore viene modulato dinamicamente ($\pm 5$) in base alla responsività al monitoraggio, garantendo un'adattività clinica che protegga l'utente dalla saturazione cognitiva.
+
     \item \textbf{Penalità Temporale ($P_{time}$):} Rispetta i diversi \textbf{Cronotipi} e l'igiene del sonno applicando un costo lineare proporzionale all'ampiezza della finestra di disponibilità oraria, con un incremento critico in corrispondenza delle fasce notturne individuate come sensibili per la stabilità psicologica del paziente.
-    \begin{equation}
-        P_{time} = \min\left(1.0, (\frac{H_{active}}{24} \cdot 0.05) + \frac{H_{night}}{8} \cdot \max(0.2, 1 - \text{night\_activity\_rate})\right)
-    \end{equation}
-    Per i \textbf{Night Owls} (utenti con alta attività notturna storica), la sensibilità al disturbo viene ridotta in base al \textit{night\_activity\_rate}, permettendo l'evoluzione di strategie che rispettino il ritmo circadiano individuale senza penalizzare i pattern di veglia tardivi.
+          \begin{equation}
+              P_{time} = \min\left(1.0, (\frac{H_{active}}{24} \cdot 0.05) + \frac{H_{night}}{8} \cdot \max(0.2, 1 - \text{night\_activity\_rate})\right)
+          \end{equation}
+          Per i \textbf{Night Owls} (utenti con alta attività notturna storica), la sensibilità al disturbo viene ridotta in base al \textit{night\_activity\_rate}, permettendo l'evoluzione di strategie che rispettino il ritmo circadiano individuale senza penalizzare i pattern di veglia tardivi.
 \end{enumerate}
 
 
@@ -451,11 +451,11 @@ La scelta degli operatori evolutivi mira a bilanciare l'esplorazione di nuove so
 
 \begin{enumerate}
     \item \textbf{Selezione - Tournament ($k=3$)}: Rispetto alle tecniche proporzionali (\textit{Roulette Wheel Selection}) o basate sul rango (\textit{Rank Selection}), il torneo garantisce una \textbf{pressione selettiva costante} ed indipendente dalla scala dei valori di fitness. La taglia $k=3$ è stata selezionata per bilanciare il rigore della scelta con il mantenimento della diversità genetica, prevenendo il rischio che individui "super-fit" dominino prematuramente la popolazione (convergenza precoce) o che la ricerca diventi stocasticamente inefficiente a causa di differenze di fitness troppo sottili tra gli individui.
-    
+
     \item \textbf{Crossover - Two-Point}: Adottato per mitigare il bias posizionale tipico del \textit{Single-Point} senza incorrere nella frammentazione dello \textit{Uniform Crossover}. Il \textit{Two-Point} preserva la contiguità dei segmenti nel gene G3 (Schedule Orario), garantendo l'integrità dei pattern circadiani identificati.
-    
+
     \item \textbf{Mutazione - Adaptive Bit-Flip}: L'operatore agisce tramite l'inversione stocastica dei singoli bit (\textit{bit-flip}) con un tasso base dell'1.3\% (calibrato sperimentalmente nella Sezione~\ref{sec:tuning}). La funzione \textbf{adaptive} modula dinamicamente tale valore monitorando la diversità genetica della popolazione: se l'algoritmo rileva una stagnazione (indice di diversità $<0.1$), raddoppia il tasso di mutazione per forzare l'esplorazione; al contrario, in presenza di un'ampia varietà ($>0.4$), riduce il tasso per stabilizzare il raffinamento delle strategie promettenti.
-    
+
     \item \textbf{Elitismo} ($\text{rate}=0.05$): preserva gli individui più performanti (pari al 5\% della popolazione) impedendo che le soluzioni ottimali vadano perse a causa di operatori stocastici. Tale soglia bilancia la conservazione dei tratti promettenti con la necessità di preservare la varietà genetica necessaria alla ricerca globale.
 \end{enumerate}
 
@@ -483,17 +483,29 @@ Tale processo ha eletto come configurazione ottimale l'unione tra \textit{Tourna
 
 La validazione mira a confermare la superiorità dell'algoritmo genetico rispetto a baseline stocastiche e l'efficacia della strategia di intervento generata.
 
-\paragraph{Benchmark: GA vs Random Search}
-Per misurare il reale guadagno algoritmico, il sistema è stato confrontato con una \textbf{Random Search}. Tale metodologia, utilizzata come benchmark di riferimento, consiste nella generazione stocastica di soluzioni indipendenti priva di meccanismi di apprendimento o ereditarietà. Il test è stato condotto su un \textbf{Hold-out Test Set} (40 pazienti mai analizzati durante il tuning) e, a parità di budget computazionale, l'algoritmo GA ha superato la baseline casuale con un \textbf{guadagno medio del 20.3\%}, con picchi di efficienza nei cluster \textit{A Rischio} e \textit{Ghost} (Figura~\ref{fig:ga_benchmark}). Tale risultato conferma la superiorità della personalizzazione adattiva rispetto a strategie euristiche fisse (es. invio a orari standard), le quali risulterebbero intrinsecamente incapaci di mappare l'eterogeneità dei cronotipi e dei profili di reattanza della popolazione clinica.
+\paragraph{Analisi Comparativa: GA vs Ricerca Locale e Stocastica}
+Per validare la solidità architetturale del modulo di Churn Prevention, l'Algoritmo Genetico è stato sottoposto a un duplice benchmark su un \textbf{Hold-out Test Set} (Test su 40 pazienti mai analizzati durante il tuning). A parità di budget computazionale (valutazioni di fitness), il sistema evolutivo è stato contrapposto a:
+\begin{enumerate}
+    \item \textbf{Random Search}: Baseline stocastica priva di memoria.
+    \item \textbf{Hill Climbing (con Random Restarts)}: Algoritmo di esplorazione locale, utilizzato per verificare l'effettiva convenienza di un approccio evolutivo globale rispetto a un forte sfruttamento (\textit{exploitation}) dell'intorno locale.
+\end{enumerate}
+
+I risultati (Figura~\ref{fig:ga_benchmark}) dimostrano che l'Algoritmo Genetico distacca nettamente la Random Search (guadagno medio del 20.3\% sul valore della Funzione di Fitness). Tuttavia, per via  della dimensione compatta dell'attuale dominio di ricerca (31 bit), l'Hill Climbing satura lo spazio di esplorazione raggiungendo fitness equiparabili a quelle del GA.
+
+Nonostante l'equivalenza numerica sul task specifico, l'adozione in produzione si è rivolta all' \textbf{Algoritmo Genetico} per due requisiti non soddisfatti dall'Hill Climbing:
+\begin{itemize}
+    \item \textbf{Rispetto dei Pattern Temporali:} A differenza dell'HC, che manipola singole notifiche in modo destrutturato, gli operatori di Crossover del GA scambiano interi blocchi temporali (es. un'ottima routine mattutina fusa con una serale), assecondando nativamente i ritmi circadiani clinici.
+    \item \textbf{Scalabilità Computazionale:} In caso di estensione del sistema verso una risoluzione temporale più elevata (es. fasce orarie da 15 minuti al posto di slot da un'ora) su canali multipli (Push, SMS, Email), l'aumento esponenziale delle dimensioni del problema causerebbe un collasso esplorativo dell'HC. Tale limite rende d'obbligo l'utilizzo dell'Algoritmo Genetico, l'unico in grado di elaborare la ricerca in parallelo (calcolando intere generazioni simultaneamente su più processori).
+\end{itemize}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{08_scientific_validation_test_set}
-    \caption{Benchmark Comparativo su Hold-out Test Set: GA vs Random Search a parità di budget.}
+    \caption{Benchmark Comparativo su Hold-out Test Set: GA vs Random Restart Hill Climbing vs Random Search a parità di budget.}
     \label{fig:ga_benchmark}
 \end{figure}
 
-Al di là del guadagno assoluto sul punteggio di fitness, l'impatto più significativo dell'Algoritmo Genetico risiede nella sua capacità di abbattere la probabilità di inattività dei pazienti. Come evidenziato in Figura~\ref{fig:ga_risk_reduction}, la visualizzazione si focalizza sull'area di errore reale (0-12\%) per mostrare con precisione millimetrica l'efficacia dell'intervento rispetto alla baseline. In particolare, il sistema riesce a ridurre il rischio residuo di abbandono settimanale fino al 79\% nei profili più critici, mitigando i fenomeni di inattività dovuti a strategie non ottimizzate.
+Al di là del guadagno assoluto sul punteggio di fitness, l'impatto più significativo dell'Algoritmo Genetico risiede nella sua capacità di abbattere la probabilità di inattività dei pazienti. Come evidenziato in Figura~\ref{fig:ga_risk_reduction}, la visualizzazione si focalizza sull'area di errore reale (0-12\%) per mostrare con precisione l'efficacia dell'intervento rispetto alla baseline stocastica. In particolare, il sistema riesce a ridurre il rischio residuo di abbandono settimanale fino al 79\% nei profili più critici, mitigando i fenomeni di inattività dovuti a strategie non ottimizzate.
 
 \begin{figure}[H]
     \centering
