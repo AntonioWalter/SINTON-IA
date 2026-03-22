@@ -1,4 +1,0 @@
-# Ignora tutto dentro data/ tranne questo file
-*
-!.gitignore
-!README.md

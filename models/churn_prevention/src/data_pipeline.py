@@ -237,11 +237,11 @@ class DataPipeline:
         return df
 
     def save_data(self, data: Dict[str, pd.DataFrame], base_path: str):
-        synthetic_path = os.path.join(base_path, "data", "synthetic")
+        synthetic_path = os.path.join(base_path, "data", "raw")
         os.makedirs(synthetic_path, exist_ok=True)
         for name, df in data.items():
             df.to_csv(os.path.join(synthetic_path, f"{name}.csv"), index=False)
-        print(f"[*] Dati sintetici salvati in {synthetic_path}")
+        print(f"[*] Dati grezzi sintetici salvati in {synthetic_path}")
 
     def save_features(self, df: pd.DataFrame, base_path: str):
         processed_path = os.path.join(base_path, "data", "processed")

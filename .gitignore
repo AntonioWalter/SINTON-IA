@@ -23,9 +23,12 @@ pip-delete-this-directory.txt
 # ─── Data & Datasets (troppo grandi per git) ──────────────────────────────────
 models/*/data/*
 !models/*/data/.gitkeep
+!models/*/data/README.md
+!models/*/data/*.py
 *.csv
 *.tsv
 *.json
+!api/*.json
 *.parquet
 *.feather
 *.h5
@@ -35,6 +38,7 @@ models/*/data/*
 
 # ─── Model outputs (salvare su Drive / MLflow / HuggingFace Hub) ──────────────
 *.pkl
+!api/*.pkl
 *.joblib
 *.pt
 *.pth
@@ -60,8 +64,7 @@ docs/latex/chapters/*.aux
 
 # ─── Editors & OS ─────────────────────────────────────────────────────────
 .idea/
-.vscode/*
-!.vscode/settings.json
+.vscode/
 *.swp
 *.swo
 .DS_Store

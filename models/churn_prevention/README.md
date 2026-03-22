@@ -14,7 +14,7 @@ churn_prevention/
 │   ├── download_dataset.py         # Utility download da HuggingFace
 │   └── upload_dataset.py           # Utility upload su HuggingFace
 ├── data/
-│   ├── synthetic/                  # Dati generati (gitignored)
+│   ├── raw/                  # Dati generati (gitignored)
 │   └── processed/                  # Dataset normalizzato per il GA
 └── README.md
 ```
