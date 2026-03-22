@@ -493,6 +493,15 @@ Per misurare il reale guadagno algoritmico, il sistema è stato confrontato con 
     \label{fig:ga_benchmark}
 \end{figure}
 
+Al di là del guadagno assoluto sul punteggio di fitness, l'impatto più significativo dell'Algoritmo Genetico risiede nella sua capacità di abbattere la probabilità di inattività dei pazienti. Come evidenziato in Figura~\ref{fig:ga_risk_reduction}, la visualizzazione si focalizza sull'area di errore reale (0-12\%) per mostrare con precisione millimetrica l'efficacia dell'intervento rispetto alla baseline. In particolare, il sistema riesce a ridurre il rischio residuo di abbandono settimanale fino al 79\% nei profili più critici, mitigando i fenomeni di inattività dovuti a strategie non ottimizzate.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{11_risk_reduction_presentation}
+    \caption{Visualizzazione della Riduzione Relativa del Rischio (RRR) per profilo clinico.}
+    \label{fig:ga_risk_reduction}
+\end{figure}
+
 \paragraph{Analisi della Convergenza}
 L'analisi della convergenza (Figura~\ref{fig:ga_convergence}) evidenzia il raggiungimento di un plateau stabile entro le prime 40-50 generazioni. Tale andamento conferma come l'interazione tra gli operatori evolutivi permetta un'efficace transizione dalla fase di esplorazione globale a quella di raffinamento locale (\textit{exploitation}), consentendo al meccanismo di \textbf{Early Stopping} di preservare le risorse computazionali senza compromettere la qualità della soluzione individuata.
 
