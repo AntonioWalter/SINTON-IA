@@ -252,7 +252,7 @@ class DataPipeline:
 if __name__ == "__main__":
     pipeline = DataPipeline()
     base_dir = os.path.join(os.path.dirname(__file__), "..")
-    data = pipeline.run_generation(n_patients=200)
+    data = pipeline.run_generation(n_patients=500)
     pipeline.save_data(data, base_dir)
     features = pipeline.run_aggregation(data)
     pipeline.save_features(features, base_dir)

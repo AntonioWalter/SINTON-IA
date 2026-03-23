@@ -170,7 +170,7 @@ Per ciascun paziente attivo, gli indicatori aggregati calcolati sulla finestra d
 \begin{enumerate}
     \item \textbf{Frequenza di mood tracking} (\texttt{mood\_frequency\_7d}): numero di inserimenti nella tabella \texttt{stato\_animo} negli ultimi 7 giorni. Range: $[0, n]$ dove $n$ dipende dalla frequenza massima di inserimento consentita.
     
-    \item \textbf{Regolarità del mood tracking} (\texttt{mood\_consistency\_7d}): rapporto tra i giorni con almeno un inserimento di stato d'animo e i 7 giorni della finestra. Range naturale: $[0{,}0\ ;\ 1{,}0]$.
+    \item \textbf{Tasso di attività notturna} (\texttt{night\_activity\_rate}): proporzione di interazioni (inserimento mood o diario) avvenute in orari notturni (23:00 - 06:00) sul totale delle interazioni nella finestra temporale. Range naturale: $[0{,}0\ ;\ 1{,}0]$.
     
     \item \textbf{Valenza emotiva media} (\texttt{avg\_mood\_valence\_7d}): media della valenza associata agli umori registrati. A ciascuno dei 10 stati dell'enum \texttt{umore} viene assegnato un valore numerico su scala bipolare (es. Felice $= +1{,}0$, Neutro $= 0{,}0$, Triste $= -1{,}0$). Il valore risultante sintetizza la tonalità emotiva prevalente del paziente nella finestra.
     
@@ -207,7 +207,7 @@ Questa scelta è motivata da due ragioni:
     \item \textbf{Compatibilità con la codifica genetica:} la normalizzazione in $[0, 1]$ facilita la futura integrazione con la rappresentazione cromosomiale delle strategie, che verrà dettagliata nella fase di Modeling.
 \end{itemize}
 
-Gli indicatori che presentano già un range naturale in $[0, 1]$ (come \texttt{mood\_consistency\_7d} e \texttt{notification\_read\_rate}) non necessitano di ulteriore trasformazione.
+Gli indicatori che presentano già un range naturale in $[0, 1]$ (come \texttt{questionnaire\_compliance} e \texttt{notification\_read\_rate}) non necessitano di ulteriore trasformazione qualitativa, anche se alcuni subiscono una trasformazione esplicita min-max per garantire consistenza dei tipi.
 
 \subsection{Strategia di Simulazione dei Dati}
 \label{subsec:simulazione_churn}
