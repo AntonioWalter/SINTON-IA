@@ -126,35 +126,72 @@ Affinché il GA possa essere impiegato come componente operativo nel \textit{bac
 \section{Specifiche PEAS degli Agenti Intelligenti}
 \label{sec:peas_specifications}
 
-L'architettura dei tre moduli di SINTON-IA è stata formalizzata attraverso il framework di progettazione degli Agenti Intelligenti \textbf{PEAS} (\textit{Performance Measure, Environment, Actuators, Sensors}). Questa schematizzazione definisce in maniera inequivocabile il perimetro d'azione e i confini di responsabilità tecnico-clinica di ogni singolo agente all'interno della piattaforma.
+L'architettura dei tre moduli di SINTON-IA è stata formalizzata secondo il framework dei sistemi intelligenti \textbf{PEAS} (\textit{Performance, Environment, Actuators, Sensors}). Questa schematizzazione non solo definisce i confini operativi degli agenti, ma ne chiarisce la responsabilità clinica e tecnica all'interno dell'ecosistema SINTONIA.
 
 \begin{itemize}
-    \item \textbf{Agente Diagnostico NLP (Red Flag Detection)}
-    \begin{itemize}
-        \item \textbf{Performance Measure}: Massimizzazione della Recall clinica (minimizzazione assoluta dei Falsi Negativi fatali) affiancata da una Precisione di salvaguardia ($\ge 0.70$) per contenere l'Alert Fatigue.
-        \item \textbf{Environment}: Motore logico di back-end isolato e asincrono, operante sui diari testuali redatti dai pazienti durante la lista d'attesa.
-        \item \textbf{Actuators}: Sistema di routing per l'invio e la successiva visualizzazione di "Alert Clinici Sequenziali" sulla dashboard cruscotto assegnata allo psicologo di competenza.
-        \item \textbf{Sensors}: Moduli di estrazione testo (strutturazione del linguaggio naturale grezzo prelevato dall'input della piattaforma).
-    \end{itemize}
-    
-    \vspace{0.3cm}
-    \item \textbf{Agente Regressore (Depression Prediction)}
-    \begin{itemize}
-        \item \textbf{Performance Measure}: Mantenimento dell'Errore Medio Assoluto (MAE) al di sotto della soglia clinica di accettabilità ($\le 3$ punti) rispetto alla reale scala PHQ-9.
-        \item \textbf{Environment}: Flusso dati SINTONIA relativo al monitoraggio dell'umore (serie temporali continue di valenza e intensità emozionale) generato dall'interfaccia mobile.
-        \item \textbf{Actuators}: Driver di rendering per visualizzare i trend grafici longitudinali dell'umore e generazione di "Flag di Incongruenza" in dashboard in caso di discrepanze estreme con i test ufficiali.
-        \item \textbf{Sensors}: Endpoint API interni capaci di captare ogni nuovo salvataggio nel registro giornaliero delle emozioni del paziente.
-    \end{itemize}
-    
-    \vspace{0.3cm}
-    \item \textbf{Agente Evolutivo (Churn Prevention)}
-    \begin{itemize}
-        \item \textbf{Performance Measure}: Massimizzazione della \textit{Retention probabilistica} dell'utente target, calcolata minimizzando le penalità derivate da \textit{Notification Fatigue} o disturbo della cronobiologia del sonno.
-        \item \textbf{Environment}: Infrastruttura applicativa mobile del paziente, soggetta a ritmi comportamentali fluidi e reattanza agli stimoli digitali.
-        \item \textbf{Actuators}: Motore di schedulazione interno per il rilascio autonomo di interventi terapeutici digitali (\textit{Nudging strategico}) sotto forma di notifiche in-app categorizzate.
-        \item \textbf{Sensors}: Rilevatori dei log di attività per valutare la propensione al drop-out.
-    \end{itemize}
+    \item \textbf{Agente Diagnostico NLP (Red Flag Detection)} \\
+          Un agente delegato alla sorveglianza proattiva dei contenuti testuali per l’identificazione di crisi imminenti.
+          \begin{itemize}
+              \item \textbf{Performance}: Massimizzazione della \textit{Recall} clinica ($\ge 0.90$) per minimizzare il rischio di falsi negativi, bilanciata da una \textit{Precision} $\ge 0.70$ per preservare l’attenzione operativa dello psicologo (\textit{alert fatigue}).
+              \item \textbf{Environment}: Il database dei record clinici (diari) del paziente e il sistema di dashboard del personale sanitario preposto al triage.
+              \item \textbf{Actuators}: Inserimento di un record strutturato (\texttt{alert\_clinico}) nel database del triage contenente il testo incriminato; generazione del flag di rischio per l'interfaccia UI.
+              \item \textbf{Sensors}: Triggering asincrono \textit{event-driven} (fire-and-forget) attivato dal salvataggio di una nuova pagina del diario.
+          \end{itemize}
+
+          \vspace{0.3cm}
+    \item \textbf{Agente Regressore (Depression Prediction)} \\
+          Un agente analitico focalizzato sulla stima quantitativa del deterioramento dello stato mentale basato su marker emotivi.
+          \begin{itemize}
+              \item \textbf{Performance}: Contenimento del \textit{Mean Absolute Error} (MAE) $\le 3$ punti sulla scala PHQ-9; stabilità delle predizioni misurata tramite RMSE per limitare le divergenze ingiustificate tra auto-valutazione e predizione algoritmica.
+              \item \textbf{Environment}: Il sistema informativo che traccia la storia clinica del paziente e l'applicativo di monitoraggio visionato dallo psicologo.
+              \item \textbf{Actuators}: Scrittura dei trend PHQ-9 predetti su base dati; innesco logico di "Flag di Incongruenza" sui record tabellari sospetti.
+              \item \textbf{Sensors}: Query periodiche per l'acquisizione delle serie temporali dei registri emotivi (\textit{Valence/Arousal}); parser dei log sulla frequenza di interazione quotidiana.
+          \end{itemize}
+
+          \vspace{0.3cm}
+    \item \textbf{Agente Evolutivo (Churn Prevention)} \\
+          Un agente ottimizzatore per personalizzare le strategie di engagement e prevenire l’abbandono terapeutico.
+          \begin{itemize}
+              \item \textbf{Performance}: Massimizzazione del tasso di \textit{User Retention} ($\ge 75\%$); minimizzazione delle penalità di \textit{Notification Fatigue} e rispetto dei vincoli circadiani degli utenti.
+              \item \textbf{Environment}: L'utente finale inteso come sistema cognitivo-comportamentale, percepibile e modificabile unicamente attraverso l'infrastruttura di notifica mobile associata.
+              \item \textbf{Actuators}: Modifica persistente delle policy di "Nudging" su database; schedulazione strutturata di payload contenenti template comunicativi, frequenze d'invio e finestre temporali.
+              \item \textbf{Sensors}: Recettori di telemetria per i feedback impliciti; funzioni di calcolo aggregato sui log di adesione dell'utente.
+          \end{itemize}
 \end{itemize}
+
+\subsection{Analisi del Contesto Operativo}
+\label{subsec:task_environment}
+
+Per completare la definizione degli agenti, è fondamentale mappare le proprietà dell’ambiente operativo in cui SINTON-IA agisce. L'integrazione di questi parametri permette di comprendere la complessità computazionale e l’incertezza con cui gli agenti devono confrontarsi.
+
+\begin{table}[H]
+    \centering
+    \renewcommand{\arraystretch}{1.5}
+    \small
+    \begin{tabular}{|l|c|c|c|}
+        \hline
+        \textbf{Proprietà}     & \textbf{Agente NLP}      & \textbf{Agente Regressore} & \textbf{Agente Evolutivo} \\ \hline
+        \textbf{Osservabilità} & Parzialmente Osservabile & Parzialmente Osservabile   & Parzialmente Osservabile  \\ \hline
+        \textbf{Determinismo}  & Stocastico               & Stocastico                 & Stocastico                \\ \hline
+        \textbf{Episodicità}   & Episodico                & Sequenziale                & Sequenziale               \\ \hline
+        \textbf{Dinamismo}     & Statico                  & Statico                    & Dinamico                  \\ \hline
+        \textbf{Discretezza}   & Discreto                 & Continuo                   & Discreto                  \\ \hline
+        \textbf{Agenti}        & Singolo                  & Singolo                    & Singolo                   \\ \hline
+    \end{tabular}
+    \caption{Proprietà dell'ambiente per i tre moduli di SINTON-IA.}
+    \label{tab:task_environment}
+\end{table}
+
+L'ambiente è considerato \textbf{Parzialmente Osservabile} poiché l'agente non ha accesso allo stato mentale interno dell'utente, ma solo a manifestazioni digitali indirette (testo, log). È \textbf{Stocastico} a causa della natura imprevedibile del comportamento umano.
+
+Il paradigma di esecuzione varia tra i moduli: l'Agente NLP opera in un ambiente \textbf{Episodico}, in quanto valuta il rischio leggendo esclusivamente l'ultimo testo inserito; al contrario, il Regressore e il GA sono \textbf{Sequenziali}, poiché analizzano lo storico dei dati del paziente (come l'andamento dell'umore o i giorni di inattività) per prendere decisioni.
+
+Per quanto riguarda il \textbf{Dinamismo}, l'Agente NLP e il Regressore sono considerati \textbf{Statici}: lavorano su dati fermi nel database, che non cambiano nei pochi secondi in cui l'algoritmo effettua il calcolo. L'Agente Evolutivo affronta invece un ambiente \textbf{Dinamico}, dovendo adattare le notifiche a un utente reale le cui abitudini e livelli di attenzione variano continuamente durante la giornata.
+
+Infine, per quanto riguarda la \textbf{Discretezza}: l'Agente NLP e l'Evolutivo lavorano in ambienti \textbf{Discreti}, poiché le loro decisioni ricadono su opzioni separate e ben distinte. L'ambiente del Regressore è invece \textbf{Continuo}, in quanto calcola l'andamento dell'umore tracciando variazioni fluide senza ricorrere a divisioni rigide.
+
+\vspace{0.2cm}
+Sebbene la Tabella~\ref{tab:task_environment} classifichi gli agenti come operanti in scenari ad \textbf{Agente Singolo} rispetto ai propri domini decisionali, si evidenzia una silente interazione pseudo-competitiva o collaborativa a livello sistemico: l'attività dell'Agente Evolutivo (modificando il grado di ingaggio dell'utente) altera la densità del flusso di dati che costituisce il retroterra sensorio dell'Agente Diagnostico e del Regressore, creando un ecosistema integrato.
 
 \vspace{0.5cm}
 
@@ -203,30 +240,30 @@ Trattandosi di un'applicazione operante nel delicato dominio della salute mental
 
 \vspace{0.3cm}
 \begin{table}[h]
-\centering
-\renewcommand{\arraystretch}{1.5}
-\small
-\begin{tabular}{|p{0.20\textwidth}|p{0.15\textwidth}|p{0.55\textwidth}|}
-\hline
-\textbf{Rischio} & \textbf{Categoria} & \textbf{Piano di Contingenza} \\
-\hline
-Domain shift & Tecnico & Validazione dei modelli su campioni rappresentativi del contesto italiano prima del deployment; previsione di una fase di fine-tuning su dati reali non appena disponibili. \\
-\hline
-GIGO & Tecnico & Introduzione di meccanismi automatici di rilevamento delle anomalie nei pattern di compilazione (es. sequenze di valori identici o tempi di compilazione anomali). \\
-\hline
-Drift del modello & Tecnico & Pianificazione di cicli periodici di monitoraggio delle performance e re-training, coerentemente con quanto previsto nelle voci OPEX. \\
-\hline
-Alert fatigue & Organizzativo & Definizione di una soglia minima di confidenza per la generazione degli alert, calibrata sul KPI di sostenibilità operativa descritto nella relativa sezione. \\
-\hline
-Resistenza clinica & Organizzativo & Progettazione di interfacce di output semplici e non invasive, orientate al supporto e non alla sostituzione del giudizio clinico. \\
-\hline
-Abbandono dell'app & Organizzativo & Il Churn Prevention costituisce in sé stesso la misura preventiva primaria contro questo rischio. \\
-\hline
-Sensibilità dei dati & Sicurezza & Separazione architetturale rigida tra i dati identificativi o anagrafici del paziente e le informazioni sensibili processate dai server di addestramento o dai modelli in inferenza. \\
-\hline
-Vincolo di anonimizzazione & Sicurezza & L'architettura del sistema applicativo assicura di default come alcun output o derivato esplicito del NLP text analysis module sui diari confidenziali esprima ed inoltri esposizione o un modo oggettivo per ricondurlo dal report o diario a referto per poter ricostruire la reale stringa all'occhio psichiatra /psicologo valutatore al netto d'eventuale alert severo ed indicatore score allarme prima dell'effettiva assegnazione. \\
-\hline
-\end{tabular}
+    \centering
+    \renewcommand{\arraystretch}{1.5}
+    \small
+    \begin{tabular}{|p{0.20\textwidth}|p{0.15\textwidth}|p{0.55\textwidth}|}
+        \hline
+        \textbf{Rischio}           & \textbf{Categoria} & \textbf{Piano di Contingenza}                                                                                                                                                                                                                                                                                                                                                                                                              \\
+        \hline
+        Domain shift               & Tecnico            & Validazione dei modelli su campioni rappresentativi del contesto italiano prima del deployment; previsione di una fase di fine-tuning su dati reali non appena disponibili.                                                                                                                                                                                                                                                                \\
+        \hline
+        GIGO                       & Tecnico            & Introduzione di meccanismi automatici di rilevamento delle anomalie nei pattern di compilazione (es. sequenze di valori identici o tempi di compilazione anomali).                                                                                                                                                                                                                                                                         \\
+        \hline
+        Drift del modello          & Tecnico            & Pianificazione di cicli periodici di monitoraggio delle performance e re-training, coerentemente con quanto previsto nelle voci OPEX.                                                                                                                                                                                                                                                                                                      \\
+        \hline
+        Alert fatigue              & Organizzativo      & Definizione di una soglia minima di confidenza per la generazione degli alert, calibrata sul KPI di sostenibilità operativa descritto nella relativa sezione.                                                                                                                                                                                                                                                                              \\
+        \hline
+        Resistenza clinica         & Organizzativo      & Progettazione di interfacce di output semplici e non invasive, orientate al supporto e non alla sostituzione del giudizio clinico.                                                                                                                                                                                                                                                                                                         \\
+        \hline
+        Abbandono dell'app         & Organizzativo      & Il Churn Prevention costituisce in sé stesso la misura preventiva primaria contro questo rischio.                                                                                                                                                                                                                                                                                                                                          \\
+        \hline
+        Sensibilità dei dati       & Sicurezza          & Separazione architetturale rigida tra i dati identificativi o anagrafici del paziente e le informazioni sensibili processate dai server di addestramento o dai modelli in inferenza.                                                                                                                                                                                                                                                       \\
+        \hline
+        Vincolo di anonimizzazione & Sicurezza          & L'architettura del sistema applicativo assicura di default come alcun output o derivato esplicito del NLP text analysis module sui diari confidenziali esprima ed inoltri esposizione o un modo oggettivo per ricondurlo dal report o diario a referto per poter ricostruire la reale stringa all'occhio psichiatra /psicologo valutatore al netto d'eventuale alert severo ed indicatore score allarme prima dell'effettiva assegnazione. \\
+        \hline
+    \end{tabular}
 \end{table}
 % ── 1.7 ──────────────────────────────────────────────────────────────────────
 \clearpage
@@ -280,7 +317,7 @@ Per quanto riguarda il modello di \textbf{Churn Prevention}, non è previsto l'u
 
 L'infrastruttura di calcolo disponibile per la fase di addestramento dei modelli è costituita da una workstation equipaggiata con GPU \textbf{NVIDIA RTX 2070} dotata di 8 GB di VRAM. Questa configurazione risulta adeguata per le fasi di prototipazione, sperimentazione e addestramento iniziale dei modelli previsti dal progetto.
 
-La GPU consente di eseguire il \textit{fine-tuning} di modelli di linguaggio pre-addestrati di dimensione contenuta, addestrare modelli di regressione su serie temporali e gestire l'esecuzione degli algoritmi genetici per l'ottimizzazione delle strategie di nudging. 
+La GPU consente di eseguire il \textit{fine-tuning} di modelli di linguaggio pre-addestrati di dimensione contenuta, addestrare modelli di regressione su serie temporali e gestire l'esecuzione degli algoritmi genetici per l'ottimizzazione delle strategie di nudging.
 
 Qualora le fasi successive del progetto richiedessero un incremento significativo della capacità di calcolo, si valuterà il ricorso a piattaforme cloud con GPU dedicate (es. Google Colab Pro) o a risorse di calcolo messe a disposizione dall'infrastruttura dell'Ateneo.
 
@@ -313,11 +350,11 @@ I costi OPEX rappresentano le spese ricorrenti necessarie per mantenere il siste
 \begin{itemize}
     \item \textbf{Costi di inferenza:} ogni volta che un paziente scrive una pagina di diario, il modello di Red Flag Detection deve analizzare il testo in tempo reale. Analogamente, le predizioni PHQ-9 e le valutazioni di churn richiedono elaborazioni periodiche. Questi costi sono proporzionali al numero di utenti attivi e alla frequenza di utilizzo della piattaforma. Utilizzando servizi cloud, il costo unitario per singola inferenza è nell'ordine di frazioni di centesimo, ma può accumularsi con volumi elevati di utenti.
 
-% Tradurre gli obiettivi di business in obiettivi tecnici di data mining:
-% - Classificazione del rischio suicidario tramite NLP
-% - Prevenzione del churn terapeutico
-% - Rilevamento automatico della depressione
-% - Integrazione dei modelli tramite API
+          % Tradurre gli obiettivi di business in obiettivi tecnici di data mining:
+          % - Classificazione del rischio suicidario tramite NLP
+          % - Prevenzione del churn terapeutico
+          % - Rilevamento automatico della depressione
+          % - Integrazione dei modelli tramite API
 
     \item \textbf{Ri-addestramento periodico:} per contrastare il data drift e incorporare nuovi dati clinici, i modelli dovranno essere periodicamente ri-addestrati. Ogni ciclo di ri-addestramento comporta costi di calcolo GPU e di validazione clinica da parte degli esperti di dominio.
 \end{itemize}
