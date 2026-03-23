@@ -11,7 +11,7 @@ import os
 base_dir = "/Users/antoniowalterdefusco/Documents/Project/SINTON-IA"
 data_dir = f"{base_dir}/models/nlp_suicide_risk/data/processed"
 weights_dir = f"{base_dir}/models/nlp_suicide_risk/weights"
-figures_dir = f"{base_dir}/docs/latex/figures"
+figures_dir = f"{base_dir}/docs/documentazione/latex/figures"
 os.makedirs(weights_dir, exist_ok=True)
 
 print("Caricamento dataset...")

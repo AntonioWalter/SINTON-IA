@@ -35,7 +35,7 @@ All'interno della cartella `notebooks/`, esegui i Jupyter Notebook uno di seguit
 | **02** | `02_Advanced_Synthetic_Generation.ipynb` | **Cruciale**: Poiché lo storico clinico è intrinsecamente carente, questo notebook scatena protocolli di Augmentation Ibrida per generare un dataset stratificato molto corposo (usato poi per il Machine Learning tabulare) garantendone l'ancoraggio medico ai valori di base reali. |
 | **03** | `03_Feature_Engineering_and_Prep.ipynb` | Costruzione della finestra temporale di osservazione (14 giorni cumulativi). Operazioni matematiche e statistiche (min, media, deviazione standard del sonno e umore) per appiattire la componente temporale su una tavola sinottica singola riga-per-paziente. Splitting e Standardizzazione. |
 | **04** | `04_Modeling.ipynb` | Ripartizione del Training con Cross-Validation. Grid/Random Search e test parallelo di algoritmi di regressione lineari ed ensemble (Ridge, Lasso, ElasticNet, RandomForest, GradientBoosting, ecc.) per individuare il benchmark migliore. |
-| **05** | `05_Evaluation.ipynb` | **Verifica ed Estrazione**: Valutazione indipendente delle metriche sul validatore Test Set tramite $R^2$, Calcolo Residual Error, Root Mean Squared Error (RMSE) ed esportazione formale dei file scatter-plot `docs/latex/figures/`. |
+| **05** | `05_Evaluation.ipynb` | **Verifica ed Estrazione**: Valutazione indipendente delle metriche sul validatore Test Set tramite $R^2$, Calcolo Residual Error, Root Mean Squared Error (RMSE) ed esportazione formale dei file scatter-plot `docs/documentazione/latex/figures/`. |
 
 ## Dipendenze Specifiche (Model Level)
 La struttura ha un approccio Data-Science classico per dati strutturati/tabulari:

@@ -40,7 +40,7 @@ Infine, spostati nella cartella `notebooks/` per convalidare in maniera accademi
 
 | Ordine | Nome Notebook | Obiettivo e Descrizione |
 | :---: | :--- | :--- |
-| **05** | `05_GA_Validation.ipynb` | Esecuzione del framework **Optuna** per Tuning Bayesiano. Confronto iterativo tra il nostro GA e le classiche *Random Baseline* e *Heuristic Baseline*. Generazione formale dell'analisi di convergenza e Plot della distanza di Hamming da esportare nella cartella `docs/latex/figures/` per la Relazione Tecnica. |
+| **05** | `05_GA_Validation.ipynb` | Esecuzione del framework **Optuna** per Tuning Bayesiano. Confronto iterativo tra il nostro GA e le classiche *Random Baseline* e *Heuristic Baseline*. Generazione formale dell'analisi di convergenza e Plot della distanza di Hamming da esportare nella cartella `docs/documentazione/latex/figures/` per la Relazione Tecnica. |
 
 ## Dipendenze Specifiche (Model Level)
 Oltre ai requisiti basilari della repository (`numpy`, `pandas`), questo modulo matematico implementa librerie sperimentali:
