@@ -29,3 +29,5 @@ ipykernel
 # ─── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv
 pydantic
+
+ipywidgets
