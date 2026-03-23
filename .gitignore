@@ -47,20 +47,23 @@ models/*/data/*
 *.safetensors
 
 # ─── LaTeX ────────────────────────────────────────────────────────────────────
-docs/latex/build/
-docs/latex/_minted-*/
-docs/latex/*.aux
-docs/latex/*.bbl
-docs/latex/*.blg
-docs/latex/*.fdb_latexmk
-docs/latex/*.fls
-docs/latex/*.log
-docs/latex/*.out
-docs/latex/*.toc
-docs/latex/*.pdf
-docs/latex/*.synctex.gz
-docs/latex/*.synctex(busy)
-docs/latex/chapters/*.aux
+docs/documentazione/latex/build/
+docs/documentazione/latex/_minted-*/
+docs/documentazione/latex/*.aux
+docs/documentazione/latex/*.bbl
+docs/documentazione/latex/*.blg
+docs/documentazione/latex/*.fdb_latexmk
+docs/documentazione/latex/*.fls
+docs/documentazione/latex/*.log
+docs/documentazione/latex/*.out
+docs/documentazione/latex/*.toc
+docs/documentazione/latex/*.pdf
+docs/documentazione/latex/*.synctex.gz
+docs/documentazione/latex/*.synctex(busy)
+docs/documentazione/latex/chapters/*.aux
+
+# Permetti il caricamento della Relazione Finale (PDF)
+!docs/documentazione/SINTON-IA_report_policola-delsorbo-defusco.pdf
 
 # ─── Editors & OS ─────────────────────────────────────────────────────────
 .idea/

@@ -41,7 +41,7 @@ Una volta scaricati i dati grezzi, spostati nella cartella `notebooks/` ed esegu
 | **05** | `05_RedFlag_Synthetic_Robustness.ipynb` | Analisi di robustezza (Stress Test) mediante l'inquinamento del Validation Set con dati sintetici GPT-4. |
 | **06** | `06_RedFlag_Threshold_Tuning.ipynb` | **Calibrazione Finale**: Risoluzione analitica del Trade-Off, massimizzazione dello $F_2$-Score per identificare la nuova soglia (23.84%) ed estratto formale di tutte le metriche sul *Test Set* Intoccato. |
 
-Al termine dell'esecuzione del notebook `06`, i grafici (Curve Precision-Recall e Matrici di Confusione) verranno esportati materialmente nella cartella globale della Relazione Tecnica per il LaTeX (`docs/latex/figures/`).
+Al termine dell'esecuzione del notebook `06`, i grafici (Curve Precision-Recall e Matrici di Confusione) verranno esportati materialmente nella cartella globale della Relazione Tecnica per il LaTeX (`docs/documentazione/latex/figures/`).
 
 ## Dipendenze Specifiche (Model Level)
 Oltre ai requisiti basilari, il modulo necessita di:

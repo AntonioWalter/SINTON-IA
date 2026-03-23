@@ -8,7 +8,7 @@ Componente di Intelligenza Artificiale del progetto **SINTONIA** — sistema di 
 
 SINTON-IA integra tre modelli di intelligenza artificiale all'interno del software preesistente **SINTONIA**, una piattaforma gestionale e di monitoraggio per la salute mentale. L'obiettivo primario è supportare attivamente psicologi, psichiatri e operatori dell'**ASL Campania** nella gestione dei pazienti in lista d'attesa, fornendo strumenti predittivi capaci di identificare minacce precoci, prevenire l'abbandono dell'applicativo prima della presa in carico clinica e stimare costantemente l'integrità umorale del paziente a distanza.
 
-📥 **[Consulta e Scarica la Relazione Tecnica Completa in PDF](./docs/latex/build/main.pdf)**
+📥 **[📄 Scarica la Relazione Tecnica Finale (PDF)](docs/documentazione/SINTON-IA_report_policola-delsorbo-defusco.pdf)**
 
 ### I tre modelli e le Pipeline Riproducibili
 
@@ -25,9 +25,11 @@ SINTON-IA integra tre modelli di intelligenza artificiale all'interno del softwa
 ```
 SINTON-IA/
 ├── .github/               # Template PR e workflow CI (da configurare)
-├── docs/
-│   ├── assets/            # Diagrammi architettura
-│   └── latex/             # Documentazione tecnica unificata (LaTeX)
+├── docs/                     # Documentazione e materiali di presentazione
+│   ├── documentazione/       # Relazione tecnica e sorgenti LaTeX
+│   │   ├── main.pdf          # PDF finale della relazione
+│   │   └── latex/            # Sorgenti del documento
+│   └── presentazione/        # Slide e asset grafici per il pitch
 ├── models/
 │   ├── nlp_suicide_risk/      # Modello TF-IDF e NLP per il Rischio Suicidario
 │   ├── churn_prevention/      # Algoritmo Genetico per la Prevenzione dell'Abbandono
