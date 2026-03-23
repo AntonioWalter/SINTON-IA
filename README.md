@@ -6,15 +6,17 @@ Componente di Intelligenza Artificiale del progetto **SINTONIA** — sistema di 
 
 ## Descrizione
 
-SINTON-IA integra tre modelli di machine learning nel software preesistente SINTONIA, con l'obiettivo di supportare clinici e operatori nell'identificazione precoce di situazioni a rischio e nel miglioramento del follow-up dei pazienti.
+SINTON-IA integra tre modelli di intelligenza artificiale all'interno del software preesistente **SINTONIA**, una piattaforma gestionale e di monitoraggio per la salute mentale. L'obiettivo primario è supportare attivamente psicologi, psichiatri e operatori dell'**ASL Campania** nella gestione dei pazienti in lista d'attesa, fornendo strumenti predittivi capaci di identificare minacce precoci, prevenire l'abbandono dell'applicativo prima della presa in carico clinica e stimare costantemente l'integrità umorale del paziente a distanza.
 
-### I tre modelli
+📥 **[📄 Scarica la Relazione Tecnica Finale (PDF)](docs/documentazione/SINTON-IA_report_policola-delsorbo-defusco.pdf)**
 
-| Modello                       | Obiettivo                                                                             |
-| ----------------------------- | ------------------------------------------------------------------------------------- |
-| 🔴 **NLP Rischio Suicidario** | Analisi del testo prodotto dal paziente per individuare segnali di rischio suicidario |
-| 🔔 **Churn Prevention**       | Ottimizzazione del nudging tramite Algoritmo Genetico                                 |
-| 🌧️ **Depression Prediction**  | Rilevamento dello stato depressivo a partire dal diario dell'umore giornaliero        |
+### I tre modelli e le Pipeline Riproducibili
+
+| Modello                       | Obiettivo Clinico | Riproducibilità |
+| ----------------------------- | ------------------------------------------------------------------------------------- | ---------------------- |
+| 🔴 **NLP Rischio Suicidario** | Analisi testuale dei log del paziente per individuare le _Red Flag_ e segnali di rischio suicidario | [Guida Integrale Modello (Step-by-Step)](./models/nlp_suicide_risk/README.md) |
+| 🔔 **Churn Prevention**       | Prevenzione abbandono (*Notification Fatigue*) tramite evoluzione di strategia di Nudging N-Dimensionale con Algoritmo Genetico | [Guida Integrale Modello (Step-by-Step)](./models/churn_prevention/README.md) |
+| 🌧️ **Depression Prediction**  | Rilevamento e interpolazione dello stato depressivo a partire da metriche comportamentali e *Mood Tracker* | [Guida Integrale Modello (Step-by-Step)](./models/depression_prediction/README.md) |
 
 ---
 
@@ -23,13 +25,15 @@ SINTON-IA integra tre modelli di machine learning nel software preesistente SINT
 ```
 SINTON-IA/
 ├── .github/               # Template PR e workflow CI (da configurare)
-├── docs/
-│   ├── assets/            # Diagrammi architettura
-│   └── latex/             # Documentazione tecnica unificata (LaTeX)
+├── docs/                     # Documentazione e materiali di presentazione
+│   ├── documentazione/       # Relazione tecnica e sorgenti LaTeX
+│   │   ├── main.pdf          # PDF finale della relazione
+│   │   └── latex/            # Sorgenti del documento
+│   └── presentazione/        # Slide e asset grafici per il pitch
 ├── models/
-│   ├── nlp_suicide_risk/      # Modello NLP rischio suicidario
-│   ├── churn_prevention/      # GA churn prevention
-│   └── depression_detection/  # Modello rilevamento stato depressivo
+│   ├── nlp_suicide_risk/      # Modello TF-IDF e NLP per il Rischio Suicidario
+│   ├── churn_prevention/      # Algoritmo Genetico per la Prevenzione dell'Abbandono
+│   └── depression_prediction/ # Modello ML di Regressione (Mood Tracking)
 ├── api/                   # Backend FastAPI che espone i modelli
 ├── integration/           # Connettore con il software SINTONIA
 ├── .gitignore
@@ -54,10 +58,17 @@ pip install -r requirements.txt
 
 ---
 
-## Team
+## Team SINTON-IA
 
-Progetto universitario — ASL Campania.
+Progetto Sperimentale per l'Intelligenza Artificiale Medica — Indirizzato al dominio **ASL Campania**.
+Il software, l'ingegnerizzazione dati e la validazione dei tre algoritmi sono stati curati da:
+
+- **Antonio Walter De Fusco**  | [Github Profile](https://github.com/AntonioWalter)   | Matr. `0512119006`
+- **Alessio Del Sorbo**        | [Github Profile](https://github.com/aleds25)         | Matr. `0512119618`
+- **Gianni Policola**          | [Github Profile](https://github.com/GiaPol)          | Matr. `0512119747`
+
+---
 
 ## Licenza
 
-MIT
+Questo progetto accademico è rilasciato pubblicamente sotto i termini della [Licenza MIT](LICENSE).

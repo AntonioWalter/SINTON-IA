@@ -1,0 +1,267 @@
+% ------------------------------------------------------------------------------
+%  Capitolo 3 – Data Understanding
+% ------------------------------------------------------------------------------
+\chapter{Data Understanding}
+\label{ch:data_understanding}
+
+Il presente capitolo è dedicato all'esplorazione, comprensione e analisi dei dati necessari per lo sviluppo dei tre moduli principali di SINTON-IA: Red Flag Detection, Depression Prediction e Churn Prevention.
+
+\section{Dataset per il Modello di Red Flag Detection}
+\label{sec:data_red_flag}
+
+\subsection{Acquisizione Dati}
+\label{subsec:acquisizione_red_flag}
+
+Come parzialmente anticipato nella fase di Business Understanding, l'acquisizione di dati clinici legati alla salute mentale è fortemente ostacolata da stringenti normative sulla privacy. Lo sviluppo di un modello di NLP specializzato nell'identificazione del rischio suicidario necessita di dati testuali massivi in cui gli autori esprimano i propri stati d'animo in contesti non strutturati (es. diari, blog, forum), corredati da etichette di rischio affidabili.
+
+Nel corso della ricerca sulle fonti dati, sono stati individuati due dataset primari, ciascuno con caratteristiche e livelli di accessibilità differenti.
+
+Il primo è \textbf{UMD Reddit Suicidality Dataset} \cite{umd_reddit_suicidality}, realizzato dall'Università del Maryland. Si tratta di un dataset accademico di altissimo livello qualitativo: i post estrapolati da Reddit sono stati annotati sia tramite \textit{crowdsourcing} sia da esperti clinici utilizzando la scala standard \textbf{C-SSRS} (Columbia-Suicide Severity Rating Scale). Rappresenta il \textit{gold standard} per questo tipo di task predittivi.
+Tuttavia, a causa della delicatezza dei contenuti, gli autori ne hanno reso pubblica solo una versione fortemente ridotta e anonimizzata contenente circa 500 istanze, un numero totalmente insufficiente per addestrare da zero o affinare (fine-tuning) un modello di NLP moderno (es. \textit{Transformers}). L'accesso al dataset completo richiede una formale approvazione da parte di un Comitato Etico Istituzionale (IRB) e l'implementazione di rigidi protocolli di sicurezza per la conservazione dei dati protetti.
+
+Il secondo dataset individuato è \textbf{Suicide Watch Dataset} \cite{suicide_watch_dataset}, disponibile pubblicamente sulla piattaforma Kaggle. Sebbene non raggiunga il livello di validazione clinica certificata tramite C-SSRS del dataset UMD, esso si basa anch'esso sull'estrapolazione massiva di testi dalla piattaforma Reddit (tipicamente dai subreddit \textit{r/SuicideWatch} e altri forum dedicati al supporto psicologico o temi generali). 
+
+Alla luce di questi vincoli, è stata definita la seguente strategia: \textbf{il dataset "Suicide Watch" di Kaggle verrà impiegato per la fase prototipale del progetto}. La sua natura pubblica e la mole di dati disponibile ne consentono l'impiego immediato per validare l'architettura del modello, sintonizzare gli iperparametri e dimostrare la fattibilità tecnica del sistema \textit{Red Flag}. Come sviluppo futuro in caso di adozione reale del sistema, il team richiederà l'autorizzazione etica per accedere al dataset UMD (o equivalenti clinici), al fine di specializzare e ri-calibrare il modello con dati certificati in maniera professionale.
+
+\subsection{Descrizione dei Dati}
+\label{subsec:descrizione_red_flag}
+
+Il dataset pubblico \textit{Suicide Watch} scelto per l'addestramento prototipale si presenta in formato puramente testuale e tabellare (file CSV). 
+
+La sua struttura è volutamente essenziale per favorire task di classificazione binaria nell'ambito del \textit{Natural Language Processing}. Di seguito le caratteristiche principali:
+
+\begin{itemize}
+    \item \textbf{Volume dei dati:} Il dataset comprende oltre 230.000 record complessivi.
+    \item \textbf{Bilanciamento delle classi:} Le istanze sono suddivise in modo pressoché paritetico ($\sim$50/50) tra le due classi bersaglio, mitigando il problema dello sbilanciamento tipico dei dati clinici e facilitando l'apprendimento delle \textit{feature} testuali discriminanti da parte della rete neurale.
+\end{itemize}
+
+Ogni record (riga) del dataset è descritto da due colonne fondamentali:
+\begin{enumerate}
+    \item \textbf{\texttt{text}} (Stringa): contiene il contenuto testuale non strutturato scritto dall'utente. Questi testi rispecchiano fedelmente le dinamiche dello \textit{user-generated content} (UGC) online: variano notevolmente in lunghezza, presentano spesso un registro informale, errori ortografici, e descrivono pensieri, vicende personali o espressioni dirette di dolore emotivo. Questa eterogeneità stilistica li rende una "palestra" eccellente per simulare l'imprevedibilità formale dei testi che i pazienti inseriranno nei diari di SINTONIA.
+    \item \textbf{\texttt{class}} (Label): è la variabile target del modello, che si presenta sotto forma di etichetta testuale per distinguere:
+    \begin{itemize}
+        \item \texttt{suicide}: indica che il testo contiene espressioni di ideazione suicidaria, intenti autolesionistici gravi o disperazione acuta tale da far presumere un pericolo imminente.
+        \item \texttt{non-suicide}: indica che il testo esplora argomenti di tipo generale o, pur trattando esperienze di tristezza, ansia o difficoltà, non manifesta i pattern critici ed emergenti associabili al rischio estremo.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Esplorazione e Qualità dei Dati}
+\label{subsec:esplorazione_red_flag}
+
+Al fine di validare l'idoneità del dataset e pianificare le opportune strategie di \textit{Data Preparation}, è stata condotta un'analisi esplorativa (Exploratory Data Analysis, EDA) documentata all'interno dei Jupyter Notebook associati al repository del modello. 
+
+\textbf{Bilanciamento del Dataset:} L'analisi ha confermato la totale assenza di valori nulli (\textit{missing values}) strutturali nelle colonne principali e un equilibrio perfetto delle etichette: su un totale esatto di 232.074 record, figurano 116.037 istanze per la classe \texttt{suicide} e 116.037 istanze per la classe \texttt{non-suicide} (Figura~\ref{fig:rf_class_balance}). Questa simmetria garantisce che la rete non svilupperà intrinsecamente un \textit{bias} verso la classe maggioritaria.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.65\textwidth]{rf_class_balance.png}
+    \caption{Bilanciamento perfetto delle classi nel dataset "Suicide Watch".}
+    \label{fig:rf_class_balance}
+\end{figure}
+
+\textbf{Distribuzione delle Lunghezze e Limiti Architetturali (2000 Caratteri):}
+Un aspetto essenziale emerso durante il \textit{Business Understanding} è che la piattaforma SINTONIA imporrà un limite tassativo di \textbf{2.000 caratteri} per la compilazione dei diari da parte dei pazienti. Pertanto, analizzare la lunghezza dei testi del dataset non in "numero di parole" ma in "numero di caratteri" è cruciale per prevenire un \textit{bias} strutturale. 
+
+Lo script di analisi ha rilevato una lunghezza testuale media di circa 690 caratteri per post, con la maggior parte della distribuzione (mediana) concentrata intorno ai 315 caratteri. Tuttavia, focalizzandosi sul limite di tolleranza pattuito, l'esplorazione (Figura~\ref{fig:rf_char_len_dist}) ha evidenziato che \textbf{oltre 17.000 record (il 7,3\% del totale) superano la soglia dei 2.000 caratteri}, con picchi estremi superiori ai 40.000 caratteri.
+Addestrare un modello su documenti lunghissimi per poi impiegarlo in inferenza su frammenti corti (limitati dal frontend) causerebbe un crollo drammatico dell'accuratezza in fase di produzione.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.75\textwidth]{rf_char_len_dist.png}
+    \caption{Distribuzione della lunghezza dei testi in caratteri. La linea rossa tratteggiata indica il limite di 2.000 caratteri previsto per l'app SINTONIA.}
+    \label{fig:rf_char_len_dist}
+\end{figure}
+
+\textbf{Analisi del Rumore Testuale (Noise):} 
+L'estrapolazione di dati da una piattaforma web non regolamentata come Reddit comporta l'introduzione di notevole "rumore" sintattico e semantico. L'analisi quantitativa tramite espressioni regolari ha messo in luce:
+\begin{itemize}
+    \item L'inclusione di \textbf{URL / Link esterni} in oltre 7.100 post (circa il 3,1\% del dataset).
+    \item Una \textbf{formattazione complessa o dispersiva} (sequenze multiple di \textit{newline} o ritorni a capo) presente nel 36,7\% dei record, tipica dei forum online ma inverosimile per la textarea di un diario clinico privato.
+    \item Un'ingente presenza di \textbf{Stop Words} (le parole grammaticali di contorno, es. pronomi, articoli, preposizioni), che saturano mediamente il 45,4\% di ciascun documento senza apportare semantica discriminante ai fini predittivi del rischio e minacciando l'efficienza dei layer di \textit{Attention} dei Transformers impiegati.
+\end{itemize}
+
+Le evidenze raccolte impongono, dunque, una fase di manipolazione preliminare severa. La \textit{Data Preparation} successiva dovrà obbligatoriamente implementare filtri per eliminare il rumore (URL e formattazioni errate), decurtare le stop-words e, soprattutto, imporre una troncatura delle sequenze testuali superiori alla soglia di 2.000 caratteri imposta dal frontend dell'applicativo.
+
+% -- 3.2 ----------------------------------------------------------------------
+\section{Dati per il Modello di Depression Prediction}
+\label{sec:data_depression}
+
+Il cuore tecnologico di SINTON-IA per il monitoraggio della salute mentale risiede nella capacità di analizzare l'andamento affettivo del paziente per prevedere l'insorgenza o l'aggravamento di stati depressivi. Nello specifico, il sistema mira a stimare il punteggio del \textbf{PHQ-9} (\textit{Patient Health Questionnaire-9}) \cite{kroenke2001phq9}, un protocollo clinico standardizzato composto da 9 item che quantifica la severità dei sintomi su una scala da 0 a 27, suddivisa in cinque intervalli di gravità diagnostica.
+
+Data l'indisponibilità di dataset pubblici che combinino log quotidiani dell'umore e valutazioni cliniche longitudinali, e nel pieno rispetto della riservatezza dei dati sensibili, abbiamo progettato un'architettura di generazione dati avanzata. Tale soluzione si basa sul concetto di \textbf{Augmentation Ibrida}: una metodologia che fonde rigorosi parametri tratti dalla letteratura medica con pattern statistici reali estratti da popolazioni sane e patologiche. Questo processo, descritto nei notebook \texttt{01\_Data\_Analysis\_and\_Mapping.ipynb} e \texttt{02\_Advanced\_Synthetic\_Generation.ipynb}, garantisce la creazione di un dataset massivo (100.000 pazienti virtuali) ma clinicamente rappresentativo.
+
+\subsection{Filosofia del Generatore: Nucleo Clinico e Rumore Empirico}
+\label{subsec:filosofia_generatore}
+
+Il framework di generazione di SINTON-IA si fonda sulla distinzione tra due componenti fondamentali che garantiscono la validità scientifica del dataset:
+\begin{enumerate}
+    \item \textbf{Il Nucleo Clinico (Literature-Driven):} Rappresenta l'ossatura medica del sistema. Tutti i parametri che definiscono la struttura di una patologia --- come il tono affettivo medio, la prevalenza epidemiologica nella popolazione e la tendenza dell'emozione a persistere (\textit{emotional inertia}) --- sono estratti direttamente da studi clinici consolidati \cite{kuppens2010inertia, who2023depression, karyotaki2015dropout}. Questo assicura che il modello di Intelligenza Artificiale apprenda segnali che hanno una solida base nella letteratura psichiatrica.
+    \item \textbf{Il Rumore Empirico (Data-Driven):} Rappresenta il materiale grezzo che conferisce realismo al dato sintetico. I dataset reali pubblici vengono analizzati per estrarre la \textbf{varianza statistica} e le \textbf{matrici di transizione}. Questi elementi iniettano nel sistema quel disordine, quella volatilità e quelle irregolarità tipiche del comportamento umano reale, evitando che il generatore produca serie temporali "troppo pulite" o artificialmente perfette.
+\end{enumerate}
+
+\subsection{Analisi e Utilizzo dei Dataset Reali di Riferimento}
+\label{subsec:analisi_dataset_depression}
+
+Per calibrare il generatore abbiamo analizzato due sorgenti principali, selezionate per la loro rilevanza metodologica nonostante i limiti strutturali che ne precludono l'uso come fonte primaria di addestramento:
+
+\paragraph{StudentLife Dataset \cite{studentlife_dataset}:} 
+Condotto dalla Dartmouth University su 48 studenti per 10 settimane tramite tecniche di EMA (\textit{Ecological Momentary Assessment}). Questo studio è stato fondamentale per modellare la \textbf{volatilità naturale} dell'umore in un contesto di stress. Tuttavia, il campione è demograficamente troppo omogeneo (estrazione accademica) per rappresentare un triage clinico generale.
+
+\paragraph{14-Day Ambulatory Assessment \cite{kaggle_14day_depression}:} 
+Questo studio documenta il monitoraggio giornaliero di oltre 300 soggetti. Sebbene la sua struttura sia contraria al nostro task (correla la felicità quotidiana a un PHQ-9 quotidiano), è stato essenziale per estrarre le \textbf{Matrici di Transizione di Markov}. Queste matrici sono tabelle di probabilità che descrivono come un individuo passa da uno stato emotivo all'altro (es. da "Ansioso" a "Neutro") nell'arco di 24 ore. Abbiamo scoperto che questi pattern di passaggio sono radicalmente diversi tra soggetti sani e soggetti depressi, e questa conoscenza è stata iniettata nel nostro generatore per creare dinamiche temporali realistiche.
+\subsection{L'Interfaccia 10x10 e il Modello Circomplesso di Russell}
+\label{subsec:russell_mapping}
+
+L'utente finale interagisce con SINTONIA tramite un'interfaccia di check-in quotidiano progettata per essere intuitiva ma scientificamente densa. Il sistema si basa su una matrice di scelta \textbf{10x10}:
+\begin{itemize}
+    \item \textbf{10 stati d'animo categorici:} Felice, Sereno, Energico, Neutro, Stanco, Triste, Ansioso, Arrabbiato, Spaventato, Confuso.
+    \item \textbf{10 livelli di intensità:} Una scala Likert per quantificare la forza dello stato d'animo provato.
+\end{itemize}
+
+Per trasformare queste etichette soggettive in segnali calcolabili, abbiamo adottato il \textbf{Modello Circomplesso dell'Affetto di Russell} \cite{russell1980circumplex}. Questo modello proietta ogni emozione in uno spazio bidimensionale definito da due assi ortogonali fondamentali (Figura~\ref{fig:va_map}):
+\begin{enumerate}
+    \item \textbf{Valenza (Valence):} L'asse orizzontale che rappresenta la "piacevolezza" dell'emozione, variando da un valore di -1 (estremo dispiacere) a +1 (massimo piacere).
+    \item \textbf{Attivazione (Arousal):} L'asse verticale che rappresenta la carica energetica o l'attivazione fisiologica, variando da -1 (calma/letargia) a +1 (massima attivazione/tensione).
+\end{enumerate}
+
+Questa mappatura funge da \textbf{ponte matematico}: trasforma la scelta qualitativa dell'utente (es. "Ansioso") in una coppia di coordinate numeriche. Questo passaggio è cruciale per permettere al computer di calcolare statistiche avanzate come le medie mobili esponenziali (\textit{Exponential Moving Average}, EMA) e la variabilità affettiva senza perdere il significato clinico dell'input originario.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{dp_valence_arousal_map.png}
+    \caption{Mappatura degli stati SINTONIA nello spazio Valence-Arousal di Russell.}
+    \label{fig:va_map}
+\end{figure}
+
+\subsection{Architettura del Generatore: Una Simulazione a Tre Livelli}
+\label{subsec:generatore_meccaniche}
+
+Il generatore di pazienti sintetici non si limita a produrre numeri casuali, ma costruisce una serie temporale di 14 giorni operando su tre livelli di profondità computazionale:
+
+\subsubsection{Livello 1: Definizione del Profilo Clinico Individuale}
+A ogni paziente virtuale viene assegnato un punteggio PHQ-9 target seguendo una distribuzione Beta calibrata sulle statistiche dell'OMS \cite{who2023depression}. In base a questo target, il sistema calcola i \textbf{parametri baricentrici} (valori medi di riferimento): un paziente classificato come "Severo" avrà una valenza media molto più bassa ($-0.6$) rispetto a un paziente "Sano". La letteratura psichiatrica fornisce le medie di riferimento, mentre i dataset reali contribuiscono definendo la varianza naturale per garantire che ogni paziente sintetico sia unico.
+
+\subsubsection{Livello 2: Dinamica Temporale e Catene di Markov}
+L'umore di un essere umano non salta in modo casuale da un estremo all'altro. Abbiamo implementato una \textbf{Catena di Markov del primo ordine}, dove lo stato del giorno $t$ dipende probabilisticamente dallo stato del giorno precedente $t-1$. Le matrici di transizione estratte dal dataset 14-Day AA ci permettono di simulare il fenomeno del \textbf{Critical Slowing Down} \cite{wichers2016critical}: nei pazienti depressi, la capacità di "rimbalzare" fuori da uno stato negativo è ridotta, portandoli a rimanere bloccati in fasi di tristezza o apatia per periodi prolungati.
+
+\subsubsection{Livello 3: Iniezione di Bias Clinici e Sfide Diagnostiche}
+Per testare la capacità di discernimento della nostra IA, abbiamo iniettato nel generatore tre comportamenti tipici che complicano la diagnosi nella realtà:
+\begin{itemize}
+    \item \textbf{Smiling Depression (Mascheramento):} Una percentuale di pazienti gravi è istruita a riportare stati di valenza positiva nonostante l'alto PHQ-9 target. Questo costringe il modello a non basarsi solo sulla media dell'umore, ma a cercare pattern di instabilità sottostanti \cite{helmich2020smiling}.
+    \item \textbf{Affective Blunting (Anestesia Emotiva):} Nei casi severi, il generatore applica una tecnica di \textit{damping} (appiattimento), riducendo l'intensità delle emozioni riportate per simulare la mancanza di reazione emotiva descritta dai clinici \cite{rottenberg2005mood}.
+    \item \textbf{Dropout MNAR (Missing Not At Random):} Simuliamo l'abbandono del monitoraggio dovuto alla letargia depressiva. La probabilità che un dato manchi aumenta esponenzialmente dopo una serie di giorni negativi (\textit{negative streaks}), eliminando il dato proprio quando sarebbe più critico.
+\end{itemize}
+
+\subsection{Validazione e Plausibilità del Dataset Sintetico}
+\label{subsec:validazione_sintetico}
+
+La qualità della generazione è stata validata tramite controlli statistici rigorosi:
+\begin{itemize}
+    \item \textbf{Analisi delle Distribuzioni (Figura~\ref{fig:mood_dist}):} Conferma che la prevalenza di stati a bassa valenza aumenta coerentemente con la severità del PHQ-9.
+    \item \textbf{Test di Leakage (Figura~\ref{fig:leakage_check}):} Verifica che il target clinico non sia "ovvio" o trivialmente deducibile da una singola misura, ma richieda l'analisi dell'intera serie temporale.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{dp_mood_distribution.png}
+    \caption{Distribuzione statistica degli stati d'animo per fascia di severità PHQ-9. Il grafico dimostra come il generatore rispetti il "Nucleo Clinico" aumentando la frequenza di stati negativi all'aumentare della gravità diagnostica.}
+    \label{fig:mood_dist}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{dp_leakage_check.png}
+    \caption{Test di leakage per la verifica dell'indipendenza statistica. Si osserva come il sistema non introduca correlazioni triviali tra input e target.}
+    \label{fig:leakage_check}
+\end{figure}
+
+\subsection{Limiti della Soluzione Attuale e Sviluppi Futuri}
+\label{subsec:limiti_sviluppi}
+
+È fondamentale sottolineare che il ricorso a dati sintetici, per quanto raffinati e validati clinicamente, rappresenta una soluzione di compromesso dettata dai vincoli di privacy e dalla scarsità di dataset longitudinali pubblici. Il limite principale di questo approccio risiede nell'impossibilità di catturare l'intera gamma delle sfumature psicologiche e dei contesti di vita reali che influenzano il benessere di un individuo.
+
+Per superare queste limitazioni e potenziare l'efficacia predittiva di SINTON-IA, le direzioni future prevedono:
+\begin{itemize}
+    \item \textbf{Utilizzo dei Dati Reali di SINTONIA:} Il limite del dato sintetico verrà superato non appena l'applicazione SINTONIA entrerà a pieno regime. I log dell'umore e i risultati dei test PHQ-9 raccolti direttamente dagli utenti reali dell'app costituiranno la fonte primaria per una fase di \textit{fine-tuning} dei modelli. SINTON-IA, in quanto nucleo di intelligenza artificiale dell'intero ecosistema, potrà così evolversi basandosi su casistiche cliniche concrete e specifiche del territorio.
+    \item \textbf{Adozione del Federated Learning:} Per gestire questi dati reali garantendo la \textit{privacy-by-design}, l'evoluzione del sistema prevede l'implementazione dell'apprendimento federato. Questo paradigma consentirà di addestrare i modelli direttamente sui dispositivi degli utenti di SINTONIA, aggregando solo i gradienti matematici ed evitando che i dati emotivi sensibili lascino mai lo smartphone del paziente.
+    \item \textbf{Monitoraggio Passivo:} L'espansione del dataset acquisibile tramite l'app includerà parametri biometrici raccolti passivamente (es. sonno, attività fisica), integrando il diario soggettivo con indicatori oggettivi di salute.
+\end{itemize}
+
+% -- 3.3 ----------------------------------------------------------------------
+\clearpage
+\section{Dati per il Churn Prevention}
+\label{sec:data_churn}
+
+\subsection{Natura del Problema e Approccio ai Dati}
+\label{subsec:natura_churn}
+
+Il Churn Prevention si distingue radicalmente dai due componenti precedenti per la natura stessa del task affrontato. Mentre il Red Flag Detection e il Depression Prediction sono paradigmi di \textit{apprendimento supervisionato}, il sistema di prevenzione dell'abbandono è formulato come un \textbf{problema di ottimizzazione} risolto mediante un Algoritmo Genetico (GA).
+
+Questa differenza fondamentale comporta tre conseguenze dirette sull'approccio ai dati:
+\begin{enumerate}
+    \item \textbf{Nessun dataset esterno:} il GA non ``impara'' da esempi storici etichettati. Il suo compito è \textit{evolvere} strategie di \textit{nudging} (notifiche personalizzate) che massimizzino la probabilità di mantenere attivo l'utente sulla piattaforma. Non è quindi necessario reperire dataset pubblici o accademici da fonti terze.
+    \item \textbf{Dati interni come sorgente esclusiva:} l'algoritmo si alimenta esclusivamente dei dati comportamentali generati dall'interazione dei pazienti con la piattaforma SINTONIA.
+    \item \textbf{Nessuna etichettatura necessaria:} a differenza del ML supervisionato, il GA non richiede label. La qualità delle soluzioni candidate viene valutata da una \textbf{funzione di fitness} che utilizza gli indicatori comportamentali dell'utente come input per calcolare un punteggio di bontà della strategia proposta.
+\end{enumerate}
+
+Di conseguenza, la \textit{Data Understanding} per questo modello non consiste nell'esplorare un dataset scaricato, bensì nel \textbf{mappare sistematicamente quali dati il backend di SINTONIA produce e persiste}, valutandone l'idoneità come input per la funzione di fitness dell'Algoritmo Genetico.
+
+\subsection{Inventario degli Indicatori Comportamentali}
+\label{subsec:inventario_indicatori}
+
+L'analisi dello schema del database relazionale di SINTONIA (implementato tramite Drizzle ORM su PostgreSQL) ha permesso di identificare \textbf{sette entità} le cui informazioni risultano direttamente rilevanti per la costruzione della funzione di fitness del GA. Per ciascuna entità vengono riportati i campi significativi e l'indicatore comportamentale derivabile.
+
+\subsubsection{Stato d'Animo (\texttt{stato\_animo})}
+
+La tabella \texttt{stato\_animo} registra ogni inserimento dello stato emotivo da parte del paziente. I campi rilevanti sono: \texttt{umore} (un valore categorico tra 10 stati predefiniti: Felice, Sereno, Energico, Neutro, Stanco, Triste, Ansioso, Arrabbiato, Spaventato, Confuso), \texttt{intensita} (valore intero) e \texttt{data\_inserimento} (timestamp).
+
+Questa tabella costituisce la fonte primaria di indicatori per il GA. Dalla sequenza temporale degli inserimenti è possibile derivare:
+\begin{itemize}
+    \item La \textbf{frequenza di registrazione del mood} in una finestra temporale (es. inserimenti negli ultimi 7 giorni), direttamente proporzionale al livello di engagement dell'utente.
+    \item Il \textbf{tasso di attività notturna}: calcolato aggregando gli orari di inserimento di mood e diario, aiuta a identificare alterazioni del ritmo circadiano (es. insonnia) tipiche di stati d'ansia o alterazioni emotive, che correlano con comportamenti a rischio.
+    \item Il \textbf{trend della valenza emotiva}: una predominanza persistente di umori a valenza negativa (Triste, Ansioso, Spaventato) potrebbe correlare con un aumento del rischio di abbandono.
+\end{itemize}
+
+\subsubsection{Pagine del Diario (\texttt{pagina\_diario})}
+
+La tabella \texttt{pagina\_diario} memorizza le pagine scritte nel diario personale, con i campi \texttt{titolo}, \texttt{testo} e \texttt{data\_inserimento}.
+
+Gli indicatori derivabili sono:
+\begin{itemize}
+    \item La \textbf{frequenza di scrittura} nel diario, indicativa dell'interesse del paziente verso lo strumento terapeutico.
+    \item La \textbf{lunghezza media dei testi} (in caratteri), che permette di distinguere compilazioni genuine e riflessive da inserimenti superficiali o frettolosi.
+    \item I \textbf{giorni trascorsi dall'ultima pagina scritta}, un potente segnale di disengagement quando il valore è elevato.
+\end{itemize}
+
+\subsubsection{Questionari (\texttt{questionario})}
+
+La tabella \texttt{questionario} traccia le compilazioni dei questionari clinici, includendo \texttt{score}, \texttt{data\_compilazione}, i flag \texttt{revisionato} e \texttt{invalidato}.
+
+Da questa entità si ricavano:
+\begin{itemize}
+    \item Il \textbf{tasso di compliance}: rapporto tra questionari effettivamente completati e questionari previsti dal calendario di somministrazione. Un calo della compliance è un indicatore precoce di disengagement.
+    \item Il \textbf{tasso di invalidazione}: percentuale di compilazioni successivamente invalidate dallo psicologo, potenziale segnale di \textit{careless responding} tipico di utenti che stanno perdendo interesse.
+\end{itemize}
+
+\subsubsection{Forum (\texttt{domanda\_forum})}
+
+La tabella \texttt{domanda\_forum} registra le domande pubblicate dal paziente nel forum comunitario, con \texttt{titolo}, \texttt{testo}, \texttt{categoria} e \texttt{data\_inserimento}.
+
+L'indicatore derivabile è il livello di \textbf{engagement sociale}: un paziente che interagisce attivamente nel forum è presumibilmente più coinvolto nell'ecosistema SINTONIA rispetto a uno che non vi partecipa.
+
+\subsubsection{Notifiche (\texttt{notifica})}
+
+La tabella \texttt{notifica} è di particolare importanza strategica per il GA. Oltre ai campi \texttt{titolo}, \texttt{tipologia}, \texttt{descrizione} e \texttt{data\_invio}, essa include il campo \texttt{letto} (boolean): un flag che indica se l'utente ha effettivamente visualizzato la notifica.
+
+Questo campo costituisce il \textbf{meccanismo di feedback diretto} per l'Algoritmo Genetico: consente di valutare se le notifiche generate da una strategia di \textit{nudging} vengono effettivamente lette o sistematicamente ignorate dall'utente. Il \textbf{tasso di lettura} delle notifiche (rapporto \texttt{letto = true} / totale inviate) diventa così un componente fondamentale della funzione di fitness.
+
+\subsubsection{Paziente (\texttt{paziente})}
+
+La tabella anagrafica \texttt{paziente} contiene il campo \texttt{data\_ingresso} (data di inserimento nella lista d'attesa), dal quale si calcola il numero di \textbf{giorni in lista d'attesa}. Questo indicatore è cruciale poiché la letteratura evidenzia una correlazione diretta tra la durata dell'attesa e la probabilità di abbandono \cite{baumel2019mhealth}. Risultano inoltre rilevanti il campo \texttt{id\_priorita} (livello di priorità nel triage) e \texttt{id\_psicologo} (che indica se il paziente è già stato preso in carico).
+
+\subsubsection{Badge (\texttt{acquisizione\_badge})}
+
+La tabella \texttt{acquisizione\_badge} traccia i traguardi di gamification raggiunti dal paziente, con \texttt{nome\_badge} e \texttt{data\_acquisizione}. Il numero totale di badge ottenuti e la loro distribuzione temporale forniscono un indicatore dell' \textbf{engagement con il sistema di gamification} integrato nella piattaforma.
+
+% -- Conclusione Capitolo 3 ---------------------------------------------------
+In sintesi, il Capitolo 3 ha delineato un ecosistema di dati ricco e diversificato: dai grandi dataset web per il rischio suicidario, al framework di generazione statistica per la depressione, fino alla mappatura dinamica dei comportamenti per la retention. Questi dati rappresentano il materiale grezzo che, nel prossimo capitolo, verrà raffinato per alimentare l'Intelligenza Artificiale.
