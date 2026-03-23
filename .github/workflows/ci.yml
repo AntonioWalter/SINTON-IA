@@ -25,13 +25,11 @@ on:
 
 # ─── Job: controlli sul codice Python ────────────────────────────────────────
 jobs:
-
   lint-and-check:
     # L'environment virtuale in cui girano i controlli (runner GitHub)
     runs-on: ubuntu-latest
 
     steps:
-
       # 1. Scarica il codice del branch in esame
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
@@ -106,8 +104,3 @@ jobs:
           python -m py_compile $(find models/*/src -name "*.py") 2>/dev/null || true
           python -m py_compile $(find api -name "*.py") 2>/dev/null || true
           echo "✅ Nessun errore di sintassi trovato."
-
-
-#TODO: implementare test di unità
-
-#TODO: implementare test di integrazione

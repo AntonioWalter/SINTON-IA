@@ -45,3 +45,19 @@ Il core dell'integrazione è demandato alla classe \texttt{AiService} posta all'
 \end{itemize}
 
 Per mitigare la latenza causata dal \textit{Cold Start} dei servizi serverless su Hugging Face (lo spegnimento automatico dei container inattivi), \texttt{AiService} invia procedure di asincrone di \textit{pre-warming} con la funzione \texttt{wakeUpModels()} per notificare allo \textit{Space} di avviarsi o rimanere in \textit{stand-by} attivo per immediate elaborazioni.
+
+\section{Continuous Integration}
+\label{sec:continuous_integration}
+
+La transizione di un modello di Intelligenza Artificiale da un ambiente di ricerca (Jupyter Notebooks) a un ecosistema di produzione clinico richiede standard rigorosi di affidabilità del codice. Per garantire la manutenibilità del progetto SINTON-IA e prevenire il rilascio di codice difettoso, l'architettura è stata dotata di una pipeline di \textbf{Continuous Integration (CI)} completamente automatizzata tramite \textit{GitHub Actions}.
+
+\subsection{Progettazione della Pipeline}
+Il workflow di validazione, definito nel file di configurazione \texttt{ci.yml}, si innesca automaticamente per ogni \textit{Push} o \textit{Pull Request}. L'automazione esegue tre macro-attività sequenziali:
+
+\begin{enumerate}
+    \item \textbf{Analisi Statica e Linting (Ruff)}: Ruff è stato selezionato come linter per via della sua estrema velocità di esecuzione. La CI interroga l'intera \textit{codebase} per individuare non conformità agli standard PEP8, variabili \textit{undefined} o pattern di codice deprecati, agendo da filtro di primo livello.
+    \item \textbf{Validazione dei Notebooks}: Poiché il core analitico risiede nei file \texttt{.ipynb}, la pipeline automatizza il parsing dei JSON sottostanti per verificare che i file non si siano corrotti durante i salvataggi, garantendo la totale replicabilità degli esperimenti scientifici.
+    \item \textbf{Integrità del Codice di Modello}: Tutti i file eseguibili del pacchetto \texttt{src} subiscono un check formale di compilazione. Se anche un singolo errore solleva un'eccezione, GitHub interrompe il processo di integrazione, assicurando che solo il codice formalmente corretto e privo di errori di compilazione possa avanzare verso le fasi successive.
+\end{enumerate}
+
+L'introduzione di questa architettura CI ha permesso di mantenere elevati standard qualitativi durante tutto lo sviluppo, garantendo che ogni aggiornamento futuro rispetti i requisiti di correttezza necessari all'operatività del sistema.
