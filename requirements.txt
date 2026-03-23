@@ -4,6 +4,14 @@ pandas
 scikit-learn
 matplotlib
 seaborn
+nltk
+joblib
+lightgbm
+optuna
+shap
+plotly
+tqdm
+kaleido
 
 # ─── NLP (Modello 1 – Rischio Suicidario) ────────────────────────────────────
 transformers
