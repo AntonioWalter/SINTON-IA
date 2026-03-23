@@ -89,12 +89,11 @@ df_final = df[(df['char_count'] > 0) & (df['char_count'] <= 2000)].copy()
 print(df_final['class'].value_counts(normalize=True))
 \end{lstlisting}
 
-\subsection{Zero-Shot Cross-Lingual Transfer}
-Un enorme divario tra questa fase e la futura operatività è la lingua: il nostro dataset di partenza è in Inglese, ma gli utenti campani della piattaforma SINTONIA scriveranno i diari in Italiano. 
+\subsection{Gestione del Language Gap}
+Un enorme divario tra questa fase e la futura operatività è la barriera linguistica: l'intero dataset di partenza è in Inglese (ricavato da Reddit), mentre gli utenti campani della piattaforma SINTON-IA scriveranno i loro diari emotivi in Italiano. 
 Solitamente in questi casi si tenta di tradurre interamente il dataset iniziale (Machine Translation), pratica che degrada la qualità dei dati, annacqua i modi di dire dello "slang" depressivo (ad es. "feeling blue") e risulta temporalmente onerosa in fase di caricamento ed addestramento. 
 
-La soluzione progettata per il modello SINTON-IA adotta l'approccio \textbf{Zero-Shot Cross-Lingual Transfer}.
-L'idea consiste nell'utilizzare come "cervello di base" un modello Transformer Multilingua aspecifico preparato in precedenza da ricercatori terzi (ad es. XLM-RoBERTa), che è capace di capire 100 lingue diverse in contemporanea. Noi addestreremo l'Intelligenza Artificiale sfruttando nativamente i post in inglese. La logica pregressa del Transformer sarà in grado di riconoscere i "concetti appresi" (il comportamento suicidario) e replicarne in autonomia l'identificazione anche quando, una volta installato in reparto, l'input live del paziente proverrà tradotto sintatticamente in lingua italiana.
+La soluzione architetturale progettata per il modello SINTON-IA adotta l'approccio inverso: l'algoritmo TF-IDF sarà addestrato nativamente sui post originali in lingua inglese. Successivamente, in fase di \textbf{Deploy e Integrazione} (Integration Layer), verrà valutata e implementata l'installazione di un modulo di traduzione automatica (es. \textit{Translation API}). Quando il paziente italiano invierà la nota di diario, il backend SINTON-IA si occuperà anzitutto di chiamare l'API di traduzione in maniera fluida; soltanto allora, il testo convertito in inglese verrà inoltrato all'algoritmo di classificazione, bypassando il disallineamento linguistico senza intaccare le performance natie del modello.
 
 % ─────────────────────────────────────────────────────────────────────────────
 \clearpage
