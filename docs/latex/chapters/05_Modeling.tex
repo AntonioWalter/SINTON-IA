@@ -15,7 +15,7 @@ Come spiegato nel Capitolo~\ref{ch:data_preparation}, tenendo soltanto messaggi 
 Poiché abbiamo parecchi dati a disposizione, abbiamo deciso di dividere il dataset basandoci su tre percentuali standard (\textbf{80-10-10}):
 \begin{itemize}
     \item \textbf{Training Set (80\%)}: È il grosso dei dati su cui si allena il modello vero e proprio, sia per le tecniche base che per il modello avanzato finale.
-    \item \textbf{Validation Set (10\%)}: Lo usiamo durante l'allenamento per valutare via via la bontà delle scoperte, per capire quando è il momento di fermare il calcolo (con la tecnica dell'\textit{Early Stopping}) e per poter impostare a dovere le giuste soglie in base all'uso clinico dell'applicazione.
+    \item \textbf{Validation Set (10\%)}: Viene impiegato per la fase di ottimizzazione dei parametri e calibrazione clinica. In particolare, questo set è fondamentale per identificare la soglia di classificazione (\textit{Threshold Tuning}) ottimale, garantendo il miglior bilanciamento tra sensibilità clinica e precisione per l'applicativo.
     \item \textbf{Test Set (10\%)}: È il set di prova tenuto rigorosamente nascosto al modello. Ci servirà solo all'ultimo miglio, a fine esperimento, per testare come si comporterebbe l'algoritmo con messaggi mai letti in precedenza.
 \end{itemize}
 
@@ -35,7 +35,6 @@ Per non rovinare il buon bilanciamento iniziale tra messaggi "sani e a rischio",
     \label{fig:nlp_class_balance}
 \end{figure}
 
-Il codice Python con cui questa strategia iniziale \`e stata messa in pratica si trova documentato sul notebook intitolato \texttt{03\_RedFlag\_Modelling\_Baseline.ipynb}.
 
 \subsection{Il Modello Baseline (TF-IDF + Logistic Regression)}
 Prima di passare a modelli di Intelligenza Artificiale potenti e complessi, abbiamo ritenuto indispensabile fissare prima un "modello di base" (o \textbf{Baseline}). L'idea è semplice: la Baseline funge da metro di giudizio o "parametro zero". Se un modello complicato (che magari impiega ore per addestrarsi) non riesce a battere in modo deciso le prestazioni di un modello banale che si allena in venti secondi, significa che tutta quella complessità aggiuntiva è inutile.
@@ -45,7 +44,6 @@ Abbiamo scelto questa combinazione per tre motivi molto pratici:
 \begin{enumerate}
     \item \textbf{Gestisce bene le parole importanti}: Il TF-IDF (\textit{Term Frequency - Inverse Document Frequency}) penalizza le parole comuni che si trovano dappertutto (come "il", "di", "essere") facendole valere zero, e premia fortissimo le parole "rare" ma cruciali presenti solo nei testi critici (es. "suicido", "odio", "morire"). Così facendo ripulisce da solo il rumore di fondo.
     \item \textbf{Cosa fa il modello è sempre visibile}: A differenza delle moderne "scatole nere", la Regressione Logistica assegna un punteggio visibile ad ogni singola parola chiave. Sapremo per certo se il modello fallisce perché ha frainteso il peso di un aggettivo specifico, permettendoci di giustificarne sempre agli psicologi il ragionamento interno.
-    \item \textbf{Probabilità chiare}: Abbiamo bisogno non solo di un responso netto (Sì/No), ma di sapere "quanto" l'utente è a rischio, per modulare meglio l'avviso ai medici. La Regressione Logistica fornisce come risultato diretto una percentuale precisa calibrata tra lo 0\% e il 100\%.
 \end{enumerate}
 
 Ecco come abbiamo istruito il nostro modello Base. Il codice utilizza la libreria \textit{Scikit-Learn} ed è commentato per essere chiaro in ogni suo passaggio:
@@ -131,16 +129,15 @@ Il secondo test racchiude invece l'idillio e l'organizzazione metodica precedent
     \item \textbf{Rischio Calcolato}: \textbf{23.59\%}
     \item \textbf{Classificazione del Modello}: \texttt{NON-SUICIDE}
 \end{itemize}
-L'utente non adopera alcun termine classificabile statisticamente come negativo (dominano lemmi positivi o neutri, come \textit{clean, letters, rest peacefully, understand}). Poiché l'intento autolesionista è veicolato unicamente dal significato semantico complessivo del gesto, il modello Baseline è totalmente cieco di fronte a questo altissimo rischio clinico.
 
 \subsubsection{L'Esperimento col Dataset Sintetico}
 Preso atto dell'incapacità del TF-IDF di processare sfumature così delicate testandole "a caldo", ci siamo domandati se queste mancanze fossero ovviabili. \textit{Cosa accadrebbe se inquinassimo il dataset di addestramento creando un sotto-dataset sintetico ricolmo di queste eccezioni semantiche e iperboli videoludiche, sperando di forzare il TF-IDF a una ri-ponderazione dei propri pesi?}
 Per dimostrare questa ipotesi, abbiamo iniettato 30.000 records sintetici volutamente ambigui all'interno del Training Set (es. esagerazioni contenenti parole chiave negative e frasi di rassegnazione letargica totalmente decurtate da vocaboli di allarme).
 
 I risultati successivi alla riqualificazione della Baseline (visibili nel notebook \texttt{05\_RedFlag\_Synthetic\_Robustness.ipynb}) hanno generato un comportamento apparentemente strabiliante: gli Edge Cases sono stati "risolti". Ad esempio, il Test Caso 1 (l'esame deprimente) è crollato dal \textbf{86.41\%} al \textbf{4.55\%} di rischio fittizio, mentre il Test Caso 2 (l'organizzazione pacifica dell'addio) è stato portato dal \textbf{23.59\%} a circa il \textbf{74.97\%} di percezione del rischio corretto.
-Tuttavia, una simile soluzione tecnica si configura come un \textbf{falso successo ingegneristico}. Di fronte a una distribuzione artificiale massiccia all'interno del Train Set, il \textit{Term Frequency} non ha "imparato il contesto", bensì ha matematicamente saturato il peso delle combinazioni testuali introdotte a mano, imparandole forzatamente a memoria e sbilanciando la stabilità generale delle parole chiave originali. Lo dimostra il calcolo delle metriche sul Validation Set rimasto pulito: l'Accuracy globale è scesa dal \textbf{94.01\%} al \textbf{93.54\%}, ma soprattutto la Recall è calata significativamente (da \textbf{93.3\%} a \textbf{92.66\%}), dimostrando che l'iniezione artificiale ha "confuso" il peso statistico dei lemmi critici reali del dataset.
+Tuttavia, una simile soluzione tecnica si configura come un \textbf{falso successo ingegneristico}. Di fronte a una distribuzione artificiale massiccia all'interno del Train Set, il \textit{Term Frequency} non ha "imparato il contesto", bensì ha matematicamente saturato il peso delle combinazioni testuali introdotte a mano, imparandole forzatamente a memoria e sbilanciando la stabilità generale delle parole chiave originali. Lo dimostra il calcolo delle metriche sul Validation Set rimasto pulito: l'Accuracy globale è scesa dal \textbf{94.01\%} al \textbf{93.54\%}, dimostrando che l'iniezione artificiale ha "confuso" il peso statistico dei lemmi critici reali del dataset.
 
-\subsubsection{Adozione della Baseline e Sviluppi Futuri}
+\subsubsection{Trade Off tf-idf vs Rete Neurale}
 Nonostante questi test evidenzino l'incapacità intrinseca del modello \textit{Bag-of-Words} di cogliere le sfumature semantiche periferiche, ci troviamo di fronte a un problema ben noto in letteratura scientifica: i risultati dipendono strettamente dalla natura del dataset esplorato. Il Suicide Watch Dataset risulta fortemente "esplicito" nei suoi pattern, motivo per cui l'algoritmo TF-IDF riesce ad intercettare la stragrande maggioranza dei casi con un invidiabile \textbf{94.01\% di Accuratezza}.
 
 Dal punto di vista del \textit{Business Understanding}, l'obiettivo del Red Flag Testuale all'interno di SINTON-IA non è quello di sostituire la diagnosi clinica approfondita, ma di agire come \textbf{filtro di sicurezza primo e macroscopico} in aree dell'applicativo in cui lo psicologo non ha visuale in tempo reale. In questo preciso framework, l'uso di un modello baseline si dimostra la soluzione tecnica più idonea, garantendo:
